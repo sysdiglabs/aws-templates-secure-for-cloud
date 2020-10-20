@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Fargate Cluster where apps are deployed
+Description: Fargate Cluster where Sysdig CloudVision apps are deployed
 
 Resources:
   VPCStack:
