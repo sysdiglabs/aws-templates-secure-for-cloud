@@ -160,7 +160,6 @@ Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${AWS::StackName}-LoadBalancer"
       Scheme: internet-facing
       LoadBalancerAttributes:
       - Key: idle_timeout.timeout_seconds
@@ -232,4 +231,4 @@ Resources:
       TemplateURL: ./CloudTrail.yaml
       Parameters:
         CloudTrailLogRetention: !Ref CloudConnectorLogRetention
-        CloudConnectorLoadBalancer: !GetAtt  LoadBalancer.DNSName
+        CloudConnectorLoadBalancer: !GetAtt LoadBalancer.DNSName
