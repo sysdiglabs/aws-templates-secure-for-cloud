@@ -191,3 +191,16 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
+
+Outputs:
+  VPC:
+    Description: The VPC ID
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: The public subnets identifiers
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ] ]
+
+  PrivateSubnets:
+    Description: The private subnets identifiers
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ] ]

@@ -14,5 +14,17 @@ Resources:
 
 Outputs:
   ClusterName:
-    Description: "Cluster name for Sysdig CloudVision workload"
+    Description: Cluster name for Sysdig CloudVision workload
     Value: !Ref ECSCluster
+
+  VPC:
+    Description: The VPC ID
+    Value: !GetAtt ["VPCStack", "Outputs.VPC"]
+
+  PublicSubnets:
+    Description: Public Subnets
+    Value: !GetAtt ["VPCStack", "Outputs.PublicSubnets"]
+
+  PrivateSubnets:
+    Description: Private Subnets
+    Value: !GetAtt ["VPCStack", "Outputs.PrivateSubnets"]

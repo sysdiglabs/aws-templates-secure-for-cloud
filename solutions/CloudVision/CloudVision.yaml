@@ -6,3 +6,13 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../ECSFargateCluster/ECSFargateCluster.yaml
+
+  CloudConnectorStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ../CloudConnector/CloudConnector.yaml
+      Parameters:
+        VPC: !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"]
+        PublicSubnets: !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"]
+        PrivateSubnets: !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"]
+        ECSCluster: !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"]
