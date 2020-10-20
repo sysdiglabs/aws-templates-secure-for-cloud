@@ -225,3 +225,11 @@ Resources:
         - ContainerName: CloudConnector
           ContainerPort: 5000
           TargetGroupArn: !Ref TargetGroup
+
+  CloudTrailStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./CloudTrail.yaml
+      Parameters:
+        CloudTrailLogRetention: !Ref CloudConnectorLogRetention
+        CloudConnectorLoadBalancer: !GetAtt  LoadBalancer.DNSName
