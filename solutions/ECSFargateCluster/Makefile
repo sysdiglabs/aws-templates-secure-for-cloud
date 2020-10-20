@@ -11,7 +11,7 @@ packaged-template.yaml: ECSFargateCluster.yaml VPC.yaml
 test: packaged-template.yaml
 	aws cloudformation deploy \
 		--stack-name "ECSFargateClusterTest" \
-		--template-body file://./packaged-template.yaml \
+		--template-file packaged-template.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM"
 
 clean:
