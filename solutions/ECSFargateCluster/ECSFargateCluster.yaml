@@ -1,0 +1,8 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Fargate Cluster where apps are deployed
+
+Resources:
+  ECSFargateClusterStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./VPC.yaml
