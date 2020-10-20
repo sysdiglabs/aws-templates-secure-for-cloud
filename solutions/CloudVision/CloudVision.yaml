@@ -5,4 +5,4 @@ Resources:
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ../cluster/cluster.yaml
+      TemplateURL: ../FargateCluster/FargateCluster.yaml

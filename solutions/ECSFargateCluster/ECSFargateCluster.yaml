@@ -2,7 +2,17 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Fargate Cluster where apps are deployed
 
 Resources:
-  ECSFargateClusterStack:
+  VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./VPC.yaml
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}"
+
+Outputs:
+  ClusterName:
+    Description: "Cluster name for Sysdig CloudVision workload"
+    Value: !Ref ECSCluster
