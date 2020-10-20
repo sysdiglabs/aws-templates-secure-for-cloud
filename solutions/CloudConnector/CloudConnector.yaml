@@ -116,8 +116,8 @@ Resources:
                         - console: {}
                         - metrics: {}
                         - cloudwatch:
-                            logGroup: !Ref LogGroup
-                            logStream: !Ref AlertsLogStream
+                            logGroup: ${LogGroup}
+                            logStream: ${AlertsLogStream}
                         - securityhub:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
 
