@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::Serverless-2016-10-31'
+Description: ECS + Fargate Image Scanning with Sysdig Secure - Inline Mode
+
+Resources:
+  ECSInlineSecureScanningLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: scan_image.handler
+      Runtime: python3.8
+      CodeUri: ./inline-scanning-lambda/
+      Timeout: 60
+      Environment:
+        Variables:
+          CODE_BUILD_PROJECT_NAME: !Ref ECSInlineSecureScanningBuildProject
+      Events:
+        CloudWatch:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - "aws.ecs"
+              detail-type:
+                - "ECS Task State Change"
+              detail:
+                desiredStatus:
+                  - RUNNING
+                lastStatus:
+                  - PROVISIONING
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogGroup"
+              Resource:
+                - "arn:aws:logs:*:*:*"
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+              Resource:
+                - "arn:aws:logs:*:*:log-group:/aws/lambda/*:*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "codebuild:StartBuild"
+              Resource:
+                - !GetAtt ECSInlineSecureScanningBuildProject.Arn
+    Metadata:
+      BuildMethod: makefile
+
+
+  InlineSecureScanningServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "InlineSecureScanningServiceRole-${AWS::StackName}"
+      Description: "IAM::Role which allows to run the CodeBuild Job to perform the ECS scanning"
+      Path: /
+      Policies:
+        - PolicyName: LogsPublisher
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - "arn:aws:logs:*:*:log-group:build"
+                  - "arn:aws:logs:*:*:log-group:build:*"
+
+        - PolicyName: CodeBuildPublisher
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/ECSInlineSecureScanning-${AWS::StackName}"
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/ECSInlineSecureScanning-${AWS::StackName}:*"
+              - Effect: Allow
+                Action:
+                  - "codebuild:CreateReportGroup"
+                  - "codebuild:CreateReport"
+                  - "codebuild:UpdateReport"
+                  - "codebuild:BatchPutTestCases"
+                Resource:
+                  - "arn:aws:codebuild:*:*:report-group/ECSInlineSecureScanning-*"
+
+        - PolicyName: ParameterReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:DescribeParameters"
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                Resource:
+                  - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
+              - Effect: Allow
+                Action:
+                  - "ssm:DescribeParameters"
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                Resource:
+                  - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+
+  ECSInlineSecureScanningBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "ECSInlineSecureScanning-${AWS::StackName}"
+      Description: "CodeBuild project which scans images using inline technology in ECS using Sysdig Secure"
+      ServiceRole: !Ref InlineSecureScanningServiceRole
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:3.0
+        PrivilegedMode: true
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+
+          env:
+            variables:
+              SCAN_IMAGE_NAME: "sysdiglabs/secure-inline-scan:latest"
+            parameter-store:
+              SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
+              SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
+
+          phases:
+
+            build:
+              commands:
+              - docker pull $REPOSITORY
+              - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $SCAN_IMAGE_NAME analyze -s $SYSDIG_SECURE_ENDPOINT -k $SYSDIG_SECURE_TOKEN $REPOSITORY
