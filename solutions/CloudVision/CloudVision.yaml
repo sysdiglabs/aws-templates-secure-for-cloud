@@ -5,10 +5,20 @@ Parameters:
   SysdigSecureAPIToken:
     Type: String
     Description: "Enter your Sysdig Secure API Token"
+    NoEcho: true
   SysdigSecureEndpoint:
     Type: String
     Description: "Enter your Sysdig Secure Endpoint"
     Default: "https://secure.sysdig.com"
+
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Description: >
+      Choose if you want to deploy the ECR Repository Image Scanning feature
+    Default: "Yes"
 
   ECRImageScanningMode:
     Type: String
@@ -22,8 +32,55 @@ Parameters:
       faster. If choose Backend it will be done on Sysdig's infrastructure.
     Default: "Inline"
 
+  CloudConnectorDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Description: >
+      Choose if you want to deploy the CloudConnector for CloudTrail
+    Default: "Yes"
+
+  ECSCluster:
+    Type: String
+    Description: ECS Fargate Cluster where deploy the CloudVision workload
+    Default: ""
+  ECSClusterVPC:
+    Type: String
+    Description: VPC where the CloudVision workload will be deployed
+    Default: ""
+  ECSClusterPublicSubnets:
+    Type: List<String>
+    Description: Public Subnets where the CloudVision LoadBalancers will be deployed
+    Default: ""
+  ECSClusterPrivateSubnets:
+    Type: List<String>
+    Description: Private Subnets where the CloudVision workload will be deployed
+    Default: ""
+
 Conditions:
-  DeployECRInlineImageScanning: !Equals [!Ref ECRImageScanningMode, "Inline"]
+  DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+  DeployECRInlineImageScanning: !And
+    - !Condition DeployECRImageScanning
+    - !Equals [!Ref "ECRImageScanningMode", "Inline"]
+  DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
+  RequiresNewECSCluster:
+    Fn::Or:
+      - Fn::Equals:
+        - !Ref ECSCluster
+        - ""
+      - Fn::Equals:
+        - !Ref ECSClusterVPC
+        - ""
+      - Fn::Equals:
+        - !Join [",", !Ref ECSClusterPublicSubnets]
+        - ""
+      - Fn::Equals:
+        - !Join [",", !Ref ECSClusterPrivateSubnets]
+        - ""
+  DeployNewECSCluster: !And
+       - !Condition DeployCloudConnector
+       - !Condition RequiresNewECSCluster
 
 Resources:
   ECRInlineImageScanningStack:
@@ -37,15 +94,17 @@ Resources:
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
+    Condition: DeployNewECSCluster
     Properties:
       TemplateURL: ../ECSFargateCluster/ECSFargateCluster.yaml
 
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudConnector
     Properties:
       TemplateURL: ../CloudConnector/CloudConnector.yaml
       Parameters:
-        VPC: !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"]
-        PublicSubnets: !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"]
-        PrivateSubnets: !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"]
-        ECSCluster: !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"]
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ECSClusterVPC ]
+        PublicSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"], !Ref ECSClusterPublicSubnets ]
+        PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Ref ECSClusterPrivateSubnets ]
