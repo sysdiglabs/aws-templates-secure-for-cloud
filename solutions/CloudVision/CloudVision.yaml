@@ -25,7 +25,6 @@ Parameters:
     AllowedValues:
       - "Inline"
       - "Backend"
-      - "No"
     Description: >
       Choose how the scan will be performed. If choose Inline it will use AWS
       infrastructure and don't need outside access, this option makes scan
