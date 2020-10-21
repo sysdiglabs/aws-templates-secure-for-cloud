@@ -2,11 +2,11 @@ S3_BUCKET=nestor-test-cf
 REGION=eu-west-1
 
 validate:
-	sam validate --template-file ./Lambda.yaml
+	aws cloudformation validate-template --template-body file://./Inline.yaml
 
 packaged-template.yaml: Inline.yaml
 	aws cloudformation package \
-		--template-file Lambda.yaml \
+		--template-file Inline.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--output-template-file packaged-template.yaml
 

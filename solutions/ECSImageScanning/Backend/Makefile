@@ -2,16 +2,16 @@ S3_BUCKET=nestor-test-cf
 REGION=eu-west-1
 
 validate:
-	sam validate --template-file ./Lambda.yaml
+	aws cloudformation validate-template --template-body file://./Backend.yaml
 
 packaged-template.yaml: Backend.yaml
-	sam package \
-		--template-file Lambda.yaml \
+	aws cloudformation package \
+		--template-file Backend.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--output-template-file packaged-template.yaml
 
 test: packaged-template.yaml
-	sam deploy \
+	aws cloudformation deploy \
 		--stack-name "ECSImageScanningBackendTest" \
 		--template-file packaged-template.yaml \
 		--region $(REGION) \
