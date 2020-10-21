@@ -1,7 +1,40 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Sysdig CloudVision for AWS
 
+Parameters:
+  SysdigSecureAPIToken:
+    Type: String
+    Description: "Enter your Sysdig Secure API Token"
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: "https://secure.sysdig.com"
+
+  ECRImageScanningMode:
+    Type: String
+    AllowedValues:
+      - "Inline"
+      - "Backend"
+      - "No"
+    Description: >
+      Choose how the scan will be performed. If choose Inline it will use AWS
+      infrastructure and don't need outside access, this option makes scan
+      faster. If choose Backend it will be done on Sysdig's infrastructure.
+    Default: "Inline"
+
+Conditions:
+  DeployECRInlineImageScanning: !Equals [!Ref ECRImageScanningMode, "Inline"]
+
 Resources:
+  ECRInlineImageScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployECRInlineImageScanning
+    Properties:
+      TemplateURL: ../ECRImageScanning/Inline/Inline.yaml
+      Parameters:
+        SysdigSecureAPIToken: !Ref SysdigSecureAPIToken
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
     Properties:

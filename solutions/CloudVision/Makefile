@@ -1,3 +1,5 @@
+SECURE_API_TOKEN=""
+
 .PHONY: packaged-template.yaml
 
 validate:
@@ -13,6 +15,10 @@ test: packaged-template.yaml
 	aws cloudformation deploy \
 		--stack-name "CloudVisionTest" \
 		--template-file packaged-template.yaml \
-		--capabilities "CAPABILITY_NAMED_IAM"
+		--capabilities "CAPABILITY_NAMED_IAM" \
+		--parameter-overrides \
+			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
+			"ECRImageScanningMode=Inline"
+
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"
