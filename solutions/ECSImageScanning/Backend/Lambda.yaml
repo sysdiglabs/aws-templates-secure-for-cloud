@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::Serverless-2016-10-31'
+Description: ECS + Fargate Image Scanning with Sysdig Secure - Lambda code
+
+Resources:
+  ECSBackendSecureScanningLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: scan_image.handler
+      Runtime: python3.8
+      CodeUri: ./backend-scanning-lambda/
+      Timeout: 60
+      Events:
+        CloudWatch:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - "aws.ecs"
+              detail-type:
+                - "ECS Task State Change"
+              detail:
+                desiredStatus:
+                  - RUNNING
+                lastStatus:
+                  - PROVISIONING
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogGroup"
+              Resource:
+                - "arn:aws:logs:*:*:*"
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+              Resource:
+                - "arn:aws:logs:*:*:log-group:/aws/lambda/*:*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/ECSBackendSecureScanningUserAccessKeyId"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/ECSBackendSecureScanningUserSecretAccessKey"
+    Metadata:
+      BuildMethod: makefile
