@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ECR Image Scanning with Sysdig Secure
+Parameters:
+  SysdigSecureAPIToken:
+    Type: String
+    Description: "Enter your Sysdig Secure API Token"
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: "https://secure.sysdig.com"
+
+Resources:
+  SysdigSecureAPITokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureAPIToken
+      Description: "Sysdig Secure API Token"
+      Type: String
+      Value: !Ref SysdigSecureAPIToken
+
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureEndpoint
+      Description: "Sysdig Secure endpoint"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
+  SecureScanningServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: "IAM::Role which allows to run the CodeBuild Job to perform the ECR scanning"
+      Path: /
+      Policies:
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
+
+        - PolicyName: LogsPublisher
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - "arn:aws:logs:*:*:log-group:build"
+                  - "arn:aws:logs:*:*:log-group:build:*"
+
+        - PolicyName: CodeBuildPublisher
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - "arn:aws:logs:*:*:log-group:/aws/codebuild/InlineSecureScanning"
+                  - "arn:aws:logs:*:*:log-group:/aws/codebuild/InlineSecureScanning:*"
+              - Effect: Allow
+                Action:
+                  - "codebuild:CreateReportGroup"
+                  - "codebuild:CreateReport"
+                  - "codebuild:UpdateReport"
+                  - "codebuild:BatchPutTestCases"
+                Resource:
+                  - "arn:aws:codebuild:*:*:report-group/InlineSecureScanning-*"
+
+        - PolicyName: ParameterReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:DescribeParameters"
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                Resource:
+                  - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
+              - Effect: Allow
+                Action:
+                  - "ssm:DescribeParameters"
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                Resource:
+                  - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+
+  SecureScanningBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${AWS::StackName}-SecureScanningBuildProject"
+      Description: "CodeBuild project which scans images using inline technology in ECR using Sysdig Secure"
+      ServiceRole: !Ref SecureScanningServiceRole
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:3.0
+        PrivilegedMode: true
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+
+          env:
+            variables:
+              SCAN_IMAGE_NAME: "sysdiglabs/secure-inline-scan:latest"
+            parameter-store:
+              SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
+              SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
+
+          phases:
+            pre_build:
+              commands:
+              - echo Logging in to Amazon ECR...
+              - $(aws ecr get-login --no-include-email --region $REGION)
+
+            build:
+              commands:
+              - docker pull $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+              - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $SCAN_IMAGE_NAME analyze -s $SYSDIG_SECURE_ENDPOINT -k $SYSDIG_SECURE_TOKEN $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+
+  SecureScanningInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: "IAM::Role which triggers the CodeBuild project for the ECR Scanning"
+      Path: /
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: ECRReadOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - "arn:aws:codebuild:*:*:project/InlineSecureScanning"
+
+  SecureScanningRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Rule which triggers an inline scanning when a new image is pushed to ECR"
+      EventPattern:
+        source:
+          - "aws.ecr"
+        detail-type:
+          - "ECR Image Action"
+        detail:
+          action-type:
+            - "PUSH"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - SecureScanningBuildProject
+              - Arn
+          Id: SecureScanningBuildProject
+          RoleArn:
+            Fn::GetAtt:
+              - SecureScanningInvokeRole
+              - Arn
+          InputTransformer:
+            InputPathsMap:
+              account: "$.account"
+              region: "$.region"
+              repository: "$.detail.repository-name"
+              tag: "$.detail.image-tag"
+            InputTemplate: "{\n \"environmentVariablesOverride\": [\n {\"name\": \"ACCOUNT\", \"type\": \"PLAINTEXT\", \"value\":<account>},\n {\"name\": \"REGION\", \"type\": \"PLAINTEXT\", \"value\":<region>},\n {\"name\": \"REPOSITORY\", \"type\": \"PLAINTEXT\", \"value\":<repository>},\n {\"name\": \"TAG\", \"type\": \"PLAINTEXT\", \"value\":<tag>}\n ]\n}"
