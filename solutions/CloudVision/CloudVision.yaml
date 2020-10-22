@@ -133,14 +133,17 @@ Resources:
     Properties:
       TemplateURL: ../ECRImageScanning/Inline/Inline.yaml
       Parameters:
-        SysdigSecureAPIToken: !Ref SysdigSecureAPIToken
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
 
   ECSInlineImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECSInlineImageScanning
     Properties:
       TemplateURL: ../ECSImageScanning/Inline/Inline.yaml
+      Parameters:
+        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
 
   ECSBackendImageScanningStack:
     Type: AWS::CloudFormation::Stack
