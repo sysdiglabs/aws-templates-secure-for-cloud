@@ -3,7 +3,7 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: ECS + Fargate Image Scanning with Sysdig Secure - Inline Mode
 
 Resources:
-  ECSInlineSecureScanningLambda:
+  Lambda:
     Type: AWS::Serverless::Function
     Properties:
       Handler: scan_image.handler
@@ -12,7 +12,7 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          CODE_BUILD_PROJECT_NAME: !Ref ECSInlineSecureScanningBuildProject
+          CODE_BUILD_PROJECT_NAME: !Ref BuildProject
       Events:
         CloudWatch:
           Type: CloudWatchEvent
@@ -63,15 +63,14 @@ Resources:
               Action:
                 - "codebuild:StartBuild"
               Resource:
-                - !GetAtt ECSInlineSecureScanningBuildProject.Arn
+                - !GetAtt BuildProject.Arn
     Metadata:
       BuildMethod: makefile
 
 
-  InlineSecureScanningServiceRole:
+  ServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "InlineSecureScanningServiceRole-${AWS::StackName}"
       Description: "IAM::Role which allows to run the CodeBuild Job to perform the ECS scanning"
       Path: /
       Policies:
@@ -138,12 +137,12 @@ Resources:
             Action:
               - 'sts:AssumeRole'
 
-  ECSInlineSecureScanningBuildProject:
+  BuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub "ECSInlineSecureScanning-${AWS::StackName}"
+      Name: !Sub "${AWS::StackName}-BuildProject"
       Description: "CodeBuild project which scans images using inline technology in ECS using Sysdig Secure"
-      ServiceRole: !Ref InlineSecureScanningServiceRole
+      ServiceRole: !Ref ServiceRole
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
