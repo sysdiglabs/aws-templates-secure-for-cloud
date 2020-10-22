@@ -107,8 +107,8 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource:
-                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/ECSInlineSecureScanning-${AWS::StackName}"
-                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/ECSInlineSecureScanning-${AWS::StackName}:*"
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-BuildProject"
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-BuildProject:*"
               - Effect: Allow
                 Action:
                   - "codebuild:CreateReportGroup"
@@ -116,7 +116,7 @@ Resources:
                   - "codebuild:UpdateReport"
                   - "codebuild:BatchPutTestCases"
                 Resource:
-                  - "arn:aws:codebuild:*:*:report-group/ECSInlineSecureScanning-*"
+                  - !Sub "arn:aws:codebuild:*:*:report-group/${AWS::StackName}-BuildProject-*"
 
         - PolicyName: ParameterReader
           PolicyDocument:
