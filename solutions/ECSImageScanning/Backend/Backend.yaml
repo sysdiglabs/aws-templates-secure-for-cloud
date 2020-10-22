@@ -3,7 +3,7 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: ECS + Fargate Image Scanning with Sysdig Secure - Backend mode
 
 Resources:
-  ECSBackendSecureScanningLambda:
+  Lambda:
     Type: AWS::Serverless::Function
     Properties:
       Handler: scan_image.handler
