@@ -111,6 +111,22 @@ Conditions:
     - !Equals [!Ref "ECSImageScanningMode", "Backend"]
 
 Resources:
+  SysdigSecureAPITokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureAPIToken
+      Description: "Sysdig Secure API Token"
+      Type: String
+      Value: !Ref SysdigSecureAPIToken
+
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureEndpoint
+      Description: "Sysdig Secure endpoint"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
   ECRInlineImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECRInlineImageScanning
