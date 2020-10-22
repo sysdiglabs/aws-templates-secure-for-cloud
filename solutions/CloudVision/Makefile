@@ -15,10 +15,11 @@ test: packaged-template.yaml
 	aws cloudformation deploy \
 		--stack-name "CloudVisionTest" \
 		--template-file packaged-template.yaml \
-		--capabilities "CAPABILITY_NAMED_IAM" \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
 			"ECRImageScanningDeploy=Yes" \
+			"ECSImageScanningDeploy=Yes" \
 			"CloudConnectorDeploy=Yes" \
 
 clean:

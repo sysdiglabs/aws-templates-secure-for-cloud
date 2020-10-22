@@ -31,6 +31,26 @@ Parameters:
       faster. If choose Backend it will be done on Sysdig's infrastructure.
     Default: "Inline"
 
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Description: >
+      Choose if you want to deploy the ECS Image Scanning feature
+    Default: "Yes"
+
+  ECSImageScanningMode:
+    Type: String
+    AllowedValues:
+      - "Inline"
+      - "Backend"
+    Description: >
+      Choose how the scan will be performed. If choose Inline it will use AWS
+      infrastructure and don't need outside access, this option makes scan
+      faster. If choose Backend it will be done on Sysdig's infrastructure.
+    Default: "Inline"
+
   ExistentECSCluster:
     Type: String
     Description: Enter ECS Fargate Cluster where deploy the CloudVision workload if you don't want to create a new one
@@ -62,6 +82,7 @@ Conditions:
   DeployECRInlineImageScanning: !And
     - !Condition DeployECRImageScanning
     - !Equals [!Ref "ECRImageScanningMode", "Inline"]
+
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   RequiresNewECSCluster:
     Fn::Or:
@@ -81,6 +102,14 @@ Conditions:
        - !Condition DeployCloudConnector
        - !Condition RequiresNewECSCluster
 
+  DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  DeployECSInlineImageScanning: !And
+    - !Condition DeployECSImageScanning
+    - !Equals [!Ref "ECSImageScanningMode", "Inline"]
+  DeployECSBackendImageScanning: !And
+    - !Condition DeployECSImageScanning
+    - !Equals [!Ref "ECSImageScanningMode", "Backend"]
+
 Resources:
   ECRInlineImageScanningStack:
     Type: AWS::CloudFormation::Stack
@@ -90,6 +119,18 @@ Resources:
       Parameters:
         SysdigSecureAPIToken: !Ref SysdigSecureAPIToken
         SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+
+  ECSInlineImageScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployECSInlineImageScanning
+    Properties:
+      TemplateURL: ../ECSImageScanning/Inline/Inline.yaml
+
+  ECSBackendImageScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployECSBackendImageScanning
+    Properties:
+      TemplateURL: ../ECSImageScanning/Backend/Backend.yaml
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack

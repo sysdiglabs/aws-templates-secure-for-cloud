@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: 'AWS::Serverless-2016-10-31'
-Description: ECS + Fargate Image Scanning with Sysdig Secure - Backend mode
+Description: ECS Image Scanning with Sysdig Secure - Backend mode
 
 Resources:
   Lambda:
