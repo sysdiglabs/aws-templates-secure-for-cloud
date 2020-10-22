@@ -18,8 +18,8 @@ test: packaged-template.yaml
 		--capabilities "CAPABILITY_NAMED_IAM" \
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
-			"ECRImageScanningDeploy=No" \
-			"CloudConnectorDeploy=No" \
+			"ECRImageScanningDeploy=Yes" \
+			"CloudConnectorDeploy=Yes" \
 
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"

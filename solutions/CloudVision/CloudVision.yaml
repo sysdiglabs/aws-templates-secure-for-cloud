@@ -2,14 +2,14 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Sysdig CloudVision for AWS
 
 Parameters:
-  SysdigSecureAPIToken:
+  CloudConnectorDeploy:
     Type: String
-    Description: "Enter your Sysdig Secure API Token"
-    NoEcho: true
-  SysdigSecureEndpoint:
-    Type: String
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: "https://secure.sysdig.com"
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Description: >
+      Choose if you want to deploy the CloudConnector for CloudTrail
+    Default: "Yes"
 
   ECRImageScanningDeploy:
     Type: String
@@ -31,31 +31,31 @@ Parameters:
       faster. If choose Backend it will be done on Sysdig's infrastructure.
     Default: "Inline"
 
-  CloudConnectorDeploy:
+  ExistentECSCluster:
     Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Description: >
-      Choose if you want to deploy the CloudConnector for CloudTrail
-    Default: "Yes"
+    Description: Enter ECS Fargate Cluster where deploy the CloudVision workload if you don't want to create a new one
+    Default: ""
+  ExistentECSClusterVPC:
+    Type: String
+    Description: Enter VPC where the CloudVision workload will be deployed if you don't want to create a new cluster
+    Default: ""
+  ExistentECSClusterPublicSubnets:
+    Type: List<String>
+    Description: Enter Public Subnets where the CloudVision LoadBalancers will be deployed if you don't want to create a new cluster
+    Default: ""
+  ExistentECSClusterPrivateSubnets:
+    Type: List<String>
+    Description: Enter Private Subnets where the CloudVision workload will be deployed if you don't want to create a new cluster
+    Default: ""
 
-  ECSCluster:
+  SysdigSecureAPIToken:
     Type: String
-    Description: ECS Fargate Cluster where deploy the CloudVision workload
-    Default: ""
-  ECSClusterVPC:
+    Description: Enter your Sysdig Secure API Token
+    NoEcho: true
+  SysdigSecureEndpoint:
     Type: String
-    Description: VPC where the CloudVision workload will be deployed
-    Default: ""
-  ECSClusterPublicSubnets:
-    Type: List<String>
-    Description: Public Subnets where the CloudVision LoadBalancers will be deployed
-    Default: ""
-  ECSClusterPrivateSubnets:
-    Type: List<String>
-    Description: Private Subnets where the CloudVision workload will be deployed
-    Default: ""
+    Description: Enter your Sysdig Secure Endpoint
+    Default: "https://secure.sysdig.com"
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
@@ -66,16 +66,16 @@ Conditions:
   RequiresNewECSCluster:
     Fn::Or:
       - Fn::Equals:
-        - !Ref ECSCluster
+        - !Ref ExistentECSCluster
         - ""
       - Fn::Equals:
-        - !Ref ECSClusterVPC
+        - !Ref ExistentECSClusterVPC
         - ""
       - Fn::Equals:
-        - !Join [",", !Ref ECSClusterPublicSubnets]
+        - !Join [",", !Ref ExistentECSClusterPublicSubnets]
         - ""
       - Fn::Equals:
-        - !Join [",", !Ref ECSClusterPrivateSubnets]
+        - !Join [",", !Ref ExistentECSClusterPrivateSubnets]
         - ""
   DeployNewECSCluster: !And
        - !Condition DeployCloudConnector
@@ -103,7 +103,7 @@ Resources:
     Properties:
       TemplateURL: ../CloudConnector/CloudConnector.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ECSClusterVPC ]
-        PublicSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"], !Ref ECSClusterPublicSubnets ]
-        PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Ref ECSClusterPrivateSubnets ]
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        PublicSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"], !Ref ExistentECSClusterPublicSubnets ]
+        PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Ref ExistentECSClusterPrivateSubnets ]
