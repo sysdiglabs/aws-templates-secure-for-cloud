@@ -1,31 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: ECR Image Scanning with Sysdig Secure - Inline Mode
+
 Parameters:
   SysdigSecureAPIToken:
-    Type: String
+    Type: AWS::SSM::Parameter::Value<String>
     Description: "Enter your Sysdig Secure API Token"
+    Default: SysdigSecureAPIToken
   SysdigSecureEndpoint:
-    Type: String
+    Type: AWS::SSM::Parameter::Value<String>
     Description: "Enter your Sysdig Secure Endpoint"
-    Default: "https://secure.sysdig.com"
+    Default: SysdigSecureEndpoint
 
 Resources:
-  SysdigSecureAPITokenParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: SysdigSecureAPIToken
-      Description: "Sysdig Secure API Token"
-      Type: String
-      Value: !Ref SysdigSecureAPIToken
-
-  SysdigSecureEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: SysdigSecureEndpoint
-      Description: "Sysdig Secure endpoint"
-      Type: String
-      Value: !Ref SysdigSecureEndpoint
-
   SecureScanningServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -75,8 +61,8 @@ Resources:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource:
-                  - "arn:aws:logs:*:*:log-group:/aws/codebuild/InlineSecureScanning"
-                  - "arn:aws:logs:*:*:log-group:/aws/codebuild/InlineSecureScanning:*"
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-SecureScanningBuildProject-*"
+                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-SecureScanningBuildProject:*"
               - Effect: Allow
                 Action:
                   - "codebuild:CreateReportGroup"
@@ -84,7 +70,7 @@ Resources:
                   - "codebuild:UpdateReport"
                   - "codebuild:BatchPutTestCases"
                 Resource:
-                  - "arn:aws:codebuild:*:*:report-group/InlineSecureScanning-*"
+                  - !Sub "arn:aws:codebuild:*:*:report-group/${AWS::StackName}-SecureScanningBuildProject"
 
         - PolicyName: ParameterReader
           PolicyDocument:
@@ -175,7 +161,7 @@ Resources:
                 Action:
                   - "codebuild:StartBuild"
                 Resource:
-                  - "arn:aws:codebuild:*:*:project/InlineSecureScanning"
+                  - !Sub "arn:aws:codebuild:*:*:project/${AWS::StackName}-SecureScanningBuildProject"
 
   SecureScanningRule:
     Type: AWS::Events::Rule
