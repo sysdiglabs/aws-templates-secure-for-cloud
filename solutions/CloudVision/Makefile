@@ -5,7 +5,11 @@ SECURE_API_TOKEN=""
 validate:
 	aws cloudformation validate-template --template-body file://./CloudVision.yaml
 
-packaged-template.yaml:
+package-lambdas:
+	$(MAKE) -C ../ECSImageScanning/Inline/inline-scanning-lambda lambda.zip
+	$(MAKE) -C ../ECSImageScanning/Backend/backend-scanning-lambda lambda.zip
+
+packaged-template.yaml: package-lambdas
 	aws cloudformation package \
 		--template-file CloudVision.yaml \
 		--s3-bucket nestor-test-cf \
