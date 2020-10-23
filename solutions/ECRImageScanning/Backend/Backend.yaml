@@ -2,33 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: 'AWS::Serverless-2016-10-31'
 Description: ECR Image Scanning with Sysdig Secure - Backend Mode
 
-Parameters:
-  SysdigSecureAPIToken:
-    Type: String
-    Description: Enter your Sysdig Secure API Token
-    NoEcho: true
-  SysdigSecureEndpoint:
-    Type: String
-    Description: Enter your Sysdig Secure Endpoint
-    Default: "https://secure.sysdig.com"
-
 Resources:
-  SysdigSecureAPITokenParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: SysdigSecureAPIToken
-      Description: "Sysdig Secure API Token"
-      Type: String
-      Value: !Ref SysdigSecureAPIToken
-
-  SysdigSecureEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: SysdigSecureEndpoint
-      Description: "Sysdig Secure endpoint"
-      Type: String
-      Value: !Ref SysdigSecureEndpoint
-
   ScanningUser:
     Type: AWS::IAM::User
     Properties:

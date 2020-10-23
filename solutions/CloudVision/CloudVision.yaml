@@ -82,6 +82,9 @@ Conditions:
   DeployECRInlineImageScanning: !And
     - !Condition DeployECRImageScanning
     - !Equals [!Ref "ECRImageScanningMode", "Inline"]
+  DeployECRBackendImageScanning: !And
+    - !Condition DeployECRImageScanning
+    - !Equals [!Ref "ECRImageScanningMode", "Backend"]
 
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   RequiresNewECSCluster:
@@ -135,6 +138,12 @@ Resources:
       Parameters:
         SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
         SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
+
+  ECRBackendImageScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployECRBackendImageScanning
+    Properties:
+      TemplateURL: ../ECRImageScanning/Backend/Backend.yaml
 
   ECSInlineImageScanningStack:
     Type: AWS::CloudFormation::Stack
