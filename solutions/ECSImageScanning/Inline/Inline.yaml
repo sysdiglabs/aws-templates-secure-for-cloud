@@ -18,7 +18,7 @@ Resources:
     Properties:
       Handler: scan_image.handler
       Runtime: python3.8
-      CodeUri: ./inline-scanning-lambda/
+      CodeUri: ./inline-scanning-lambda/lambda.zip
       Timeout: 60
       Environment:
         Variables:
