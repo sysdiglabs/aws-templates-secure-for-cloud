@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::Serverless-2016-10-31'
+Description: ECR Image Scanning with Sysdig Secure - Backend Mode
+
+Parameters:
+  SysdigSecureAPIToken:
+    Type: String
+    Description: Enter your Sysdig Secure API Token
+    NoEcho: true
+  SysdigSecureEndpoint:
+    Type: String
+    Description: Enter your Sysdig Secure Endpoint
+    Default: "https://secure.sysdig.com"
+
+Resources:
+  SysdigSecureAPITokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureAPIToken
+      Description: "Sysdig Secure API Token"
+      Type: String
+      Value: !Ref SysdigSecureAPIToken
+
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: SysdigSecureEndpoint
+      Description: "Sysdig Secure endpoint"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
+  ScanningUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub "${AWS::StackName}-SysdigSecureUser"
+      Policies:
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
+
+  ScanningUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref ScanningUser
+
+  ScanningUserAccessKeyId:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: ScanningUserAccessKeyId
+      Description: "Access Key Id for user to read from ECR registries"
+      Type: String
+      Value: !Ref ScanningUserAccessKey
+
+  ScanningUserSecretAccessKey:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: ScanningUserSecretAccessKey
+      Description: "Secret Access Key for user to read from ECR registries"
+      Type: String
+      Value:
+        Fn::GetAtt:
+          - ScanningUserAccessKey
+          - SecretAccessKey
+
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: scan_image.handler
+      Runtime: python3.8
+      CodeUri: ./backend-scanning-lambda/lambda.zip
+      Timeout: 60
+      Events:
+        CloudWatch:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - "aws.ecr"
+              detail-type:
+                - "ECR Image Action"
+              detail:
+                action-type:
+                  - PUSH
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogGroup"
+              Resource:
+                - "arn:aws:logs:*:*:*"
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+              Resource:
+                - "arn:aws:logs:*:*:log-group:/aws/lambda/*:*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/ScanningUserAccessKeyId"
+            - Effect: Allow
+              Action:
+                - "ssm:DescribeParameters"
+                - "ssm:GetParameter"
+                - "ssm:GetParameters"
+              Resource:
+                - "arn:aws:ssm:*:*:parameter/ScanningUserSecretAccessKey"
+    Metadata:
+      BuildMethod: makefile
