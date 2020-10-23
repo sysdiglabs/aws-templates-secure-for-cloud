@@ -4,7 +4,10 @@ REGION=eu-west-1
 validate:
 	aws cloudformation validate-template --template-body file://./Backend.yaml
 
-packaged-template.yaml: Backend.yaml
+package-lambda:
+	$(MAKE) -C ./backend-scanning-lambda lambda.zip
+
+packaged-template.yaml: Backend.yaml package-lambda
 	aws cloudformation package \
 		--template-file Backend.yaml \
 		--s3-bucket $(S3_BUCKET) \
@@ -22,3 +25,4 @@ clean:
 		--stack-name "ECSImageScanningBackendTest" \
 		--region $(REGION)
 	-rm packaged-template.yaml
+	-rm ./backend-scanning-lambda/lambda.zip

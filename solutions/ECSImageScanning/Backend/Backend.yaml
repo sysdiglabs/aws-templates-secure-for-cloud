@@ -8,7 +8,7 @@ Resources:
     Properties:
       Handler: scan_image.handler
       Runtime: python3.8
-      CodeUri: ./backend-scanning-lambda/
+      CodeUri: ./backend-scanning-lambda/lambda.zip
       Timeout: 60
       Events:
         CloudWatch:
