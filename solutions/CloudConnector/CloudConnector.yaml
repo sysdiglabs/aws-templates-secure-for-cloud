@@ -108,7 +108,7 @@ Resources:
             - sh
             - -c
             - !Sub
-              - "echo '${Command}' | s3-bucket-config > /etc/cloud-connector/cloud-connector.yaml"
+              - "echo '${Command}' | s3-bucket-config"
               - Command:
                   "Fn::Base64":
                     !Sub |
@@ -139,6 +139,12 @@ Resources:
           MountPoints:
             - SourceVolume: config
               ContainerPath: "/etc/cloud-connector"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
         - Name: CloudConnector
           DependsOn:
             - ContainerName: Config
