@@ -1,0 +1,227 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloud Bench for AWS
+
+Parameters:
+  CloudBenchLogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudBench
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the workload is deployed
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Public Subnets where the LoadBalancer will be deployed
+  PrivateSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private Subnets where the CloudBench will be deployed
+  ECSCluster:
+    Type: String
+    Description: ECS Fargate Cluster where deploy the CloudBench workload
+  SysdigSecureAPIToken:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Enter your Sysdig Secure API Token"
+    Default: SysdigSecureAPIToken
+  SysdigSecureEndpoint:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: SysdigSecureEndpoint
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref CloudBenchLogRetention
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-TaskRole"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-TaskRolePolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "access-analyzer:ListAnalyzers"
+                  - "cloudwatch:PutMetricData"
+                  - "cloudwatch:DescribeAlarmsForMetric"
+                  - "cloudtrail:DescribeTrails"
+                  - "cloudtrail:GetEventSelectors"
+                  - "cloudtrail:GetTrailStatus"
+                  - "config:DescribeConfigurationRecorders"
+                  - "ec2:DescribeFlowLogs"
+                  - "ec2:DescribeNetworkAcls"
+                  - "ec2:DescribeSecurityGroups"
+                  - "ec2:DescribeVpcs"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:CreateNetworkInterface"
+                  - "events:PutTargets"
+                  - "events:PutRule"
+                  - "iam:GetGroup"
+                  - "iam:GenerateCredentialReport"
+                  - "iam:GetAccountPasswordPolicy"
+                  - "iam:GetAccountSummary"
+                  - "iam:GetCredentialReport"
+                  - "iam:GetPolicyVersion"
+                  - "iam:ListAccountAliases"
+                  - "iam:ListAccessKeys"
+                  - "iam:ListAttachedUserPolicies"
+                  - "iam:ListAttachedRolePolicies"
+                  - "iam:ListEntitiesForPolicy"
+                  - "iam:ListPolicies"
+                  - "iam:ListRolePolicies"
+                  - "iam:ListPolicyVersions"
+                  - "iam:ListGroupPolicies"
+                  - "iam:ListGroupsForUser"
+                  - "iam:ListServerCertificates"
+                  - "iam:ListUserPolicies"
+                  - "iam:ListUsers"
+                  - "iam:ListVirtualMFADevices"
+                  - "iam:DeleteAccessKey"
+                  - "iam:ListMfaDevices"
+                  - "iam:UpdateAccessKey"
+                  - "lambda:UpdateFunctionConfiguration"
+                  - "lambda:UpdateFunctionCode"
+                  - "lambda:UpdateEventSourceMapping"
+                  - "lambda:UpdateAlias"
+                  - "lambda:UntagResource"
+                  - "lambda:TagResource"
+                  - "lambda:RemovePermission"
+                  - "lambda:PutFunctionConcurrency"
+                  - "lambda:InvokeFunction"
+                  - "lambda:DeleteFunctionConcurrency"
+                  - "lambda:DeleteFunction"
+                  - "lambda:DeleteEventSourceMapping"
+                  - "lambda:DeleteAlias"
+                  - "lambda:CreateFunction"
+                  - "lambda:CreateEventSourceMapping"
+                  - "lambda:CreateAlias"
+                  - "lambda:AddPermission"
+                  - "logs:CreateLogStream"
+                  - "logs:CreateLogGroup"
+                  - "logs:DescribeMetricFilters"
+                  - "s3:GetBucketAcl"
+                  - "s3:GetBucketLocation"
+                  - "s3:GetBucketLogging"
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketPublicAccessBlock"
+                  - "s3:ListBucket"
+                  - "sns:ListSubscriptionsByTopic"
+                Resource: '*'
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ExecutionRole"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ ecs-tasks.amazonaws.com ]
+          Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Family: !Sub "${AWS::StackName}-CloudBench"
+      NetworkMode: awsvpc
+      TaskRoleArn: !Ref TaskRole
+      ExecutionRoleArn: !Ref ExecutionRole
+      Cpu: 256
+      Memory: 512
+      Volumes:
+        - Name: config
+          Host: { }
+      ContainerDefinitions:
+        - Name: Config
+          Command:
+            - sh
+            - -c
+            - !Sub
+              - "echo '${Command}'| s3-bucket-config"
+              - Command:
+                  "Fn::Base64":
+                    !Sub |
+                    secureURL: ${SysdigSecureEndpoint}
+                    logLevel: "debug"
+                    schedule: "24h"
+                    bechmarkType: "aws"
+                    outputDir:
+                      - directory:
+                          path: "/tmp/cloud-custodian"
+                    policyFile:
+                      - directory:
+                          path: "/home/custodian/aws-benchmarks.yml"
+          Environment:
+            - Name: SECURE_API_TOKEN
+              Value: !Ref SysdigSecureAPIToken
+          Image: sysdiglabs/cloud-bench:master
+          Essential: false
+          MountPoints:
+            - SourceVolume: config
+              ContainerPath: "/etc/cloud-bench"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+        - Name: CloudBench
+          DependsOn:
+            - ContainerName: Config
+              Condition: SUCCESS
+          Image: sysdiglabs/cloud-bench:master
+          Essential: true
+          PortMappings:
+            - ContainerPort: 7000
+          MountPoints:
+            - SourceVolume: config
+              ContainerPath: "/etc/cloud-bench"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Sub "${AWS::StackName}-CloudBench"
+      GroupDescription: CloudBench workload Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudBench"
+
