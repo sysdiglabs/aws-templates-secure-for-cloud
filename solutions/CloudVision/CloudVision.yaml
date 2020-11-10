@@ -112,7 +112,9 @@ Conditions:
         - !Join [",", !Ref ExistentECSClusterPrivateSubnets]
         - ""
   DeployNewECSCluster: !And
-       - !Condition DeployCloudConnector
+       - !Or
+         - !Condition DeployCloudConnector
+         - !Condition DeployCloudBench
        - !Condition RequiresNewECSCluster
 
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]

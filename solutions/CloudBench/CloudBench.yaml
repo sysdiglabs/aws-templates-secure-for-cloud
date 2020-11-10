@@ -57,44 +57,19 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "access-analyzer:ListAnalyzers"
+                  - "access-analyzer:List*"
                   - "cloudwatch:PutMetricData"
-                  - "cloudwatch:DescribeAlarmsForMetric"
-                  - "cloudtrail:DescribeTrails"
-                  - "cloudtrail:GetEventSelectors"
-                  - "cloudtrail:GetTrailStatus"
-                  - "config:DescribeConfigurationRecorders"
-                  - "ec2:DescribeFlowLogs"
-                  - "ec2:DescribeNetworkAcls"
-                  - "ec2:DescribeSecurityGroups"
-                  - "ec2:DescribeVpcs"
-                  - "ec2:DescribeNetworkInterfaces"
+                  - "cloudwatch:Describe*"
+                  - "cloudtrail:Get*"
+                  - "config:Describe*"
+                  - "ec2:Describe*"
                   - "ec2:DeleteNetworkInterface"
                   - "ec2:CreateNetworkInterface"
                   - "events:PutTargets"
                   - "events:PutRule"
-                  - "iam:GetGroup"
-                  - "iam:GenerateCredentialReport"
-                  - "iam:GetAccountPasswordPolicy"
-                  - "iam:GetAccountSummary"
-                  - "iam:GetCredentialReport"
-                  - "iam:GetPolicyVersion"
-                  - "iam:ListAccountAliases"
-                  - "iam:ListAccessKeys"
-                  - "iam:ListAttachedUserPolicies"
-                  - "iam:ListAttachedRolePolicies"
-                  - "iam:ListEntitiesForPolicy"
-                  - "iam:ListPolicies"
-                  - "iam:ListRolePolicies"
-                  - "iam:ListPolicyVersions"
-                  - "iam:ListGroupPolicies"
-                  - "iam:ListGroupsForUser"
-                  - "iam:ListServerCertificates"
-                  - "iam:ListUserPolicies"
-                  - "iam:ListUsers"
-                  - "iam:ListVirtualMFADevices"
+                  - "iam:Get*"
+                  - "iam:List*"
                   - "iam:DeleteAccessKey"
-                  - "iam:ListMfaDevices"
                   - "iam:UpdateAccessKey"
                   - "lambda:UpdateFunctionConfiguration"
                   - "lambda:UpdateFunctionCode"
@@ -115,13 +90,11 @@ Resources:
                   - "lambda:AddPermission"
                   - "logs:CreateLogStream"
                   - "logs:CreateLogGroup"
-                  - "logs:DescribeMetricFilters"
-                  - "s3:GetBucketAcl"
-                  - "s3:GetBucketLocation"
-                  - "s3:GetBucketLogging"
-                  - "s3:GetBucketPolicy"
-                  - "s3:GetBucketPublicAccessBlock"
-                  - "s3:ListBucket"
+                  - "logs:Describe*"
+                  - "s3:Get*"
+                  - "s3:List*"
+                  - "s3:Put*"
+                  - "s3:Head*"
                   - "sns:ListSubscriptionsByTopic"
                 Resource: '*'
 
@@ -166,24 +139,20 @@ Resources:
             - sh
             - -c
             - !Sub
-              - "echo '${Command}'| s3-bucket-config"
+              - "echo '${Command}'| s3-bucket-config -output /etc/cloud-bench/cloud-bench.yaml -configName cloud-bench.yaml"
               - Command:
                   "Fn::Base64":
                     !Sub |
                     secureURL: ${SysdigSecureEndpoint}
                     logLevel: "debug"
                     schedule: "24h"
-                    bechmarkType: "aws"
-                    outputDir:
-                      - directory:
-                          path: "/tmp/cloud-custodian"
-                    policyFile:
-                      - directory:
-                          path: "/home/custodian/aws-benchmarks.yml"
+                    benchmarkType: "aws"
+                    outputDir: "tmp/cloud-custodian"
+                    policyFile: "/home/custodian/aws-benchmarks.yml"
           Environment:
-            - Name: SECURE_API_TOKEN
-              Value: !Ref SysdigSecureAPIToken
-          Image: sysdiglabs/cloud-bench:master
+            - Name: BUCKET
+              Value: !Ref Bucket
+          Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
           MountPoints:
             - SourceVolume: config
@@ -198,6 +167,9 @@ Resources:
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
+          Environment:
+            - Name: SECURE_API_TOKEN
+              Value: !Ref SysdigSecureAPIToken
           Image: sysdiglabs/cloud-bench:master
           Essential: true
           PortMappings:
@@ -225,3 +197,16 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudBench"
 
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${AWS::StackName}-CloudBench"
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: !Ref PrivateSubnets
+      TaskDefinition: !Ref TaskDefinition
