@@ -59,6 +59,7 @@ Resources:
                 Action:
                   - "access-analyzer:List*"
                   - "acm:List*"
+                  - "cloudtrail:DescribeTrails"
                   - "cloudtrail:Get*"
                   - "cloudwatch:Describe*"
                   - "cloudwatch:PutMetricData"
@@ -93,11 +94,16 @@ Resources:
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:Describe*"
+                  - "kms:ListAliases"
+                  - "kms:ListKeys"
+                  - "kms:DescribeKey"
+                  - "kms:GetKeyRotationStatus"
                   - "s3:Get*"
                   - "s3:Head*"
                   - "s3:List*"
                   - "s3:Put*"
                   - "sns:ListSubscriptionsByTopic"
+                  - "tag:GetResources"
                 Resource: '*'
 
   ExecutionRole:
