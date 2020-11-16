@@ -2,6 +2,15 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Sysdig CloudVision for AWS
 
 Parameters:
+  CloudBenchDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Description: >
+      Choose if you want to deploy the CloudBench for Cloud Benchmarks.
+    Default: "Yes"
+
   CloudConnectorDeploy:
     Type: String
     AllowedValues:
@@ -87,6 +96,7 @@ Conditions:
     - !Equals [!Ref "ECRImageScanningMode", "Backend"]
 
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
+  DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
   RequiresNewECSCluster:
     Fn::Or:
       - Fn::Equals:
@@ -102,7 +112,9 @@ Conditions:
         - !Join [",", !Ref ExistentECSClusterPrivateSubnets]
         - ""
   DeployNewECSCluster: !And
-       - !Condition DeployCloudConnector
+       - !Or
+         - !Condition DeployCloudConnector
+         - !Condition DeployCloudBench
        - !Condition RequiresNewECSCluster
 
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
@@ -176,3 +188,16 @@ Resources:
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         PublicSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PublicSubnets"], !Join [",", !Ref ExistentECSClusterPublicSubnets] ]
         PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+
+  CloudBenchStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudBench
+    Properties:
+      TemplateURL: ../CloudBench/CloudBench.yaml
+      Parameters:
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
+        PublicSubnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PublicSubnets" ], !Join [ ",", !Ref ExistentECSClusterPublicSubnets ] ]
+        PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
