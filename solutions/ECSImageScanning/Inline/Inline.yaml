@@ -167,7 +167,7 @@ Resources:
 
           env:
             variables:
-              SCAN_IMAGE_NAME: "sysdiglabs/secure-inline-scan:latest"
+              SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
             parameter-store:
               SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
               SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
@@ -176,5 +176,4 @@ Resources:
 
             build:
               commands:
-              - docker pull $REPOSITORY
-              - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $SCAN_IMAGE_NAME analyze -s $SYSDIG_SECURE_ENDPOINT -k $SYSDIG_SECURE_TOKEN $REPOSITORY
+              - docker run --rm $SCAN_IMAGE_NAME --sysdig-url $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN $REPOSITORY
