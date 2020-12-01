@@ -62,8 +62,6 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - "kms:Decrypt"
-                - "secretsmanager:GetSecretValue"
                 - "ecs:DescribeTaskDefinition"
               Resource:
                 - "*"
