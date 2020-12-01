@@ -55,28 +55,20 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - "ssm:DescribeParameters"
-                - "ssm:GetParameter"
-                - "ssm:GetParameters"
+                - "codebuild:StartBuild"
               Resource:
-                - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
-            - Effect: Allow
-              Action:
-                - "ssm:DescribeParameters"
-                - "ssm:GetParameter"
-                - "ssm:GetParameters"
-              Resource:
-                - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+                - !GetAtt BuildProject.Arn
         - Version: "2012-10-17"
           Statement:
             - Effect: Allow
               Action:
-                - "codebuild:StartBuild"
+                - "kms:Decrypt"
+                - "secretsmanager:GetSecretValue"
+                - "ecs:DescribeTaskDefinition"
               Resource:
-                - !GetAtt BuildProject.Arn
+                - "*"
     Metadata:
       BuildMethod: makefile
-
 
   ServiceRole:
     Type: AWS::IAM::Role
@@ -136,7 +128,16 @@ Resources:
                   - "ssm:GetParameters"
                 Resource:
                   - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
-
+        - PolicyName: SecretsReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:Decrypt"
+                  - "secretsmanager:GetSecretValue"
+                Resource:
+                  - "*"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -176,4 +177,9 @@ Resources:
 
             build:
               commands:
-              - docker run --rm $SCAN_IMAGE_NAME --sysdig-url $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN $REPOSITORY
+              - |
+                if [ "$DOCKER_USER" != "" ] ; then
+                  docker run --rm $SCAN_IMAGE_NAME --sysdig-url $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic "${DOCKER_USER}:${DOCKER_PASS}" $REPOSITORY
+                else
+                  docker run --rm $SCAN_IMAGE_NAME --sysdig-url $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN $REPOSITORY
+                fi
