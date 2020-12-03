@@ -121,21 +121,15 @@ Resources:
 
           env:
             variables:
-              SCAN_IMAGE_NAME: "sysdiglabs/secure-inline-scan:latest"
+              SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
             parameter-store:
               SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
               SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
 
           phases:
-            pre_build:
-              commands:
-              - echo Logging in to Amazon ECR...
-              - $(aws ecr get-login --no-include-email --region $REGION)
-
             build:
               commands:
-              - docker pull $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
-              - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock $SCAN_IMAGE_NAME analyze -s $SYSDIG_SECURE_ENDPOINT -k $SYSDIG_SECURE_TOKEN $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+              - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $REGION) $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
 
   InvokeRole:
     Type: AWS::IAM::Role
