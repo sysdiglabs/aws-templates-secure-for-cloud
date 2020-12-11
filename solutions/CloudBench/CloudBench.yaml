@@ -67,6 +67,7 @@ Resources:
                   - "ec2:CreateNetworkInterface"
                   - "ec2:DeleteNetworkInterface"
                   - "ec2:Describe*"
+                  - "elasticloadbalancing:DescribeLoadBalancers"
                   - "events:PutRule"
                   - "events:PutTargets"
                   - "iam:DeleteAccessKey"
