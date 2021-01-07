@@ -1,0 +1,21 @@
+name: CI - Pull Request
+
+on:
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: cfn-lint
+      uses: scottbrenner/cfn-lint-action@master
+      continue-on-error: true
+      with:
+        args: "solutions/**/*.yaml"
