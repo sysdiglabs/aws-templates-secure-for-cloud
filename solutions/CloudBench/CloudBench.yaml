@@ -141,23 +141,20 @@ Resources:
           Host: { }
       ContainerDefinitions:
         - Name: Config
-          Command:
-            - sh
-            - -c
-            - !Sub
-              - "echo '${Command}'| s3-bucket-config -output /etc/cloud-bench/cloud-bench.yaml -configName cloud-bench.yaml"
-              - Command:
-                  "Fn::Base64":
-                    !Sub |
-                    secureURL: ${SysdigSecureEndpoint}
-                    logLevel: "debug"
-                    schedule: "24h"
-                    benchmarkType: "aws"
-                    outputDir: "tmp/cloud-custodian"
-                    policyFile: "/home/custodian/aws-benchmarks.yml"
           Environment:
             - Name: BUCKET
               Value: !Ref Bucket
+            - Name: CONFIG
+              Value:
+                "Fn::Base64":
+                  !Sub |
+                  secureURL: ${SysdigSecureEndpoint}
+                  logLevel: "debug"
+                  schedule: "24h"
+                  benchmarkType: "aws"
+                  outputDir: "tmp/cloud-custodian"
+                  policyFile: "/home/custodian/aws-benchmarks.yml"
+
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
           MountPoints:

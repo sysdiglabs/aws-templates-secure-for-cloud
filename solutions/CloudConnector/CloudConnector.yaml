@@ -104,13 +104,12 @@ Resources:
           Host: {}
       ContainerDefinitions:
         - Name: Config
-          Command:
-            - sh
-            - -c
-            - !Sub
-              - "echo '${Command}' | s3-bucket-config"
-              - Command:
-                  "Fn::Base64":
+          Environment:
+            - Name: BUCKET
+              Value: !Ref Bucket
+            - Name: CONFIG
+              Value:
+                "Fn::Base64":
                     !Sub |
                       rules:
                         - directory:
@@ -131,9 +130,7 @@ Resources:
                             logStream: ${AlertsLogStream}
                         - securityhub:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
-          Environment:
-            - Name: BUCKET
-              Value: !Ref Bucket
+
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
           MountPoints:
