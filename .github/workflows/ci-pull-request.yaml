@@ -16,6 +16,5 @@ jobs:
 
     - name: cfn-lint
       uses: scottbrenner/cfn-lint-action@master
-      continue-on-error: true
       with:
         args: "solutions/**/*.yaml"

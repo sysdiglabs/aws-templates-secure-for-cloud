@@ -197,7 +197,6 @@ Resources:
       Parameters:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
-        PublicSubnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PublicSubnets" ], !Join [ ",", !Ref ExistentECSClusterPublicSubnets ] ]
         PrivateSubnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
         SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter

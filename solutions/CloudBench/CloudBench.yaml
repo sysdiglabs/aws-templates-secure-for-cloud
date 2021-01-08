@@ -9,9 +9,6 @@ Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: VPC where the workload is deployed
-  PublicSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Public Subnets where the LoadBalancer will be deployed
   PrivateSubnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Private Subnets where the CloudBench will be deployed
@@ -136,9 +133,9 @@ Resources:
       Family: !Sub "${AWS::StackName}-CloudBench"
       NetworkMode: awsvpc
       TaskRoleArn: !Ref TaskRole
-      ExecutionRoleArn: !Ref ExecutionRole
-      Cpu: 256
-      Memory: 512
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Cpu: "256"
+      Memory: "512"
       Volumes:
         - Name: config
           Host: { }
@@ -201,7 +198,7 @@ Resources:
       GroupDescription: CloudBench workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          IpProtocol: -1
+          IpProtocol: "-1"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudBench"

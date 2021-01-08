@@ -96,9 +96,9 @@ Resources:
       Family: !Sub "${AWS::StackName}-CloudConnector"
       NetworkMode: awsvpc
       TaskRoleArn: !Ref TaskRole
-      ExecutionRoleArn: !Ref ExecutionRole
-      Cpu: 256
-      Memory: 512
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Cpu: "256"
+      Memory: "512"
       Volumes:
         - Name: config
           Host: {}
@@ -171,7 +171,7 @@ Resources:
       GroupDescription: CloudConnector public facing load balancer
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          IpProtocol: -1
+          IpProtocol: "-1"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-LoadBalancer"
@@ -219,7 +219,7 @@ Resources:
       GroupDescription: CloudConnector workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          IpProtocol: -1
+          IpProtocol: "-1"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudConnector"
