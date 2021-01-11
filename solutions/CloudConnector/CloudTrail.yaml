@@ -6,9 +6,6 @@ Parameters:
     Type: Number
     Default: 5
     Description: Days to keep logs from CloudTrail in s3 bucket
-  CloudConnectorLoadBalancer:
-    Type: String
-    Description: LoadBalancer DNS name where notify new logs using SNS - HTTP
 
 Resources:
   CloudTrailBucket:
@@ -69,8 +66,6 @@ Resources:
     Properties:
       TopicName: !Sub "${AWS::StackName}-CloudConnector"
       Subscription:
-        - Protocol: HTTP
-          Endpoint: !Sub 'http://${CloudConnectorLoadBalancer}/cloudtrail'
         - Protocol: SQS
           Endpoint: !GetAtt CloudTrailQueue.Arn
 
