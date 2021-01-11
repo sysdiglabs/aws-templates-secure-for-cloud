@@ -118,10 +118,9 @@ Resources:
                             bucket: ${Bucket}
                             path: rules
                       ingestors:
-                        - cloudtrail-sns-http:
-                            url: /cloudtrail
-                        - cloudtrail-http:
-                            url: /cloudtrail-debug
+                        - cloudtrail-sns-sqs:
+                            queueURL: ${CloudTrailStack.Outputs.Queue}
+                            interval: 1m
                       notifiers:
                         - console: {}
                         - metrics: {}

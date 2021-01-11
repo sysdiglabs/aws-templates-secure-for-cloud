@@ -53,7 +53,7 @@ Resources:
       Queues:
         - !Ref CloudTrailQueue
       PolicyDocument:
-        Version: 2008-10-17
+        Version: 2012-10-17
         Statement:
           - Sid: Allow CloudTrail to send messages
             Effect: Allow
@@ -179,3 +179,8 @@ Resources:
       KMSKeyId: !Ref KMSKey
       S3BucketName: !Ref CloudTrailBucket
       SnsTopicName: !Ref SNSTopic
+
+Outputs:
+  Queue:
+    Description: SQS Queue which contain the CloudTrail notifications
+    Value: !Ref CloudTrailQueue
