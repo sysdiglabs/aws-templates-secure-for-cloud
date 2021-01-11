@@ -44,6 +44,26 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: "bucket-owner-full-control"
 
+  CloudTrailQueue:
+    Type: AWS::SQS::Queue
+
+  CloudTrailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref CloudTrailQueue
+      PolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: Allow CloudTrail to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt CloudTrailQueue.Arn
+
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -51,6 +71,8 @@ Resources:
       Subscription:
         - Protocol: HTTP
           Endpoint: !Sub 'http://${CloudConnectorLoadBalancer}/cloudtrail'
+        - Protocol: SQS
+          Endpoint: !GetAtt CloudTrailQueue.Arn
 
   SNSPolicy:
     Type: AWS::SNS::TopicPolicy
