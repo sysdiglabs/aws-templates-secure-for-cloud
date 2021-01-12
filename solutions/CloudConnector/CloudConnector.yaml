@@ -62,6 +62,7 @@ Resources:
                 - 'logs:GetLogEvents'
                 - 'logs:FilterLogEvents'
                 - 'logs:PutLogEvents'
+                - 'sqs:DeleteMessage'
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource: '*'
