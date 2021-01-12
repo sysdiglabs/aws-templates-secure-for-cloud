@@ -9,9 +9,9 @@ Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: VPC where the workload is deployed
-  PrivateSubnets:
+  Subnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Private Subnets where the CloudConnector will be deployed
+    Description: Subnets where the CloudConnector will be deployed
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
@@ -183,7 +183,7 @@ Resources:
         AwsvpcConfiguration:
           SecurityGroups:
             - !Ref SecurityGroup
-          Subnets: !Ref PrivateSubnets
+          Subnets: !Ref Subnets
       TaskDefinition: !Ref TaskDefinition
 
   CloudTrailStack:
