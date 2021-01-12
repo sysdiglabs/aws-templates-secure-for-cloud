@@ -9,12 +9,9 @@ Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: VPC where the workload is deployed
-  PublicSubnets:
+  Subnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Public Subnets where the LoadBalancer will be deployed
-  PrivateSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Private Subnets where the CloudConnector will be deployed
+    Description: Subnets where the CloudConnector will be deployed
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
@@ -65,6 +62,9 @@ Resources:
                 - 'logs:GetLogEvents'
                 - 'logs:FilterLogEvents'
                 - 'logs:PutLogEvents'
+                - 'sqs:DeleteMessage'
+                - 'sqs:DeleteMessageBatch'
+                - 'sqs:ReceiveMessage'
               Resource: '*'
 
   ExecutionRole:
@@ -118,10 +118,9 @@ Resources:
                             bucket: ${Bucket}
                             path: rules
                       ingestors:
-                        - cloudtrail-sns-http:
-                            url: /cloudtrail
-                        - cloudtrail-http:
-                            url: /cloudtrail-debug
+                        - cloudtrail-sns-sqs:
+                            queueURL: ${CloudTrailStack.Outputs.Queue}
+                            interval: 25s
                       notifiers:
                         - console: {}
                         - metrics: {}
@@ -160,54 +159,6 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
 
-  LoadBalancerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      VpcId: !Ref VPC
-      GroupName: !Sub "${AWS::StackName}-LoadBalancer"
-      GroupDescription: CloudConnector public facing load balancer
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: "-1"
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-LoadBalancer"
-
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
-      Subnets: !Ref PublicSubnets
-      SecurityGroups:
-        - !Ref LoadBalancerSecurityGroup
-
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /health
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      TargetType: ip
-      Port: 5000
-      Protocol: HTTP
-      UnhealthyThresholdCount: 2
-      VpcId: !Ref VPC
-
-  LoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - TargetGroupArn: !Ref TargetGroup
-          Type: 'forward'
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -223,8 +174,6 @@ Resources:
 
   CloudConnectorService:
     Type: AWS::ECS::Service
-    DependsOn:
-      - LoadBalancerListener
     Properties:
       ServiceName: !Sub "${AWS::StackName}-CloudConnector"
       Cluster: !Ref ECSCluster
@@ -234,12 +183,8 @@ Resources:
         AwsvpcConfiguration:
           SecurityGroups:
             - !Ref SecurityGroup
-          Subnets: !Ref PrivateSubnets
+          Subnets: !Ref Subnets
       TaskDefinition: !Ref TaskDefinition
-      LoadBalancers:
-        - ContainerName: CloudConnector
-          ContainerPort: 5000
-          TargetGroupArn: !Ref TargetGroup
 
   CloudTrailStack:
     Type: AWS::CloudFormation::Stack
@@ -247,4 +192,3 @@ Resources:
       TemplateURL: ./CloudTrail.yaml
       Parameters:
         CloudTrailLogRetention: !Ref CloudConnectorLogRetention
-        CloudConnectorLoadBalancer: !GetAtt LoadBalancer.DNSName

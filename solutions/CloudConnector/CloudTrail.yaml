@@ -6,9 +6,6 @@ Parameters:
     Type: Number
     Default: 5
     Description: Days to keep logs from CloudTrail in s3 bucket
-  CloudConnectorLoadBalancer:
-    Type: String
-    Description: LoadBalancer DNS name where notify new logs using SNS - HTTP
 
 Resources:
   CloudTrailBucket:
@@ -44,13 +41,33 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: "bucket-owner-full-control"
 
+  CloudTrailQueue:
+    Type: AWS::SQS::Queue
+
+  CloudTrailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref CloudTrailQueue
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow CloudTrail to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt CloudTrailQueue.Arn
+
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: !Sub "${AWS::StackName}-CloudConnector"
       Subscription:
-        - Protocol: HTTP
-          Endpoint: !Sub 'http://${CloudConnectorLoadBalancer}/cloudtrail'
+        - Protocol: SQS
+          Endpoint: !GetAtt CloudTrailQueue.Arn
 
   SNSPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -157,3 +174,8 @@ Resources:
       KMSKeyId: !Ref KMSKey
       S3BucketName: !Ref CloudTrailBucket
       SnsTopicName: !Ref SNSTopic
+
+Outputs:
+  Queue:
+    Description: SQS Queue which contain the CloudTrail notifications
+    Value: !Ref CloudTrailQueue
