@@ -120,7 +120,7 @@ Resources:
                       ingestors:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailStack.Outputs.Queue}
-                            interval: 1m
+                            interval: 25s
                       notifiers:
                         - console: {}
                         - metrics: {}
