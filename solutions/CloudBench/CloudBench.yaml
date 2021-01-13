@@ -144,6 +144,10 @@ Resources:
           Environment:
             - Name: BUCKET
               Value: !Ref Bucket
+            - Name: KEY
+              Value: cloud-bench.yaml
+            - Name: OUTPUT
+              Value: /etc/cloud-bench/cloud-bench.yaml
             - Name: CONFIG
               Value:
                 "Fn::Base64":

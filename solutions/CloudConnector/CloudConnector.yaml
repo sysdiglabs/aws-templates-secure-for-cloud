@@ -107,6 +107,10 @@ Resources:
           Environment:
             - Name: BUCKET
               Value: !Ref Bucket
+            - Name: KEY
+              Value: cloud-connector.yaml
+            - Name: OUTPUT
+              Value: /etc/cloud-connector/cloud-connector.yaml
             - Name: CONFIG
               Value:
                 "Fn::Base64":
