@@ -25,7 +25,17 @@ test: packaged-template.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
 			"ECRImageScanningDeploy=Yes" \
 			"ECSImageScanningDeploy=Yes" \
-			"CloudConnectorDeploy=Yes" \
+			"CloudBenchDeploy=Yes" \
+			"CloudConnectorDeploy=Yes"
+
+ci: package-lambdas
+	aws cloudformation package \
+		--template-file CloudVision.yaml \
+		--s3-bucket $(S3_BUCKET) \
+		--s3-prefix $(S3_PREFIX) \
+		--force-upload \
+		--output-template-file entry-point.yaml
+	aws s3 cp ./entry-point.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"
