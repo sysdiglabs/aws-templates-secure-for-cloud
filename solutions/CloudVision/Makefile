@@ -1,4 +1,4 @@
-SECURE_API_TOKEN=""
+SECURE_API_TOKEN="d7b5a1ab-0215-4f14-8ad2-b8d6e0ff6f89"
 
 .PHONY: packaged-template.yaml
 
