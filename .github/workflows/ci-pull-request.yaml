@@ -48,11 +48,11 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-region: eu-west-1
 
     - name: Build and Upload
       run: make ci
       working-directory: ./solutions/CloudVision
       env:
-        S3_BUCKET: cloudvision-cft-ci
+        S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.sha }}
