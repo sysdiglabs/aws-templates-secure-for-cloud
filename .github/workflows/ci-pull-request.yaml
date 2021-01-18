@@ -55,4 +55,4 @@ jobs:
       working-directory: ./solutions/CloudVision
       env:
         S3_BUCKET: cloudvision-cft-ci
-        S3_PREFIX: pr/${{ GITHUB_SHA }}
+        S3_PREFIX: pr/$GITHUB_SHA
