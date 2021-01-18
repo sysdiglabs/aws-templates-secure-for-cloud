@@ -1,4 +1,4 @@
-SECURE_API_TOKEN="d7b5a1ab-0215-4f14-8ad2-b8d6e0ff6f89"
+SECURE_API_TOKEN=""
 
 .PHONY: packaged-template.yaml
 
@@ -31,11 +31,11 @@ test: packaged-template.yaml
 ci: package-lambdas
 	aws cloudformation package \
 		--template-file CloudVision.yaml \
-		--s3-bucket cloudvision-cft-ci \
-		--s3-prefix $(GITHUB_SHA) \
+		--s3-bucket $(S3_BUCKET) \
+		--s3-prefix $(S3_PREFIX) \
 		--force-upload \
 		--output-template-file entry-point.yaml
-	aws s3 cp ./entry-point.yaml s3://cloudvision-cft-ci/$(GITHUB_SHA)/entry-point.yaml
+	aws s3 cp ./entry-point.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"
