@@ -6,9 +6,7 @@ validate:
 	aws cloudformation validate-template --template-body file://./CloudVision.yaml
 
 package-lambdas:
-	$(MAKE) -C ../ECSImageScanning/Inline/inline-scanning-lambda lambda.zip
-	$(MAKE) -C ../ECSImageScanning/Backend/backend-scanning-lambda lambda.zip
-	$(MAKE) -C ../ECRImageScanning/Backend/backend-scanning-lambda lambda.zip
+	$(MAKE) -C ../ECSImageScanning/lambda lambda.zip
 
 packaged-template.yaml: package-lambdas
 	aws cloudformation package \

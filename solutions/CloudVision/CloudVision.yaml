@@ -29,17 +29,6 @@ Parameters:
       Choose if you want to deploy the ECR Repository Image Scanning feature
     Default: "Yes"
 
-  ECRImageScanningMode:
-    Type: String
-    AllowedValues:
-      - "Inline"
-      - "Backend"
-    Description: >
-      Choose how the scan will be performed. If choose Inline it will use AWS
-      infrastructure and don't need outside access, this option makes scan
-      faster. If choose Backend it will be done on Sysdig's infrastructure.
-    Default: "Inline"
-
   ECSImageScanningDeploy:
     Type: String
     AllowedValues:
@@ -48,17 +37,6 @@ Parameters:
     Description: >
       Choose if you want to deploy the ECS Image Scanning feature
     Default: "Yes"
-
-  ECSImageScanningMode:
-    Type: String
-    AllowedValues:
-      - "Inline"
-      - "Backend"
-    Description: >
-      Choose how the scan will be performed. If choose Inline it will use AWS
-      infrastructure and don't need outside access, this option makes scan
-      faster. If choose Backend it will be done on Sysdig's infrastructure.
-    Default: "Inline"
 
   ExistentECSCluster:
     Type: String
@@ -88,13 +66,6 @@ Parameters:
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
-  DeployECRInlineImageScanning: !And
-    - !Condition DeployECRImageScanning
-    - !Equals [!Ref "ECRImageScanningMode", "Inline"]
-  DeployECRBackendImageScanning: !And
-    - !Condition DeployECRImageScanning
-    - !Equals [!Ref "ECRImageScanningMode", "Backend"]
-
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
   RequiresNewECSCluster:
@@ -116,14 +87,7 @@ Conditions:
          - !Condition DeployCloudConnector
          - !Condition DeployCloudBench
        - !Condition RequiresNewECSCluster
-
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
-  DeployECSInlineImageScanning: !And
-    - !Condition DeployECSImageScanning
-    - !Equals [!Ref "ECSImageScanningMode", "Inline"]
-  DeployECSBackendImageScanning: !And
-    - !Condition DeployECSImageScanning
-    - !Equals [!Ref "ECSImageScanningMode", "Backend"]
 
 Resources:
   SysdigSecureAPITokenParameter:
@@ -142,35 +106,17 @@ Resources:
       Type: String
       Value: !Ref SysdigSecureEndpoint
 
-  ECRInlineImageScanningStack:
+  ECRImageScanningStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployECRInlineImageScanning
+    Condition: DeployECRImageScanning
     Properties:
-      TemplateURL: ../ECRImageScanning/Inline/Inline.yaml
-      Parameters:
-        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
+      TemplateURL: ../ECRImageScanning/ECRImageScanning.yaml
 
-  ECRBackendImageScanningStack:
+  ECSImageScanningStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployECRBackendImageScanning
+    Condition: DeployECSImageScanning
     Properties:
-      TemplateURL: ../ECRImageScanning/Backend/Backend.yaml
-
-  ECSInlineImageScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployECSInlineImageScanning
-    Properties:
-      TemplateURL: ../ECSImageScanning/Inline/Inline.yaml
-      Parameters:
-        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
-
-  ECSBackendImageScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployECSBackendImageScanning
-    Properties:
-      TemplateURL: ../ECSImageScanning/Backend/Backend.yaml
+      TemplateURL: ../ECSImageScanning/ECSImageScanning.yaml
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
