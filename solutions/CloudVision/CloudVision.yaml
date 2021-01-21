@@ -111,18 +111,12 @@ Resources:
     Condition: DeployECRImageScanning
     Properties:
       TemplateURL: ../ECRImageScanning/ECRImageScanning.yaml
-      Parameters:
-        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
 
   ECSImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECSImageScanning
     Properties:
       TemplateURL: ../ECSImageScanning/ECSImageScanning.yaml
-      Parameters:
-        SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack

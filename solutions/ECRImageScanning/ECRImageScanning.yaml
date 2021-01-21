@@ -1,16 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: ECR Image Scanning with Sysdig Secure
 
-Parameters:
-  SysdigSecureAPIToken:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: "Enter your Sysdig Secure API Token"
-    Default: SysdigSecureAPIToken
-  SysdigSecureEndpoint:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: SysdigSecureEndpoint
-
 Resources:
   ServiceRole:
     Type: AWS::IAM::Role

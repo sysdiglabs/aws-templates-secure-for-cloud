@@ -2,16 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: 'AWS::Serverless-2016-10-31'
 Description: ECS Image Scanning with Sysdig Secure
 
-Parameters:
-  SysdigSecureAPIToken:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: "Enter your Sysdig Secure API Token"
-    Default: SysdigSecureAPIToken
-  SysdigSecureEndpoint:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: SysdigSecureEndpoint
-
 Resources:
   Lambda:
     Type: AWS::Serverless::Function
