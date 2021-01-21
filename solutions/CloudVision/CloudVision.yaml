@@ -115,12 +115,6 @@ Resources:
         SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
         SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
 
-  ECRBackendImageScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployECRBackendImageScanning
-    Properties:
-      TemplateURL: ../ECRImageScanning/Backend/Backend.yaml
-
   ECSImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECSImageScanning
