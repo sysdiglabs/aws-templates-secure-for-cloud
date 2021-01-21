@@ -1,6 +1,6 @@
 S3_BUCKET?="nestor-test-cf"
 S3_PREFIX?="test"
-SECURE_API_TOKEN="e41f0936-705d-43f8-a70a-c3f1dc4c5fb4"
+SECURE_API_TOKEN=""
 
 .PHONY: packaged-template.yaml
 
