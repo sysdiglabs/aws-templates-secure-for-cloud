@@ -110,25 +110,25 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECRImageScanning
     Properties:
-      TemplateURL: ../ECRImageScanning/ECRImageScanning.yaml
+      TemplateURL: ./ECRImageScanning.yaml
 
   ECSImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECSImageScanning
     Properties:
-      TemplateURL: ../ECSImageScanning/ECSImageScanning.yaml
+      TemplateURL: ./ECSImageScanning.yaml
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployNewECSCluster
     Properties:
-      TemplateURL: ../ECSFargateCluster/ECSFargateCluster.yaml
+      TemplateURL: ./ECSFargateCluster.yaml
 
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudConnector
     Properties:
-      TemplateURL: ../CloudConnector/CloudConnector.yaml
+      TemplateURL: ./CloudConnector.yaml
       Parameters:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
@@ -138,7 +138,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudBench
     Properties:
-      TemplateURL: ../CloudBench/CloudBench.yaml
+      TemplateURL: ./CloudBench.yaml
       Parameters:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]

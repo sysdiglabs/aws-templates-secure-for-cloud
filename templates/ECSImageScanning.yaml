@@ -8,7 +8,7 @@ Resources:
     Properties:
       Handler: scan_image.handler
       Runtime: python3.8
-      CodeUri: ./lambda/lambda.zip
+      CodeUri: ./ecs-image-scanning-lambda/lambda.zip
       Timeout: 60
       Environment:
         Variables:

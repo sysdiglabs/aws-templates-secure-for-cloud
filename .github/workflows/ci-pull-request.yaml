@@ -17,7 +17,7 @@ jobs:
     - name: cfn-lint
       uses: scottbrenner/cfn-lint-action@master
       with:
-        args: "solutions/**/*.yaml"
+        args: "templates/**/*.yaml"
 
   build:
     name: Build and Upload
@@ -52,7 +52,7 @@ jobs:
 
     - name: Build and Upload
       run: make ci
-      working-directory: ./solutions/CloudVision
+      working-directory: ./templates
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.sha }}
