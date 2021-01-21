@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: ECR Image Scanning with Sysdig Secure - Inline Mode
+Description: ECR Image Scanning with Sysdig Secure
 
 Parameters:
   SysdigSecureAPIToken:

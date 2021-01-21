@@ -1,12 +1,12 @@
 SECURE_API_TOKEN=""
 
 validate:
-	aws cloudformation validate-template --template-body file://./Inline.yaml
+	aws cloudformation validate-template --template-body file://./ECRImageScanning.yaml
 
 test:
 	aws cloudformation deploy \
 		--stack-name "ECRImageScanningInline" \
-		--template-file Inline.yaml \
+		--template-file ECRImageScanning.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" \
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)"
