@@ -90,6 +90,13 @@ Conditions:
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
 
 Resources:
+  S3ConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+
   SysdigSecureAPITokenParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -124,11 +131,6 @@ Resources:
     Properties:
       TemplateURL: ./ECSFargateCluster.yaml
 
-  S3ConfigBucket:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./S3ConfigBucket.yaml
-
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudConnector
@@ -138,7 +140,7 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
-        S3ConfigBucket: !GetAtt ["S3ConfigBucket", "Outputs.BucketName"]
+        S3ConfigBucket: !Ref S3ConfigBucket
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack
@@ -151,5 +153,5 @@ Resources:
         Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
         SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        S3ConfigBucket: !GetAtt ["S3ConfigBucket", "Outputs.BucketName"]
+        S3ConfigBucket: !Ref S3ConfigBucket
 
