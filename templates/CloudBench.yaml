@@ -23,6 +23,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Description: "Enter your Sysdig Secure Endpoint"
     Default: SysdigSecureEndpoint
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
+
 
 Resources:
   LogGroup:
@@ -30,12 +34,6 @@ Resources:
     Properties:
       LogGroupName: !Ref AWS::StackName
       RetentionInDays: !Ref CloudBenchLogRetention
-
-  Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -143,7 +141,7 @@ Resources:
         - Name: Config
           Environment:
             - Name: BUCKET
-              Value: !Ref Bucket
+              Value: !Ref S3ConfigBucket
             - Name: KEY
               Value: cloud-bench.yaml
             - Name: OUTPUT

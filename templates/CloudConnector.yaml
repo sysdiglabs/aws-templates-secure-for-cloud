@@ -15,6 +15,9 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
 
 Resources:
   LogGroup:
@@ -28,12 +31,6 @@ Resources:
     Properties:
       LogGroupName: !Ref LogGroup
       LogStreamName: alerts
-
-  Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -106,7 +103,7 @@ Resources:
         - Name: Config
           Environment:
             - Name: BUCKET
-              Value: !Ref Bucket
+              Value: !Ref S3ConfigBucket
             - Name: KEY
               Value: cloud-connector.yaml
             - Name: OUTPUT
@@ -119,7 +116,7 @@ Resources:
                         - directory:
                             path: /rules
                         - s3:
-                            bucket: ${Bucket}
+                            bucket: ${S3ConfigBucket}
                             path: rules
                       ingestors:
                         - cloudtrail-sns-sqs:
