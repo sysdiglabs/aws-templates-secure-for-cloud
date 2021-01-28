@@ -38,10 +38,6 @@ Parameters:
       Choose if you want to deploy the ECS Image Scanning feature
     Default: "Yes"
 
-  ExistentConfigBucket:
-    Type: String
-    Description: Enter the name of an existing S3 bucket where the configuration YAML files will be stored, if you don't want to create a new one
-    Default: ""
   ExistentECSCluster:
     Type: String
     Description: Enter ECS Fargate Cluster where deploy the CloudVision workload if you don't want to create a new one
@@ -92,7 +88,6 @@ Conditions:
          - !Condition DeployCloudBench
        - !Condition RequiresNewECSCluster
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
-  DeployS3ConfigBucket: !Equals [ !Ref ExistentConfigBucket, "" ]
 
 Resources:
   SysdigSecureAPITokenParameter:
@@ -131,7 +126,6 @@ Resources:
 
   S3ConfigBucket:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployS3ConfigBucket
     Properties:
       TemplateURL: ./S3ConfigBucket.yaml
 
@@ -144,7 +138,7 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
-        S3ConfigBucket: !If [ DeployS3ConfigBucket, !GetAtt ["S3ConfigBucket", "Outputs.BucketName"], !Ref ExistentConfigBucket ]
+        S3ConfigBucket: !GetAtt ["S3ConfigBucket", "Outputs.BucketName"]
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack
@@ -157,5 +151,5 @@ Resources:
         Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
         SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPIToken: !Ref SysdigSecureAPITokenParameter
-        S3ConfigBucket: !If [ DeployS3ConfigBucket, !GetAtt ["S3ConfigBucket", "Outputs.BucketName"], !Ref ExistentConfigBucket ]
+        S3ConfigBucket: !GetAtt ["S3ConfigBucket", "Outputs.BucketName"]
 
