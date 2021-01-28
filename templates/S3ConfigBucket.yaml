@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: S3 Bucket for configuration files
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  BucketName:
+    Description: S3 Bucket name for configuration files
+    Value: !Ref Bucket
