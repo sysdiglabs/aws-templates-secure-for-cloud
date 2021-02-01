@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Transform: 'AWS::Serverless-2016-10-31'
 Description: ECS Image Scanning with Sysdig Secure
 
 Resources:
@@ -133,7 +132,7 @@ Resources:
             - PROVISIONING
       State: ENABLED
       Targets:
-        - Arn: !GetAtt BuildProject.Arn 
+        - Arn: !GetAtt BuildProject.Arn
           Id: codebuild-scan-task
           RoleArn: !GetAtt StartBuildRole.Arn
           InputTransformer:
@@ -144,7 +143,7 @@ Resources:
               {
                 "environmentVariablesOverride": [
                   {"name": "EVENT_REGION", "value":<region>},
-                  {"name":"EVENT_TASKDEFINITIONARN","value":<taskDefinitionArn>}
+                  {"name": "EVENT_TASKDEFINITIONARN","value":<taskDefinitionArn>}
                 ]
               }
 
@@ -165,16 +164,13 @@ Resources:
         Type: NO_SOURCE
         BuildSpec: |
           version: 0.2
-
           env:
             variables:
               SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
             parameter-store:
               SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
               SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
-
           phases:
-
             build:
               commands:
               - |
