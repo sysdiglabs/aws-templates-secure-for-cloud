@@ -12,10 +12,7 @@ validate:
 lint:
 	cfn-lint *.yaml
 
-package-lambdas:
-	$(MAKE) -C ecs-image-scanning-lambda lambda.zip
-
-packaged-template.yaml: package-lambdas
+packaged-template.yaml:
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudVision.yaml \
@@ -36,7 +33,7 @@ test: packaged-template.yaml
 			"CloudBenchDeploy=Yes" \
 			"CloudConnectorDeploy=Yes"
 
-ci: packaged-template.yaml package-lambdas
+ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
 
 clean:
