@@ -19,7 +19,7 @@ Metadata:
           - ECSImageScanningDeploy
 
       - Label:
-          default: "Reusing Existent Infrastructure"
+          default: "Existing Infrastructure"
         Parameters:
           - ExistentECSCluster
           - ExistentECSClusterVPC
@@ -77,15 +77,15 @@ Parameters:
   ExistentECSCluster:
     Type: String
     Default: ""
-    Description: Existent ECS Cluster to deploy Sysdig for Cloud workload
+    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
   ExistentECSClusterVPC:
     Type: String
     Default: ""
-    Description: Existent VPC to deploy Sysdig for Cloud workload
+    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
   ExistentECSClusterPrivateSubnets:
     Type: List<String>
     Default: ""
-    Description: Existent private subnets to deploy Sysdig for Cloud workload
+    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
 
   SysdigSecureAPIToken:
     Type: String
