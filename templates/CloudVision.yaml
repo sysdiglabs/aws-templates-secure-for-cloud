@@ -77,15 +77,15 @@ Parameters:
   ExistentECSCluster:
     Type: String
     Default: ""
-    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
   ExistentECSClusterVPC:
     Type: String
     Default: ""
-    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
   ExistentECSClusterPrivateSubnets:
     Type: List<String>
     Default: ""
-    Description: Left blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
 
   SysdigSecureAPIToken:
     Type: String
