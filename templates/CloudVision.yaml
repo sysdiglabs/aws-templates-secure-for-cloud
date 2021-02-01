@@ -30,6 +30,8 @@ Metadata:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
         default: "Sysdig Secure API Token"
+      SysdigAgentKey:
+        default: "Sysdig Agent Key"
       CloudBenchDeploy:
         default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
@@ -87,6 +89,10 @@ Parameters:
     Default: ""
     Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
 
+  SysdigAgentKey:
+    Type: String
+    Description: Enter your Sysdig Agent Key
+    NoEcho: true
   SysdigSecureAPIToken:
     Type: String
     NoEcho: true
@@ -122,6 +128,13 @@ Resources:
     Properties:
       VersioningConfiguration:
         Status: Enabled
+
+  SysdigAgentKeyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Agent Key"
+      Type: String
+      Value: !Ref SysdigAgentKey
 
   SysdigSecureAPITokenParameter:
     Type: AWS::SSM::Parameter
@@ -166,6 +179,7 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        SysdigAgentKeyArn: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeyParameter}
         S3ConfigBucket: !Ref S3ConfigBucket
 
   CloudBenchStack:
