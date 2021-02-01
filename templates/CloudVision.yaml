@@ -31,7 +31,7 @@ Metadata:
       SysdigSecureAPIToken:
         default: "Sysdig Secure API Token"
       CloudBenchDeploy:
-        default: "Do you want to deploy CSPM / Compliance?"
+        default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
         default: "Do you want to deploy Real-Time Threat Investigation?"
       ECRImageScanningDeploy:
