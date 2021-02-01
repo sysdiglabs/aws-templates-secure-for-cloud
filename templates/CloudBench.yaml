@@ -38,7 +38,6 @@ Resources:
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-TaskRole"
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -105,7 +104,6 @@ Resources:
   ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-ExecutionRole"
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
