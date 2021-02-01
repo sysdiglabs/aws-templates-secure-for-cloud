@@ -9,6 +9,7 @@ Metadata:
         Parameters:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
+          - SysdigAgentKey
 
       - Label:
           default: "Modules to Deploy"
@@ -91,7 +92,6 @@ Parameters:
 
   SysdigAgentKey:
     Type: String
-    Description: Enter your Sysdig Agent Key
     NoEcho: true
   SysdigSecureAPIToken:
     Type: String
@@ -179,6 +179,7 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpointParameter
         SysdigAgentKeyArn: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeyParameter}
         S3ConfigBucket: !Ref S3ConfigBucket
 

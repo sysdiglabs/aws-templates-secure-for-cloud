@@ -15,12 +15,16 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
-  S3ConfigBucket:
-    Type: String
-    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
   SysdigAgentKeyArn:
     Type: String
     Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Sysdig Agent Key
+  SysdigSecureEndpoint:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: SysdigSecureEndpoint
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
 
 Resources:
   LogGroup:
@@ -140,7 +144,7 @@ Resources:
                         - securityhub:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
                         - secure:
-                            url: https://app.sysdigcloud.com
+                            url: ${SysdigSecureEndpoint}
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
