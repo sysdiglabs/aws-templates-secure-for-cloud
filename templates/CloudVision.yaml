@@ -33,7 +33,7 @@ Metadata:
       CloudBenchDeploy:
         default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
-        default: "Do you want to deploy Real-Time Threat Investigation?"
+        default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
       ECRImageScanningDeploy:
         default: "Do you want to deploy ECR Image Registry Scanning?"
       ECSImageScanningDeploy:
