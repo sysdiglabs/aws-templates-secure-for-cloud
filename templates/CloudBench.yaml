@@ -119,6 +119,14 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameters"
+              Resource:
+                - !Ref SysdigSecureAPITokenArn
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
