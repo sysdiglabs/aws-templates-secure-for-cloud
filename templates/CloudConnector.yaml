@@ -15,6 +15,13 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
+  SysdigAgentKeyArn:
+    Type: String
+    Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Sysdig Agent Key
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: "https://app.sysdigcloud.com"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
@@ -82,6 +89,14 @@ Resources:
                 - 'logs:CreateLogStream'
                 - 'logs:PutLogEvents'
               Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameters"
+              Resource:
+                - !Ref SysdigAgentKeyArn
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -128,6 +143,8 @@ Resources:
                             logStream: ${AlertsLogStream}
                         - securityhub:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
+                        - secure:
+                            url: ${SysdigSecureEndpoint}
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
@@ -141,6 +158,9 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
         - Name: CloudConnector
+          Secrets:
+            - Name: AGENT_KEY
+              ValueFrom: !Ref SysdigAgentKeyArn
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS

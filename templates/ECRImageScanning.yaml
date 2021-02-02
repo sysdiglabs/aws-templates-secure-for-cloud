@@ -1,6 +1,16 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: ECR Image Scanning with Sysdig Secure
 
+
+Parameters:
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Enter your Sysdig Secure Endpoint"
+    Default: "https://app.sysdigcloud.com"
+  SysdigSecureAPITokenSsm:
+    Type: String
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+
 Resources:
   ServiceRole:
     Type: AWS::IAM::Role
@@ -72,14 +82,7 @@ Resources:
                   - "ssm:GetParameter"
                   - "ssm:GetParameters"
                 Resource:
-                  - "arn:aws:ssm:*:*:parameter/SysdigSecureAPIToken"
-              - Effect: Allow
-                Action:
-                  - "ssm:DescribeParameters"
-                  - "ssm:GetParameter"
-                  - "ssm:GetParameters"
-                Resource:
-                  - "arn:aws:ssm:*:*:parameter/SysdigSecureEndpoint"
+                  - !Sub "arn:aws:ssm:*:*:parameter/${SysdigSecureAPITokenSsm}"
 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -106,15 +109,15 @@ Resources:
         PrivilegedMode: true
       Source:
         Type: NO_SOURCE
-        BuildSpec: |
+        BuildSpec: !Sub |
           version: 0.2
 
           env:
             variables:
               SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
+              SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpoint}
             parameter-store:
-              SYSDIG_SECURE_TOKEN: SysdigSecureAPIToken
-              SYSDIG_SECURE_ENDPOINT: SysdigSecureEndpoint
+              SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
 
           phases:
             build:
