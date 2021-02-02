@@ -190,6 +190,6 @@ Resources:
         VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
         SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
-        SysdigSecureAPIToken: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenParameter}
+        SysdigSecureAPITokenArn: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenParameter}
         S3ConfigBucket: !Ref S3ConfigBucket
 
