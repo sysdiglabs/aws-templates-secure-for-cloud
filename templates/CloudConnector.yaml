@@ -19,9 +19,9 @@ Parameters:
     Type: String
     Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Sysdig Agent Key
   SysdigSecureEndpoint:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Description: "Enter your Sysdig Secure Endpoint"
-    Default: SysdigSecureEndpoint
+    Default: "https://app.sysdigcloud.com"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored

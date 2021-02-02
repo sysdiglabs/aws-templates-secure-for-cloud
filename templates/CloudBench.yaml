@@ -15,14 +15,13 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudBench workload
-  SysdigSecureAPIToken:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: "Enter your Sysdig Secure API Token"
-    Default: SysdigSecureAPIToken
+  SysdigSecureAPITokenArn:
+    Type: String
+    Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Secure API Token
   SysdigSecureEndpoint:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Description: "Enter your Sysdig Secure Endpoint"
-    Default: SysdigSecureEndpoint
+    Default: "https://app.sysdigcloud.com"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
@@ -170,9 +169,9 @@ Resources:
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
-          Environment:
+          Secrets:
             - Name: SECURE_API_TOKEN
-              Value: !Ref SysdigSecureAPIToken
+              ValueFrom: !Ref SysdigSecureAPITokenArn
           Image: sysdiglabs/cloud-bench:master
           Essential: true
           PortMappings:
