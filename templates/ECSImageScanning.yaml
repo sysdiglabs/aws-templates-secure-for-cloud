@@ -176,7 +176,7 @@ Resources:
             build:
               commands:
               - |
-                  python - <<EOF
+                  cat > app.py <<EOF
                   import boto3
                   import json
                   import os
@@ -255,3 +255,4 @@ Resources:
                   if __name__ == "__main__":
                       main()
                   EOF
+              - python app.py
