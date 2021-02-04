@@ -212,6 +212,8 @@ Resources:
                       ret = subprocess.run(args)
                       if ret.returncode != 0 and ret.returncode != 1:
                           print("Error executing inline-scan for image {}".format(image))
+                          return True
+                      return False
 
                   def get_credentials_from_secret_manager(secret_id, region):
                       client = boto3.client('secretsmanager', region_name=region)
@@ -235,6 +237,7 @@ Resources:
 
                       task_definition = get_task_definition(task_definition_arn, region)
 
+                      failed_scan = False
                       for container in task_definition["taskDefinition"]["containerDefinitions"]:
                           image = container["image"]
                           print("Checking image {} for container {} in task {}".format(image, container["name"], task_definition_arn))
@@ -244,7 +247,10 @@ Resources:
                           else:
                               user, password = "", ""
 
-                          launch_scan(image, user, password)
+                          failed_scan |= launch_scan(image, user, password)
+
+                      if failed_scan:
+                          sys.exit(1)
 
                   if __name__ == "__main__":
                       main()
