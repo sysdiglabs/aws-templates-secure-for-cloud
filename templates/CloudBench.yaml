@@ -15,13 +15,12 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudBench workload
-  SysdigSecureAPITokenArn:
-    Type: String
-    Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Secure API Token
-  SysdigSecureEndpoint:
-    Type: String
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: "https://app.sysdigcloud.com"
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigSecureAPITokenSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
@@ -126,7 +125,8 @@ Resources:
               Action:
                 - "ssm:GetParameters"
               Resource:
-                - !Ref SysdigSecureAPITokenArn
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -153,9 +153,8 @@ Resources:
               Value: /etc/cloud-bench/cloud-bench.yaml
             - Name: CONFIG
               Value:
-                "Fn::Base64":
-                  !Sub |
-                  secureURL: ${SysdigSecureEndpoint}
+                "Fn::Base64": |
+                  secureURL: "value overriden by SECURE_URL env var"
                   logLevel: "debug"
                   schedule: "24h"
                   benchmarkType: "aws"
@@ -178,8 +177,10 @@ Resources:
             - ContainerName: Config
               Condition: SUCCESS
           Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
-              ValueFrom: !Ref SysdigSecureAPITokenArn
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
           Image: sysdiglabs/cloud-bench:master
           Essential: true
           PortMappings:

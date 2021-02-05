@@ -3,12 +3,11 @@ Description: ECR Image Scanning with Sysdig Secure
 
 
 Parameters:
-  SysdigSecureEndpoint:
-    Type: String
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: "https://app.sysdigcloud.com"
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
   SysdigSecureAPITokenSsm:
-    Type: String
+    Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
 
 Resources:
@@ -82,7 +81,8 @@ Resources:
                   - "ssm:GetParameter"
                   - "ssm:GetParameters"
                 Resource:
-                  - !Sub "arn:aws:ssm:*:*:parameter/${SysdigSecureAPITokenSsm}"
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -115,8 +115,8 @@ Resources:
           env:
             variables:
               SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
-              SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpoint}
             parameter-store:
+              SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpointSsm}
               SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
 
           phases:
