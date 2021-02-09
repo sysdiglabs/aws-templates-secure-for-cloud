@@ -55,4 +55,4 @@ jobs:
       working-directory: ./templates
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: ${{ github.sha }}
+        S3_PREFIX: master

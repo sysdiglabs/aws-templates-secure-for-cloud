@@ -13,6 +13,7 @@ lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
+	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudVision.yaml \
