@@ -143,13 +143,20 @@ Resources:
       Type: String
       Value: !Ref SysdigSecureAPIToken
 
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Secure Endpoint URL"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
   ECRImageScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployECRImageScanning
     Properties:
       TemplateURL: ./ECRImageScanning.yaml
       Parameters:
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
 
   ECSImageScanningStack:
@@ -158,7 +165,7 @@ Resources:
     Properties:
       TemplateURL: ./ECSImageScanning.yaml
       Parameters:
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
 
   ECSFargateClusterStack:
@@ -176,8 +183,8 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
-        SysdigAgentKeyArn: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeyParameter}
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigAgentKeySsm: !Ref SysdigAgentKeyParameter
         S3ConfigBucket: !Ref S3ConfigBucket
 
   CloudBenchStack:
@@ -189,7 +196,6 @@ Resources:
         ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
         VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
-        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
-        SysdigSecureAPITokenArn: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenParameter}
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
-

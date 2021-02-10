@@ -15,13 +15,12 @@ Parameters:
   ECSCluster:
     Type: String
     Description: ECS Fargate Cluster where deploy the CloudConnector workload
-  SysdigAgentKeyArn:
-    Type: String
-    Description: ARN of the Secret in Secrets Manager or SSM Parameter storing the Sysdig Agent Key
-  SysdigSecureEndpoint:
-    Type: String
-    Description: "Enter your Sysdig Secure Endpoint"
-    Default: "https://app.sysdigcloud.com"
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigAgentKeySsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Agent Key"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
@@ -96,7 +95,8 @@ Resources:
               Action:
                 - "ssm:GetParameters"
               Resource:
-                - !Ref SysdigAgentKeyArn
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeySsm}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -144,7 +144,7 @@ Resources:
                         - securityhub:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
                         - secure:
-                            url: ${SysdigSecureEndpoint}
+                            url: value overriden by SECURE_URL env var
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
@@ -159,8 +159,10 @@ Resources:
               awslogs-stream-prefix: "ecs"
         - Name: CloudConnector
           Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: AGENT_KEY
-              ValueFrom: !Ref SysdigAgentKeyArn
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeySsm}
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
