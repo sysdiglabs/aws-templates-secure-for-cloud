@@ -9,7 +9,6 @@ Metadata:
         Parameters:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
-          - SysdigAgentKey
 
       - Label:
           default: "Modules to Deploy"
@@ -31,8 +30,6 @@ Metadata:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
         default: "Sysdig Secure API Token"
-      SysdigAgentKey:
-        default: "Sysdig Agent Key"
       CloudBenchDeploy:
         default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
@@ -90,15 +87,12 @@ Parameters:
     Default: ""
     Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
 
-  SysdigAgentKey:
-    Type: String
-    NoEcho: true
   SysdigSecureAPIToken:
     Type: String
     NoEcho: true
   SysdigSecureEndpoint:
     Type: String
-    Default: "https://app.sysdigcloud.com"
+    Default: "https://secure.sysdig.com"
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
@@ -128,13 +122,6 @@ Resources:
     Properties:
       VersioningConfiguration:
         Status: Enabled
-
-  SysdigAgentKeyParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: "Sysdig Agent Key"
-      Type: String
-      Value: !Ref SysdigAgentKey
 
   SysdigSecureAPITokenParameter:
     Type: AWS::SSM::Parameter
@@ -184,7 +171,7 @@ Resources:
         VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigAgentKeySsm: !Ref SysdigAgentKeyParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
 
   CloudBenchStack:
