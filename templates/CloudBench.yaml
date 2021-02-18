@@ -21,6 +21,9 @@ Parameters:
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  SysdigAgentKeySsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Agent Key"
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
@@ -127,6 +130,7 @@ Resources:
               Resource:
                 - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
                 - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeySsm}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -181,6 +185,8 @@ Resources:
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+            - Name: AGENT_KEY
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigAgentKeySsm}
           Image: sysdiglabs/cloud-bench:master
           Essential: true
           PortMappings:
