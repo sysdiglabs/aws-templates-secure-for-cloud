@@ -98,7 +98,7 @@ Parameters:
     NoEcho: true
   SysdigSecureEndpoint:
     Type: String
-    Default: "https://app.sysdigcloud.com"
+    Default: "https://secure.sysdig.com"
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
