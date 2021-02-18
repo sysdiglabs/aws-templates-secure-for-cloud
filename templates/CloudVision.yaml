@@ -8,6 +8,7 @@ Metadata:
           default: "Sysdig Settings"
         Parameters:
           - SysdigSecureEndpoint
+          - SysdigSecureAPIToken
           - SysdigAgentKey
 
       - Label:
@@ -28,6 +29,8 @@ Metadata:
     ParameterLabels:
       SysdigSecureEndpoint:
         default: "Sysdig Secure Endpoint"
+      SysdigSecureAPIToken:
+        default: "Sysdig Secure API Token"
       SysdigAgentKey:
         default: "Sysdig Agent Key"
       CloudBenchDeploy:
@@ -90,9 +93,12 @@ Parameters:
   SysdigAgentKey:
     Type: String
     NoEcho: true
+  SysdigSecureAPIToken:
+    Type: String
+    NoEcho: true
   SysdigSecureEndpoint:
     Type: String
-    Default: "https://secure.sysdig.com"
+    Default: "https://app.sysdigcloud.com"
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
@@ -135,7 +141,7 @@ Resources:
     Properties:
       Description: "Sysdig Secure API Token"
       Type: String
-      Value: ""
+      Value: !Ref SysdigSecureAPIToken
 
   SysdigSecureEndpointParameter:
     Type: AWS::SSM::Parameter
