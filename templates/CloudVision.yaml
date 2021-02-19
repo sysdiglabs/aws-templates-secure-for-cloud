@@ -115,6 +115,17 @@ Conditions:
          - !Condition DeployCloudBench
        - !Condition RequiresNewECSCluster
   DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  EndpointIsSaas:
+    Fn::Or:
+      - Fn::Equals:
+        - !Ref SysdigSecureEndpoint
+        - "https://secure.sysdig.com"
+      - Fn::Equals:
+        - !Ref SysdigSecureEndpoint
+        - "https://eu1.app.sysdig.com/secure"
+      - Fn::Equals:
+        - !Ref SysdigSecureEndpoint
+        - "https://us2.app.sysdig.com/secure"
 
 Resources:
   S3ConfigBucket:
@@ -145,6 +156,7 @@ Resources:
       Parameters:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
 
   ECSImageScanningStack:
     Type: AWS::CloudFormation::Stack
@@ -154,6 +166,7 @@ Resources:
       Parameters:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
@@ -173,6 +186,7 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack
@@ -186,3 +200,4 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]

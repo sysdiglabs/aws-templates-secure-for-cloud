@@ -24,7 +24,15 @@ Parameters:
   S3ConfigBucket:
     Type: String
     Description: Name of a bucket (must exist) where the configuration YAML files will be stored
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
 
+Conditions:
+  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
 
 Resources:
   LogGroup:
@@ -173,6 +181,9 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
         - Name: CloudBench
+          Environment:
+            - Name: VERIFY_SSL
+              Value: !If [ VerifySSL, "true", "false" ]
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS

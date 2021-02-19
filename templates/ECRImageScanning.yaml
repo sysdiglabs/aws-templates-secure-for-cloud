@@ -9,6 +9,15 @@ Parameters:
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+Conditions:
+  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
 
 Resources:
   ServiceRole:
@@ -109,20 +118,22 @@ Resources:
         PrivilegedMode: true
       Source:
         Type: NO_SOURCE
-        BuildSpec: !Sub |
-          version: 0.2
+        BuildSpec: !Sub
+          - |
+            version: 0.2
 
-          env:
-            variables:
-              SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
-            parameter-store:
-              SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpointSsm}
-              SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
+            env:
+              variables:
+                SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
+              parameter-store:
+                SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpointSsm}
+                SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
 
-          phases:
-            build:
-              commands:
-              - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $REGION) $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+            phases:
+              build:
+                commands:
+                - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $REGION) $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+          - SkipTLSFlag: !If [ VerifySSL, "", " --sysdig-skip-tls" ]
 
   InvokeRole:
     Type: AWS::IAM::Role
