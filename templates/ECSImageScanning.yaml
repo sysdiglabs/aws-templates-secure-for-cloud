@@ -14,11 +14,21 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
+  LogRetention:
+    Type: Number
+    Default: 30
+    Description: Days to keep logs from builds
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
 
 Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetention
+
   StartBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -56,33 +66,11 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                 Resource:
-                  - "arn:aws:logs:*:*:log-group:build"
-                  - "arn:aws:logs:*:*:log-group:build:*"
-
-        - PolicyName: CodeBuildPublisher
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource:
-                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-BuildProject"
-                  - !Sub "arn:aws:logs:*:*:log-group:/aws/codebuild/${AWS::StackName}-BuildProject:*"
-              - Effect: Allow
-                Action:
-                  - "codebuild:CreateReportGroup"
-                  - "codebuild:CreateReport"
-                  - "codebuild:UpdateReport"
-                  - "codebuild:BatchPutTestCases"
-                Resource:
-                  - !Sub "arn:aws:codebuild:*:*:report-group/${AWS::StackName}-BuildProject-*"
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LogGroup}
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LogGroup}:*
 
         - PolicyName: ParameterReader
           PolicyDocument:
@@ -171,6 +159,10 @@ Resources:
         ComputeType: BUILD_GENERAL1_MEDIUM
         Image: aws/codebuild/standard:3.0
         PrivilegedMode: true
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref LogGroup
+          Status: ENABLED
       Source:
         Type: NO_SOURCE
         BuildSpec: !Sub
