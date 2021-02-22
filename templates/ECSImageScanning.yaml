@@ -85,6 +85,26 @@ Resources:
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
+
         - PolicyName: TaskDefinitionReader
           PolicyDocument:
             Version: "2012-10-17"
@@ -212,7 +232,7 @@ Resources:
                             print("Adding --registry-auth-basic=***:***")
                             args.append("--registry-auth-basic={}:{}".format(user,password))
 
-                        ret = subprocess.run(args)
+                        ret = subprocess.run(" ".join(args), shell=True)
                         if ret.returncode != 0 and ret.returncode != 1:
                             print("Error executing inline-scan for image {}".format(image))
                             return True
@@ -247,6 +267,8 @@ Resources:
                             secret_id = get_credentials_secret_for(container)
                             if secret_id:
                                 user, password = get_credentials_from_secret_manager(secret_id, region)
+                            elif image.startswith("${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/"):
+                                user, password = "AWS", "$(aws ecr get-login-password --region ${AWS::Region})"
                             else:
                                 user, password = "", ""
 
