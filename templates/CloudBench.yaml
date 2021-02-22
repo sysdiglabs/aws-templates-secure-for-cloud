@@ -166,7 +166,7 @@ Resources:
                   logLevel: "debug"
                   schedule: "24h"
                   benchmarkType: "aws"
-                  outputDir: "tmp/cloud-custodian"
+                  outputDir: "/tmp/cloud-custodian"
                   policyFile: "/home/custodian/aws-benchmarks.yml"
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
