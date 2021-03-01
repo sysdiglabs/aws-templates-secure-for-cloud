@@ -166,9 +166,8 @@ Resources:
               Value: !If [ VerifySSL, "true", "false" ]
             - Name: CONFIG_PATH
               Value: !Sub
-                - s3://${Bucket}/${Key}
+                - s3://${Bucket}/cloud-connector.yaml
                 - Bucket: !Ref S3ConfigBucket
-                  Key: cloud-connector.yaml
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
