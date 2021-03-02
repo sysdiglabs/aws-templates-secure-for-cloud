@@ -137,9 +137,6 @@ Resources:
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
       Cpu: "256"
       Memory: "512"
-      Volumes:
-        - Name: config
-          Host: {}
       ContainerDefinitions:
         - Name: Config
           Environment:
@@ -148,7 +145,7 @@ Resources:
             - Name: KEY
               Value: cloud-connector.yaml
             - Name: OUTPUT
-              Value: /etc/cloud-connector/cloud-connector.yaml
+              Value: /tmp/cloud-connector.yaml
             - Name: CONFIG
               Value:
                 "Fn::Base64":
@@ -176,9 +173,6 @@ Resources:
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
-          MountPoints:
-            - SourceVolume: config
-              ContainerPath: "/etc/cloud-connector"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -197,6 +191,8 @@ Resources:
               Value: !If [ TelemetryECRDeployed, "true", "false" ]
             - Name: TELEMETRY_CLOUDVISION_ECS_DEPLOYED
               Value: !If [ TelemetryECSDeployed, "true", "false" ]
+            - Name: CONFIG_PATH
+              Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
@@ -209,9 +205,6 @@ Resources:
           Essential: true
           PortMappings:
             - ContainerPort: 5000
-          MountPoints:
-            - SourceVolume: config
-              ContainerPath: "/etc/cloud-connector"
           LogConfiguration:
             LogDriver: awslogs
             Options:
