@@ -123,7 +123,7 @@ Resources:
             phases:
               build:
                 commands:
-                - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $REGION) $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$REPOSITORY:$TAG
+                - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $EVENT_REGION) $EVENT_ACCOUNT.dkr.ecr.$EVENT_REGION.amazonaws.com/$EVENT_REPOSITORY:$EVENT_TAG --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
           - SkipTLSFlag: !If [ VerifySSL, "", " --sysdig-skip-tls" ]
 
   InvokeRole:
@@ -180,4 +180,12 @@ Resources:
               region: "$.region"
               repository: "$.detail.repository-name"
               tag: "$.detail.image-tag"
-            InputTemplate: "{\n \"environmentVariablesOverride\": [\n {\"name\": \"ACCOUNT\", \"type\": \"PLAINTEXT\", \"value\":<account>},\n {\"name\": \"REGION\", \"type\": \"PLAINTEXT\", \"value\":<region>},\n {\"name\": \"REPOSITORY\", \"type\": \"PLAINTEXT\", \"value\":<repository>},\n {\"name\": \"TAG\", \"type\": \"PLAINTEXT\", \"value\":<tag>}\n ]\n}"
+            InputTemplate:  |
+              {
+                "environmentVariablesOverride": [
+                  {"name": "EVENT_ACCOUNT", "type": "PLAINTEXT", "value": <account> },
+                  {"name": "EVENT_REGION", "type": "PLAINTEXT", "value": <region> },
+                  {"name": "EVENT_REPOSITORY", "type": "PLAINTEXT", "value": <repository>},
+                  {"name": "EVENT_TAG", "type": "PLAINTEXT", "value": <tag> }
+                ]
+              }
