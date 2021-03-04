@@ -193,6 +193,7 @@ Resources:
             env:
               variables:
                 SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
+                SYSDIG_ADDED_BY: aws-fargate
               parameter-store:
                 SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpointSsm}
                 SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
