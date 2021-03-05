@@ -116,7 +116,6 @@ Resources:
             env:
               variables:
                 SCAN_IMAGE_NAME: "quay.io/sysdig/secure-inline-scan:2"
-                SYSDIG_ADDED_BY: aws-registry
               parameter-store:
                 SYSDIG_SECURE_ENDPOINT: ${SysdigSecureEndpointSsm}
                 SYSDIG_SECURE_TOKEN: ${SysdigSecureAPITokenSsm}
@@ -124,7 +123,7 @@ Resources:
             phases:
               build:
                 commands:
-                - docker run --rm $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $EVENT_REGION) $EVENT_ACCOUNT.dkr.ecr.$EVENT_REGION.amazonaws.com/$EVENT_REPOSITORY:$EVENT_TAG --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
+                - docker run --rm -e SYSDIG_ADDED_BY=aws-registry $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $EVENT_REGION) $EVENT_ACCOUNT.dkr.ecr.$EVENT_REGION.amazonaws.com/$EVENT_REPOSITORY:$EVENT_TAG --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
           - SkipTLSFlag: !If [ VerifySSL, "", " --sysdig-skip-tls" ]
 
   InvokeRole:
