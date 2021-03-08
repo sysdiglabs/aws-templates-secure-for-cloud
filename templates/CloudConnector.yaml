@@ -30,9 +30,28 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
+  TelemetryCloudBenchDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+  TelemetryECRDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+  TelemetryECSDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  TelemetryCloudBenchDeployed: !Equals [!Ref TelemetryCloudBenchDeployed, "Yes"]
+  TelemetryECRDeployed: !Equals [!Ref TelemetryECRDeployed, "Yes"]
+  TelemetryECSDeployed: !Equals [!Ref TelemetryECSDeployed, "Yes"]
 
 Resources:
   LogGroup:
@@ -164,6 +183,14 @@ Resources:
           Environment:
             - Name: VERIFY_SSL
               Value: !If [ VerifySSL, "true", "false" ]
+            - Name: TELEMETRY_DEPLOYMENT_METHOD
+              Value: cft
+            - Name: TELEMETRY_CLOUDVISION_CLOUDBENCH_DEPLOYED
+              Value: !If [ TelemetryCloudBenchDeployed, "true", "false" ]
+            - Name: TELEMETRY_CLOUDVISION_ECR_DEPLOYED
+              Value: !If [ TelemetryECRDeployed, "true", "false" ]
+            - Name: TELEMETRY_CLOUDVISION_ECS_DEPLOYED
+              Value: !If [ TelemetryECSDeployed, "true", "false" ]
             - Name: CONFIG_PATH
               Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
           Secrets:
