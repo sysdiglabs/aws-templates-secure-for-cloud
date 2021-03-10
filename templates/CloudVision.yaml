@@ -187,9 +187,10 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        TelemetryCloudBenchDeployed: !Ref CloudBenchDeploy
-        TelemetryECRDeployed: !Ref ECRImageScanningDeploy
-        TelemetryECSDeployed: !Ref ECSImageScanningDeploy
+        CloudBenchDeployed: !Ref CloudBenchDeploy
+        ECRDeployed: !Ref ECRImageScanningDeploy
+        ECRBuildProject: !If [ DeployECRImageScanning, !GetAtt [ "ECRImageScanningStack", "Outputs.BuildProject" ], "" ]
+        ECSDeployed: !Ref ECSImageScanningDeploy
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack

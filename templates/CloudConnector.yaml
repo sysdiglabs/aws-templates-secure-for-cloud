@@ -30,28 +30,31 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
-  TelemetryCloudBenchDeployed:
+  CloudBenchDeployed:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
-  TelemetryECRDeployed:
+  ECRDeployed:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
-  TelemetryECSDeployed:
+  ECSDeployed:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
+  ECRBuildProject:
+    Type: String
+    Default: ""
 
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
-  TelemetryCloudBenchDeployed: !Equals [!Ref TelemetryCloudBenchDeployed, "Yes"]
-  TelemetryECRDeployed: !Equals [!Ref TelemetryECRDeployed, "Yes"]
-  TelemetryECSDeployed: !Equals [!Ref TelemetryECSDeployed, "Yes"]
+  CloudBenchDeployed: !Equals [!Ref CloudBenchDeployed, "Yes"]
+  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
+  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
 
 Resources:
   LogGroup:
@@ -96,6 +99,17 @@ Resources:
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource: '*'
+        - !If
+          - ECRDeployed
+          - PolicyName: !Sub "${AWS::StackName}-ECRReadOnly"
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "codebuild:StartBuild"
+                  Resource:
+                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ECRBuildProject}"
+          - - Ref: "AWS::NoValue"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -148,8 +162,8 @@ Resources:
               Value: /tmp/cloud-connector.yaml
             - Name: CONFIG
               Value:
-                "Fn::Base64":
-                    !Sub |
+                "Fn::Base64": !Sub
+                    - |
                       rules:
                         - directory:
                             path: /rules
@@ -160,6 +174,9 @@ Resources:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailStack.Outputs.Queue}
                             interval: 25s
+                      evaluators:
+                        - falco: {}
+                        ${ECREvaluatorConfig}
                       notifiers:
                         - console: {}
                         - metrics: {}
@@ -170,6 +187,12 @@ Resources:
                             productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
                         - secure:
                             url: value overriden by SECURE_URL env var
+                    - ECREvaluatorConfig: !If
+                      - ECRDeployed
+                      - !Sub |
+                        - scanning-ecr:
+                              codebuild-project: "${ECRBuildProject}"
+                      - ""
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:master
           Essential: false
@@ -186,11 +209,11 @@ Resources:
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
             - Name: TELEMETRY_CLOUDVISION_CLOUDBENCH_DEPLOYED
-              Value: !If [ TelemetryCloudBenchDeployed, "true", "false" ]
+              Value: !If [ CloudBenchDeployed, "true", "false" ]
             - Name: TELEMETRY_CLOUDVISION_ECR_DEPLOYED
-              Value: !If [ TelemetryECRDeployed, "true", "false" ]
+              Value: !If [ ECRDeployed, "true", "false" ]
             - Name: TELEMETRY_CLOUDVISION_ECS_DEPLOYED
-              Value: !If [ TelemetryECSDeployed, "true", "false" ]
+              Value: !If [ ECSDeployed, "true", "false" ]
             - Name: CONFIG_PATH
               Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
           Secrets:
@@ -201,7 +224,7 @@ Resources:
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
-          Image: sysdiglabs/cloud-connector:master
+          Image: sysdiglabs/cloud-connector:ecr
           Essential: true
           PortMappings:
             - ContainerPort: 5000
