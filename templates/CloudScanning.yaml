@@ -164,9 +164,9 @@ Resources:
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
             - Name: ECR_CODEBUILD_PROJECT
-              Value: !Sub ${ECRBuildProject}"
+              Value: !Sub ${ECRBuildProject}
             - Name: ECS_CODEBUILD_PROJECT
-              Value: !Sub ${ECSBuildProject}"
+              Value: !Sub ${ECSBuildProject}
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
