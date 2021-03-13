@@ -159,7 +159,7 @@ Resources:
       ContainerDefinitions:
         - Name: CloudScanning
           Environment:
-            - Name: SQS_QUEUE_ARN
+            - Name: SQS_QUEUE_URL
               Value: !Ref CloudTrailQueue
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
