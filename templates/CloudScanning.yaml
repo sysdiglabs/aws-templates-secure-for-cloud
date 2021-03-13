@@ -1,59 +1,39 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Cloud Connector for AWS
+Description: Cloud Scanning for AWS
 
 Parameters:
   LogRetention:
     Type: Number
     Default: 5
-    Description: Days to keep logs from CloudConnector
+    Description: Days to keep logs from CloudScanning
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: VPC where the workload is deployed
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Subnets where the CloudConnector will be deployed
+    Description: Subnets where the CloudScanning will be deployed
   ECSCluster:
     Type: String
-    Description: ECS Fargate Cluster where deploy the CloudConnector workload
+    Description: ECS Fargate Cluster where deploy the CloudScanning workload
   SysdigSecureEndpointSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
-  S3ConfigBucket:
+  ECRBuildProject:
     Type: String
-    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
-  VerifySSL:
+    Default: ""
+  ECSBuildProject:
     Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "Yes"
-  CloudBenchDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-  ECRDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-  ECSDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
+    Default: ""
   CloudTrailTopic:
     Type: String
     Description: ARN of the SNS Topic to subscribe
 
 Conditions:
-  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
-  CloudBenchDeployed: !Equals [!Ref CloudBenchDeployed, "Yes"]
-  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
-  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
+  ECRDeployed: !Not [ !Equals [!Ref ECRBuildProject, ""] ]
+  ECSDeployed: !Not [ !Equals [!Ref ECSBuildProject, ""] ]
 
 Resources:
 
@@ -116,16 +96,25 @@ Resources:
                 - "s3:List*"
                 - "s3:Put*"
                 - "s3:Head*"
-                - "securityhub:GetFindings"
-                - "securityhub:BatchImportFindings"
-                - 'logs:DescribeLogStreams'
-                - 'logs:GetLogEvents'
-                - 'logs:FilterLogEvents'
-                - 'logs:PutLogEvents'
                 - 'sqs:DeleteMessage'
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-ECRTriggerScan"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !If
+                    - ECRDeployed
+                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ECRBuildProject}"
+                    - Ref: "AWS::NoValue"
+                  - !If
+                    - ECSDeployed
+                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ECSBuildProject}"
+                    - Ref: "AWS::NoValue"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -161,80 +150,30 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      Family: !Sub "${AWS::StackName}-CloudConnector"
+      Family: !Sub "${AWS::StackName}-CloudScanning"
       NetworkMode: awsvpc
       TaskRoleArn: !Ref TaskRole
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
       Cpu: "256"
       Memory: "512"
       ContainerDefinitions:
-        - Name: Config
+        - Name: CloudScanning
           Environment:
-            - Name: BUCKET
-              Value: !Ref S3ConfigBucket
-            - Name: KEY
-              Value: cloud-connector.yaml
-            - Name: OUTPUT
-              Value: /tmp/cloud-connector.yaml
-            - Name: CONFIG
-              Value:
-                "Fn::Base64":
-                    !Sub |
-                      rules:
-                        - directory:
-                            path: /rules
-                        - s3:
-                            bucket: ${S3ConfigBucket}
-                            path: rules
-                      ingestors:
-                        - cloudtrail-sns-sqs:
-                            queueURL: ${CloudTrailQueue}
-                            interval: 25s
-                      notifiers:
-                        - console: {}
-                        - metrics: {}
-                        - cloudwatch:
-                            logGroup: ${LogGroup}
-                            logStream: ${AlertsLogStream}
-                        - securityhub:
-                            productArn: arn:aws:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
-                        - secure:
-                            url: value overriden by SECURE_URL env var
-
-          Image: sysdiglabs/cloud-connector-s3-bucket-config:master
-          Essential: false
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: "ecs"
-        - Name: CloudConnector
-          Environment:
-            - Name: VERIFY_SSL
-              Value: !If [ VerifySSL, "true", "false" ]
-            - Name: TELEMETRY_DEPLOYMENT_METHOD
-              Value: cft
-            - Name: TELEMETRY_CLOUDVISION_CLOUDBENCH_DEPLOYED
-              Value: !If [ CloudBenchDeployed, "true", "false" ]
-            - Name: TELEMETRY_CLOUDVISION_ECR_DEPLOYED
-              Value: !If [ ECRDeployed, "true", "false" ]
-            - Name: TELEMETRY_CLOUDVISION_ECS_DEPLOYED
-              Value: !If [ ECSDeployed, "true", "false" ]
-            - Name: CONFIG_PATH
-              Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
+            - Name: SQS_QUEUE_ARN
+              Value: !Ref CloudTrailQueue
+            - Name: SQS_QUEUE_INTERVAL
+              Value: 30s
+            - Name: ECR_CODEBUILD_PROJECT
+              Value: !Sub ${ECRBuildProject}"
+            - Name: ECS_CODEBUILD_PROJECT
+              Value: !Sub ${ECSBuildProject}"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-          DependsOn:
-            - ContainerName: Config
-              Condition: SUCCESS
-          Image: sysdiglabs/cloud-connector:master
+          Image: sysdiglabs/cloud-scanning:ci
           Essential: true
-          PortMappings:
-            - ContainerPort: 5000
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -246,19 +185,19 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPC
-      GroupName: !Sub "${AWS::StackName}-CloudConnector"
-      GroupDescription: CloudConnector workload Security Group
+      GroupName: !Sub "${AWS::StackName}-CloudScanning"
+      GroupDescription: CloudScanning workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: "-1"
       Tags:
         - Key: Name
-          Value: !Sub "${AWS::StackName}-CloudConnector"
+          Value: !Sub "${AWS::StackName}-CloudScanning"
 
-  CloudConnectorService:
+  CloudScanningService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub "${AWS::StackName}-CloudConnector"
+      ServiceName: !Sub "${AWS::StackName}-CloudScanning"
       Cluster: !Ref ECSCluster
       DesiredCount: 1
       LaunchType: FARGATE
