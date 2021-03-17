@@ -60,47 +60,6 @@ Resources:
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
                   - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
-        - PolicyName: ECRReader
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "ecr:GetAuthorizationToken"
-                  - "ecr:BatchCheckLayerAvailability"
-                  - "ecr:GetDownloadUrlForLayer"
-                  - "ecr:GetRepositoryPolicy"
-                  - "ecr:DescribeRepositories"
-                  - "ecr:ListImages"
-                  - "ecr:DescribeImages"
-                  - "ecr:BatchGetImage"
-                  - "ecr:GetLifecyclePolicy"
-                  - "ecr:GetLifecyclePolicyPreview"
-                  - "ecr:ListTagsForResource"
-                  - "ecr:DescribeImageScanFindings"
-                Resource: "*"
-
-        - PolicyName: TaskDefinitionReader
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "ecs:DescribeTaskDefinition"
-                Resource:
-                  - "*"
-
-        - PolicyName: SecretsReader
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "kms:Decrypt"
-                  - "secretsmanager:GetSecretValue"
-                Resource:
-                  - "*"
-
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -145,10 +104,10 @@ Resources:
               build:
                 commands:
                 - |
-                  if [[ -z "$REGISTRY_AUTH" ]]; then
+                  if [ -z "$REGISTRY_AUTH" ]; then
                     docker run --rm -e SYSDIG_ADDED_BY=$SYSDIG_ADDED_BY $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN $IMAGE_TO_SCAN --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
                   else
-                    docker run --rm -e SYSDIG_ADDED_BY=$SYSDIG_ADDED_BY $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic $REGISTRY_AUTH $IMAGE_TO_SCAN --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
+                    docker run --rm -e SYSDIG_ADDED_BY=$SYSDIG_ADDED_BY $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic "$REGISTRY_AUTH" $IMAGE_TO_SCAN --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
                   fi
           - SkipTLSFlag: !If [ VerifySSL, "", " --sysdig-skip-tls" ]
 
