@@ -96,8 +96,11 @@ Parameters:
 
 Conditions:
   DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+  DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  DeployCloudScanning: !Or [!Condition DeployECRImageScanning, !Condition DeployECSImageScanning]
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
+  DeployCloudTrail: !Or [!Condition DeployCloudScanning, !Condition DeployCloudConnector]
   RequiresNewECSCluster:
     Fn::Or:
       - Fn::Equals:
@@ -113,8 +116,8 @@ Conditions:
        - !Or
          - !Condition DeployCloudConnector
          - !Condition DeployCloudBench
+         - !Condition DeployCloudScanning
        - !Condition RequiresNewECSCluster
-  DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
   EndpointIsSaas:
     Fn::Or:
       - Fn::Equals:
@@ -174,6 +177,12 @@ Resources:
     Properties:
       TemplateURL: ./ECSFargateCluster.yaml
 
+  CloudTrailStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudTrail
+    Properties:
+      TemplateURL: ./CloudTrail.yaml
+
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudConnector
@@ -187,9 +196,25 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        TelemetryCloudBenchDeployed: !Ref CloudBenchDeploy
-        TelemetryECRDeployed: !Ref ECRImageScanningDeploy
-        TelemetryECSDeployed: !Ref ECSImageScanningDeploy
+        CloudBenchDeployed: !Ref CloudBenchDeploy
+        ECRDeployed: !Ref ECRImageScanningDeploy
+        ECSDeployed: !Ref ECSImageScanningDeploy
+        CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
+
+  CloudScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudScanning
+    Properties:
+      TemplateURL: ./CloudScanning.yaml
+      Parameters:
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        ECRBuildProject: !If [ DeployECRImageScanning, !GetAtt [ "ECRImageScanningStack", "Outputs.BuildProject" ], "" ]
+        ECSBuildProject: !If [ DeployECSImageScanning, !GetAtt [ "ECSImageScanningStack", "Outputs.BuildProject" ], "" ]
+        CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack

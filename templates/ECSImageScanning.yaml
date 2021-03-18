@@ -29,31 +29,6 @@ Resources:
       LogGroupName: !Ref AWS::StackName
       RetentionInDays: !Ref LogRetention
 
-  StartBuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      Description: "IAM::Role which allows to run the CodeBuild Job to perform the ECS scanning"
-      Path: /
-      Policies:
-        - PolicyName: BuildRunner
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "codebuild:StartBuild"
-                Resource:
-                  - !GetAtt BuildProject.Arn
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - events.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-
   ServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -135,38 +110,6 @@ Resources:
             Action:
               - 'sts:AssumeRole'
 
-  TriggerScanEventRule:
-    Type: 'AWS::Events::Rule'
-    Properties:
-      Description: Trigger Codebuild project for scanning on ECS event
-      EventPattern:
-        source:
-          - "aws.ecs"
-        detail-type:
-          - "ECS Task State Change"
-        detail:
-          desiredStatus:
-            - RUNNING
-          lastStatus:
-            - PROVISIONING
-      State: ENABLED
-      Targets:
-        - Arn: !GetAtt BuildProject.Arn
-          Id: codebuild-scan-task
-          RoleArn: !GetAtt StartBuildRole.Arn
-          InputTransformer:
-            InputPathsMap:
-              account: "$.account"
-              region: "$.region"
-              taskDefinitionArn: "$.detail.taskDefinitionArn"
-            InputTemplate: |
-              {
-                "environmentVariablesOverride": [
-                  {"name": "EVENT_ACCOUNT", "type": "PLAINTEXT", "value": <account> },
-                  {"name": "EVENT_REGION", "value":<region> },
-                  {"name": "EVENT_TASKDEFINITIONARN", "value": <taskDefinitionArn> }
-                ]
-              }
 
   BuildProject:
     Type: AWS::CodeBuild::Project
@@ -287,3 +230,8 @@ Resources:
                     EOF
                 - python app.py
           - SkipTLSFlag: !If [ VerifySSL, "", "\"--sysdig-skip-tls\"," ]
+
+Outputs:
+  BuildProject:
+    Description: The name of the CodeBuild project
+    Value: !Ref BuildProject
