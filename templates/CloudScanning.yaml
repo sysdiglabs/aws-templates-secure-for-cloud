@@ -21,10 +21,17 @@ Parameters:
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
-  ECRBuildProject:
+  ECRDeployed:
     Type: String
-    Default: ""
-  ECSBuildProject:
+    AllowedValues:
+      - "Yes"
+      - "No"
+  ECSDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+  BuildProject:
     Type: String
     Default: ""
   CloudTrailTopic:
@@ -32,8 +39,8 @@ Parameters:
     Description: ARN of the SNS Topic to subscribe
 
 Conditions:
-  ECRDeployed: !Not [ !Equals [!Ref ECRBuildProject, ""] ]
-  ECSDeployed: !Not [ !Equals [!Ref ECSBuildProject, ""] ]
+  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
+  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
 
 Resources:
 
@@ -100,21 +107,52 @@ Resources:
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource: '*'
-        - PolicyName: !Sub "${AWS::StackName}-ECRTriggerScan"
+        - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
           PolicyDocument:
             Statement:
               - Effect: Allow
                 Action:
                   - "codebuild:StartBuild"
                 Resource:
-                  - !If
-                    - ECRDeployed
-                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ECRBuildProject}"
-                    - Ref: "AWS::NoValue"
-                  - !If
-                    - ECSDeployed
-                    - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${ECSBuildProject}"
-                    - Ref: "AWS::NoValue"
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+        - PolicyName: TaskDefinitionReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecs:DescribeTaskDefinition"
+                Resource:
+                  - "*"
+        - PolicyName: SecretsReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:Decrypt"
+                  - "secretsmanager:GetSecretValue"
+                Resource:
+                  - "*"
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -163,10 +201,12 @@ Resources:
               Value: !Ref CloudTrailQueue
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
-            - Name: ECR_CODEBUILD_PROJECT
-              Value: !Sub ${ECRBuildProject}
-            - Name: ECS_CODEBUILD_PROJECT
-              Value: !Sub ${ECSBuildProject}
+            - Name: CODEBUILD_PROJECT
+              Value: !Sub ${BuildProject}
+            - Name: ECR_DEPLOYED
+              Value: !If [ ECRDeployed, "true", "false" ]
+            - Name: ECS_DEPLOYED
+              Value: !If [ ECSDeployed, "true", "false" ]
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}

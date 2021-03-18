@@ -151,26 +151,6 @@ Resources:
       Type: String
       Value: !Ref SysdigSecureEndpoint
 
-  ECRImageScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployECRImageScanning
-    Properties:
-      TemplateURL: ./ECRImageScanning.yaml
-      Parameters:
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-
-  ECSImageScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployECSImageScanning
-    Properties:
-      TemplateURL: ./ECSImageScanning.yaml
-      Parameters:
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployNewECSCluster
@@ -201,6 +181,16 @@ Resources:
         ECSDeployed: !Ref ECSImageScanningDeploy
         CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
 
+  ScanningCodeBuildStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudScanning
+    Properties:
+      TemplateURL: ./ScanningCodeBuild.yaml
+      Parameters:
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+
   CloudScanningStack:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudScanning
@@ -212,8 +202,9 @@ Resources:
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        ECRBuildProject: !If [ DeployECRImageScanning, !GetAtt [ "ECRImageScanningStack", "Outputs.BuildProject" ], "" ]
-        ECSBuildProject: !If [ DeployECSImageScanning, !GetAtt [ "ECSImageScanningStack", "Outputs.BuildProject" ], "" ]
+        ECRDeployed: !Ref ECRImageScanningDeploy
+        ECSDeployed: !Ref ECSImageScanningDeploy
+        BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
 
   CloudBenchStack:

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: ECR Image Scanning with Sysdig Secure
+Description: CodeBuild for performing image scanning with Sysdig Secure
 
 Parameters:
   SysdigSecureEndpointSsm:
@@ -35,26 +35,6 @@ Resources:
       Description: "IAM::Role which allows to run the CodeBuild Job to perform the ECR scanning"
       Path: /
       Policies:
-        - PolicyName: ECRReader
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "ecr:GetAuthorizationToken"
-                  - "ecr:BatchCheckLayerAvailability"
-                  - "ecr:GetDownloadUrlForLayer"
-                  - "ecr:GetRepositoryPolicy"
-                  - "ecr:DescribeRepositories"
-                  - "ecr:ListImages"
-                  - "ecr:DescribeImages"
-                  - "ecr:BatchGetImage"
-                  - "ecr:GetLifecyclePolicy"
-                  - "ecr:GetLifecyclePolicyPreview"
-                  - "ecr:ListTagsForResource"
-                  - "ecr:DescribeImageScanFindings"
-                Resource: "*"
-
         - PolicyName: LogsPublisher
           PolicyDocument:
             Version: "2012-10-17"
@@ -94,7 +74,7 @@ Resources:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: !Sub "${AWS::StackName}-BuildProject"
-      Description: "CodeBuild project which scans images using inline technology in ECR using Sysdig Secure"
+      Description: "CodeBuild project which scans images using inline technology"
       ServiceRole: !Ref ServiceRole
       Artifacts:
         Type: NO_ARTIFACTS
@@ -123,7 +103,12 @@ Resources:
             phases:
               build:
                 commands:
-                - docker run --rm -e SYSDIG_ADDED_BY=aws-registry $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic AWS:$(aws ecr get-login-password --region $EVENT_REGION) $EVENT_ACCOUNT.dkr.ecr.$EVENT_REGION.amazonaws.com/$EVENT_REPOSITORY:$EVENT_TAG --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
+                - |
+                  if [ -z "$REGISTRY_AUTH" ]; then
+                    docker run --rm -e SYSDIG_ADDED_BY=$SYSDIG_ADDED_BY $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN $IMAGE_TO_SCAN --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
+                  else
+                    docker run --rm -e SYSDIG_ADDED_BY=$SYSDIG_ADDED_BY $SCAN_IMAGE_NAME -s $SYSDIG_SECURE_ENDPOINT ${SkipTLSFlag} --sysdig-token $SYSDIG_SECURE_TOKEN --registry-auth-basic "$(echo $REGISTRY_AUTH | base64 -d)" $IMAGE_TO_SCAN --annotations=aws-account=$EVENT_ACCOUNT,aws-region=$EVENT_REGION
+                  fi
           - SkipTLSFlag: !If [ VerifySSL, "", " --sysdig-skip-tls" ]
 
 Outputs:
