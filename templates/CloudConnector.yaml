@@ -221,13 +221,13 @@ Resources:
               Value: !If [ ECSDeployed, "true", "false" ]
             - Name: CONFIG_PATH
               Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
+            - Name: FEAT_REGISTER_ACCOUNT_IN_SECURE
+              Value: "true"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-            - Name: FEAT_REGISTER_ACCOUNT_IN_SECURE
-              Value: true
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
