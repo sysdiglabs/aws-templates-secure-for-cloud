@@ -125,10 +125,10 @@ Conditions:
         - "https://secure.sysdig.com"
       - Fn::Equals:
         - !Ref SysdigSecureEndpoint
-        - "https://eu1.app.sysdig.com/secure"
+        - "https://eu1.app.sysdig.com"
       - Fn::Equals:
         - !Ref SysdigSecureEndpoint
-        - "https://us2.app.sysdig.com/secure"
+        - "https://us2.app.sysdig.com"
 
 Resources:
   S3ConfigBucket:
