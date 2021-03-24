@@ -207,8 +207,6 @@ Resources:
               Value: !If [ ECRDeployed, "true", "false" ]
             - Name: ECS_DEPLOYED
               Value: !If [ ECSDeployed, "true", "false" ]
-            - Name: FEAT_REGISTER_ACCOUNT_IN_SECURE
-              Value: "true"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
