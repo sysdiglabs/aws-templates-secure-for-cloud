@@ -202,6 +202,7 @@ Resources:
         Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
         ECRDeployed: !Ref ECRImageScanningDeploy
         ECSDeployed: !Ref ECSImageScanningDeploy
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
