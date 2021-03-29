@@ -24,6 +24,7 @@ Metadata:
           - ExistentECSCluster
           - ExistentECSClusterVPC
           - ExistentECSClusterPrivateSubnets
+          - ExistentCloudTrailSNSTopic
 
     ParameterLabels:
       SysdigSecureEndpoint:
@@ -44,6 +45,8 @@ Metadata:
         default: "VPC Id"
       ExistentECSClusterPrivateSubnets:
         default: "Private subnet Id's"
+      ExistentCloudTrailSNSTopic:
+        default: "CloudTrail SNS Topic"
 
 Parameters:
   CloudBenchDeploy:
@@ -86,6 +89,10 @@ Parameters:
     Type: List<String>
     Default: ""
     Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+  ExistentCloudTrailSNSTopic:
+    Type: String
+    Default: ""
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
 
   SysdigSecureAPIToken:
     Type: String
@@ -95,40 +102,31 @@ Parameters:
     Default: "https://secure.sysdig.com"
 
 Conditions:
-  DeployECRImageScanning: !Equals [!Ref ECRImageScanningDeploy, "Yes"]
-  DeployECSImageScanning: !Equals [!Ref ECSImageScanningDeploy, "Yes"]
-  DeployCloudScanning: !Or [!Condition DeployECRImageScanning, !Condition DeployECSImageScanning]
+  RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
+  RequiresNewECSCluster: !Or
+    - !Equals [!Ref ExistentECSCluster, ""]
+    - !Equals [!Ref ExistentECSClusterVPC, ""]
+    - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
-  DeployCloudTrail: !Or [!Condition DeployCloudScanning, !Condition DeployCloudConnector]
-  RequiresNewECSCluster:
-    Fn::Or:
-      - Fn::Equals:
-        - !Ref ExistentECSCluster
-        - ""
-      - Fn::Equals:
-        - !Ref ExistentECSClusterVPC
-        - ""
-      - Fn::Equals:
-        - !Join [",", !Ref ExistentECSClusterPrivateSubnets]
-        - ""
+  DeployCloudScanning: !Or
+    - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+    - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  DeployCloudTrail: !And
+    - !Condition RequiresCloudTrail
+    - !Or
+      - !Condition DeployCloudConnector
+      - !Condition DeployCloudScanning
   DeployNewECSCluster: !And
-       - !Or
-         - !Condition DeployCloudConnector
-         - !Condition DeployCloudBench
-         - !Condition DeployCloudScanning
-       - !Condition RequiresNewECSCluster
-  EndpointIsSaas:
-    Fn::Or:
-      - Fn::Equals:
-        - !Ref SysdigSecureEndpoint
-        - "https://secure.sysdig.com"
-      - Fn::Equals:
-        - !Ref SysdigSecureEndpoint
-        - "https://eu1.app.sysdig.com"
-      - Fn::Equals:
-        - !Ref SysdigSecureEndpoint
-        - "https://us2.app.sysdig.com"
+    - !Condition RequiresNewECSCluster
+    - !Or
+      - !Condition DeployCloudConnector
+      - !Condition DeployCloudScanning
+      - !Condition DeployCloudBench
+  EndpointIsSaas: !Or
+    - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
 
 Resources:
   S3ConfigBucket:
@@ -179,7 +177,7 @@ Resources:
         CloudBenchDeployed: !Ref CloudBenchDeploy
         ECRDeployed: !Ref ECRImageScanningDeploy
         ECSDeployed: !Ref ECSImageScanningDeploy
-        CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
+        CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
   ScanningCodeBuildStack:
     Type: AWS::CloudFormation::Stack
@@ -205,7 +203,7 @@ Resources:
         ECRDeployed: !Ref ECRImageScanningDeploy
         ECSDeployed: !Ref ECSImageScanningDeploy
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
-        CloudTrailTopic: !GetAtt ["CloudTrailStack", "Outputs.Topic"]
+        CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
   CloudBenchStack:
     Type: AWS::CloudFormation::Stack
