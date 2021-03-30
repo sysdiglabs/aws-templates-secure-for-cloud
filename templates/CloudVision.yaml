@@ -99,11 +99,7 @@ Parameters:
     NoEcho: true
   SysdigSecureEndpoint:
     Type: String
-    AllowedValues:
-      - https://secure.sysdig.com
-      - https://us2.app.sysdig.com
-      - https://eu1.app.sysdig.com
-    Default: https://secure.sysdig.com
+    Default: "https://secure.sysdig.com"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
