@@ -54,7 +54,8 @@ jobs:
       shell: bash
       run: |
         echo "##[set-output name=branch;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
-        echo "Base ref: ${{ github.base_ref }}"
+        echo "${GITHUB_HEAD_REF#refs/heads/}"
+        echo "${{ github.event.pull_request.head.ref }}"
       id: extract_branch
 
     - name: Build and Upload
