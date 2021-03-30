@@ -199,7 +199,7 @@ Resources:
                         - secure:
                             url: value overriden by SECURE_URL env var
 
-          Image: sysdiglabs/cloud-connector-s3-bucket-config:master
+          Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false
           LogConfiguration:
             LogDriver: awslogs
@@ -229,7 +229,7 @@ Resources:
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
-          Image: sysdiglabs/cloud-connector:master
+          Image: sysdiglabs/cloud-connector:latest
           Essential: true
           PortMappings:
             - ContainerPort: 5000

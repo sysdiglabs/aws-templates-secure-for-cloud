@@ -169,7 +169,7 @@ Resources:
                   outputDir: "/tmp/cloud-custodian"
                   policyFile: "/home/custodian/aws-benchmarks.yml"
 
-          Image: sysdiglabs/cloud-connector-s3-bucket-config:master
+          Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false
           MountPoints:
             - SourceVolume: config
@@ -192,7 +192,7 @@ Resources:
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-          Image: sysdiglabs/cloud-bench:master
+          Image: sysdiglabs/cloud-bench:latest
           Essential: true
           PortMappings:
             - ContainerPort: 7000
