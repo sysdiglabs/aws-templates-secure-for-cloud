@@ -50,6 +50,13 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
+    - name: Extract branch name
+      shell: bash
+      run: |
+        echo "##[set-output name=branch;]$(echo ${GITHUB_HEAD_REF#refs/heads/})"
+        echo "Base ref: ${{ github.base_ref }}"
+      id: extract_branch
+
     - name: Build and Upload
       run: make ci
       working-directory: ./templates
