@@ -178,9 +178,6 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        CloudBenchDeployed: !Ref CloudBenchDeploy
-        ECRDeployed: !Ref ECRImageScanningDeploy
-        ECSDeployed: !Ref ECSImageScanningDeploy
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
   ScanningCodeBuildStack:
@@ -205,8 +202,6 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        ECRDeployed: !Ref ECRImageScanningDeploy
-        ECSDeployed: !Ref ECSImageScanningDeploy
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 

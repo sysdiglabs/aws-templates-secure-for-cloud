@@ -30,30 +30,12 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
-  CloudBenchDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-  ECRDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-  ECSDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
   CloudTrailTopic:
     Type: String
     Description: ARN of the SNS Topic to subscribe
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
-  CloudBenchDeployed: !Equals [!Ref CloudBenchDeployed, "Yes"]
-  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
-  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
 
 Resources:
 
@@ -213,12 +195,6 @@ Resources:
               Value: !If [ VerifySSL, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
-            - Name: TELEMETRY_CLOUDVISION_CLOUDBENCH_DEPLOYED
-              Value: !If [ CloudBenchDeployed, "true", "false" ]
-            - Name: TELEMETRY_CLOUDVISION_ECR_DEPLOYED
-              Value: !If [ ECRDeployed, "true", "false" ]
-            - Name: TELEMETRY_CLOUDVISION_ECS_DEPLOYED
-              Value: !If [ ECSDeployed, "true", "false" ]
             - Name: CONFIG_PATH
               Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
           Secrets:

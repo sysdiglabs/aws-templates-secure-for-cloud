@@ -27,16 +27,6 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
-  ECRDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-  ECSDeployed:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
   BuildProject:
     Type: String
     Default: ""
@@ -46,8 +36,6 @@ Parameters:
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
-  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
-  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
 
 Resources:
 
@@ -212,10 +200,8 @@ Resources:
               Value: 30s
             - Name: CODEBUILD_PROJECT
               Value: !Sub ${BuildProject}
-            - Name: ECR_DEPLOYED
-              Value: !If [ ECRDeployed, "true", "false" ]
-            - Name: ECS_DEPLOYED
-              Value: !If [ ECSDeployed, "true", "false" ]
+            - Name: TELEMETRY_DEPLOYMENT_METHOD
+              Value: cft
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
