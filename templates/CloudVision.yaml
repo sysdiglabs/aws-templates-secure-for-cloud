@@ -202,6 +202,8 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        ECRDeployed: !Ref ECRImageScanningDeploy
+        ECSDeployed: !Ref ECSImageScanningDeploy
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
