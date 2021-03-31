@@ -95,6 +95,7 @@ Resources:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
+      Domain: vpc
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
@@ -103,6 +104,7 @@ Resources:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
+      Domain: vpc
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
