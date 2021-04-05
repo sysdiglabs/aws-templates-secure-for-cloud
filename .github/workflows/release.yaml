@@ -44,12 +44,17 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
+    - name: Prepare
+      id: prep
+      run: |
+        echo ::set-output name=VERSION::$(echo "${{ github.ref }}" | sed -e 's/.*\/v\(.*\)/\1/')
+
     - name: Build and Upload Version
       run: make ci
       working-directory: ./templates
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: ${{ github.ref }}
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
 
     - name: Build and Upload Latest
       run: make ci
