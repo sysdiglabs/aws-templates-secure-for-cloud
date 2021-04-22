@@ -66,6 +66,7 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointSsm
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenSsm
         VerifySSL: !Ref VerifySSL
+        NamingPrefix: !Ref NamingPrefix
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -144,7 +145,7 @@ Resources:
           Environment:
             - Name: VERIFY_SSL
               Value: !If [ VerifySSL, "true", "false" ]
-            - Name: SQS_QUEUE_NAMING_STANDARD
+            - Name: SQS_QUEUE_NAME
               Value: !Sub "${NamingPrefix}-CloudScanning"
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
@@ -168,7 +169,7 @@ Resources:
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-          Image: sysdiglabs/cloud-scanning:latest
+          Image: sysdiglabs/cloud-scanning:airadier-test
           Essential: true
           LogConfiguration:
             LogDriver: awslogs
