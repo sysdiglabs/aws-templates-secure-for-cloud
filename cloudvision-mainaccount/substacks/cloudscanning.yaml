@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloud Scanning for AWS
+
+Parameters:
+  LogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudScanning
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the workload is deployed
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets where the CloudScanning will be deployed
+  ECSCluster:
+    Type: String
+    Description: ECS Fargate Cluster where deploy the CloudScanning workload
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigSecureAPITokenSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  ECRDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+  ECSDeployed:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+  NamingPrefix:
+    Type: String
+    Default: "SysdigCloud"
+    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern : "^[a-zA-Z0-9]+$"
+    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+  AccountsAndRegionsList:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
+
+
+Conditions:
+  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
+  ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
+
+Resources:
+
+  CodeBuildStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./cloudscanning-codebuild.yaml
+      Parameters:
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointSsm
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenSsm
+        VerifySSL: !Ref VerifySSL
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetention
+
+  AlertsLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref LogGroup
+      LogStreamName: alerts
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${NamingPrefix}-CloudScanningTaskRole"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "sts:AssumeRole"
+              Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudScanningRole"
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameters"
+              Resource:
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Family: !Sub "${AWS::StackName}-CloudScanning"
+      NetworkMode: awsvpc
+      TaskRoleArn: !Ref TaskRole
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Cpu: "256"
+      Memory: "512"
+      ContainerDefinitions:
+        - Name: CloudScanning
+          Environment:
+            - Name: VERIFY_SSL
+              Value: !If [ VerifySSL, "true", "false" ]
+            - Name: SQS_QUEUE_NAMING_STANDARD
+              Value: !Sub "${NamingPrefix}-CloudScanning"
+            - Name: SQS_QUEUE_INTERVAL
+              Value: 30s
+            - Name: CODEBUILD_PROJECT
+              Value:
+                Fn::Sub:
+                - "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+                - BuildProject: !GetAtt [ "CodeBuildStack", "Outputs.BuildProject" ]
+            - Name: ECR_DEPLOYED
+              Value: !If [ ECRDeployed, "true", "false" ]
+            - Name: ECS_DEPLOYED
+              Value: !If [ ECSDeployed, "true", "false" ]
+            - Name: TELEMETRY_DEPLOYMENT_METHOD
+              Value: cft
+            - Name: ACCOUNTS_AND_REGIONS
+              Value: !Join [",", !Ref AccountsAndRegionsList]
+            - Name: ACCOUNT_ROLE
+              Value: !Sub "${NamingPrefix}-CloudScanningRole"
+          Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+            - Name: SECURE_API_TOKEN
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+          Image: sysdiglabs/cloud-scanning:latest
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Sub "${AWS::StackName}-CloudScanning"
+      GroupDescription: CloudScanning workload Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudScanning"
+
+  CloudScanningService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${AWS::StackName}-CloudScanning"
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: !Ref Subnets
+      TaskDefinition: !Ref TaskDefinition

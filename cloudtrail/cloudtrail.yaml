@@ -1,0 +1,272 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sysdig for Cloud - CloudTrail preparation
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Main account"
+        Parameters:
+          - NamingPrefix
+      - Label:
+          default: "Existing Cloudtrail"
+        Parameters:
+          - ExistingCloudTrailSNSTopic
+      - Label:
+          default: "CloudTrail configuration"
+        Parameters:
+          - MultiRegionTrail
+          - CloudTrailLogRetention
+
+    ParameterLabels:
+      NamingPrefix:
+        default: Resource naming convention - prefix
+      ExistingCloudTrailSNSTopic:
+        default: Existing CloudTrail SNS Topic ARN
+      MultiRegionTrail:
+        default: Multi region CloudTrail
+      CloudTrailLogRetention:
+        default: CloudTrail log retention
+
+Parameters:
+  NamingPrefix:
+    Type: String
+    Default: "SysdigCloud"
+    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern : "^[a-zA-Z0-9]+$"
+    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+
+  ExistingCloudTrailSNSTopic:
+    Type: String
+    Default: ""
+    Description: Provide an existing CloudTrail SNS Topic, or leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+
+  MultiRegionTrail:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  CloudTrailLogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudTrail in S3 bucket
+
+Conditions:
+  DeployCloudTrail: !Equals [!Ref ExistingCloudTrailSNSTopic, ""]
+  IsMultiRegion: !Equals [!Ref MultiRegionTrail, "Yes"]
+
+Resources:
+  CloudTrailBucket:
+    Type: AWS::S3::Bucket
+    Condition: DeployCloudTrail
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: !Ref CloudTrailLogRetention
+            Status: Enabled
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: DeployCloudTrail
+    Properties:
+      Bucket: !Ref CloudTrailBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSCloudTrailAclCheck"
+            Action:
+              - "s3:GetBucketAcl"
+            Effect: "Allow"
+            Resource: !GetAtt CloudTrailBucket.Arn
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+          - Sid: "AWSCloudTrailWrite"
+            Action:
+              - "s3:PutObject"
+            Effect: "Allow"
+            Resource: !Sub "${CloudTrailBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: "bucket-owner-full-control"
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Condition: DeployCloudTrail
+    Properties:
+      TopicName: !Sub "${NamingPrefix}-CloudTrail"
+
+  SNSPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: DeployCloudTrail
+    Properties:
+      Topics:
+        - !Ref SNSTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSCloudTrailSNSPolicy"
+            Effect: "Allow"
+            Principal:
+               Service: "cloudtrail.amazonaws.com"
+            Action: "SNS:Publish"
+            Resource: !Ref SNSTopic
+
+  KMSKey:
+    Type: AWS::KMS::Key
+    Condition: DeployCloudTrail
+    Properties:
+      Enabled: True
+      EnableKeyRotation: False
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: Key policy created by CloudTrail
+        Statement:
+        - Sid: Enable IAM User Permissions
+          Effect: Allow
+          Principal:
+            AWS:
+            - !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action: kms:*
+          Resource: "*"
+        - Sid: Allow CloudTrail to describe key
+          Effect: Allow
+          Principal:
+            Service:
+            - cloudtrail.amazonaws.com
+          Action: kms:DescribeKey
+          Resource: "*"
+        - Sid: Allow CloudTrail to encrypt logs
+          Effect: Allow
+          Principal:
+            Service:
+            - cloudtrail.amazonaws.com
+          Action: kms:GenerateDataKey*
+          Resource: "*"
+          Condition:
+            StringLike:
+              kms:EncryptionContext:aws:cloudtrail:arn: !Sub arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*
+        - Sid: Allow principals in the account to decrypt log files
+          Effect: Allow
+          Principal:
+            AWS: "*"
+          Action:
+          - kms:Decrypt
+          - kms:ReEncryptFrom
+          Resource: "*"
+          Condition:
+            StringEquals:
+              kms:CallerAccount: !Sub ${AWS::AccountId}
+            StringLike:
+              kms:EncryptionContext:aws:cloudtrail:arn: !Sub arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*
+        - Sid: Allow alias creation during setup
+          Effect: Allow
+          Principal:
+            AWS: "*"
+          Action: kms:CreateAlias
+          Resource: "*"
+          Condition:
+            StringEquals:
+              kms:ViaService: !Sub ec2.${AWS::Region}.amazonaws.com
+              kms:CallerAccount: !Sub ${AWS::AccountId}
+
+  KMSAlias:
+    Type: AWS::KMS::Alias
+    Condition: DeployCloudTrail
+    Properties:
+      AliasName: !Sub "alias/${NamingPrefix}-CloudTrail"
+      TargetKeyId: !Ref KMSKey
+
+
+  Trail:
+    Type: AWS::CloudTrail::Trail
+    Condition: DeployCloudTrail
+    DependsOn:
+      - BucketPolicy
+      - SNSPolicy
+    Properties:
+      TrailName: !Sub "${NamingPrefix}-Trail"
+      IsLogging: true
+      IsMultiRegionTrail: !If [IsMultiRegion, true, false]
+      IncludeGlobalServiceEvents: true
+      EnableLogFileValidation: true
+      KMSKeyId: !Ref KMSKey
+      S3BucketName: !Ref CloudTrailBucket
+      SnsTopicName: !Ref SNSTopic
+
+
+  SQSCloudConnector:
+    Type: AWS::SQS::Queue
+    Properties:
+        QueueName: !Sub "${NamingPrefix}-CloudConnector"
+
+  SQSCloudScanning:
+    Type: AWS::SQS::Queue
+    Properties:
+        QueueName: !Sub "${NamingPrefix}-CloudScanning"
+
+  SQSCloudConnectorPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SQSCloudConnector
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow SNS to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt SQSCloudConnector.Arn
+
+  SQSCloudScanningPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SQSCloudScanning
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow SNS to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt SQSCloudScanning.Arn
+
+  SubscriptionCloudConnector:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt SQSCloudConnector.Arn
+      TopicArn: !If [ DeployCloudTrail, !Ref SNSTopic, !Ref ExistingCloudTrailSNSTopic ]
+
+  SubscriptionCloudScanning:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt SQSCloudScanning.Arn
+      TopicArn: !If [ DeployCloudTrail, !Ref SNSTopic, !Ref ExistingCloudTrailSNSTopic ]
+
+Outputs:
+  SNSTopic:
+    Description: SNS Topic where CloudTrail events are published
+    Value: !If [ DeployCloudTrail, !Ref SNSTopic, !Ref ExistingCloudTrailSNSTopic ]
+
+  SQSCloudConnector:
+    Description: SQS Queue for CloudConnector notifications
+    Value: !Ref SQSCloudConnector
+
+  SQSCloudScanning:
+    Description: SQS Queue for CloudScanning notifications
+    Value: !Ref SQSCloudScanning

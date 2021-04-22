@@ -1,0 +1,279 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sysdig for Cloud - Child account preparation
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Main account"
+        Parameters:
+          - MainAccountID
+          - NamingPrefix
+      - Label:
+          default: "Prepare roles and permissions for the following modules"
+        Parameters:
+          - CloudConnectorDeploy
+          - CloudScanningDeploy
+          - CloudBenchDeploy
+
+    ParameterLabels:
+      MainAccountID:
+        default: ID of the AWS account where the Sysdig for Cloud components will be deployed
+      NamingPrefix:
+        default: Resource naming convention - prefix
+      CloudBenchDeploy:
+        default: "Add roles and permissions for Cloud Security Posture Management / Compliance?"
+      CloudConnectorDeploy:
+        default: Add roles and permissions for Real-Time Threat Investigation based on CloudTrail?"
+      CloudScanningDeploy:
+        default: "Add roles and permissions for ECR registry and Fargate image scanning?"
+
+Parameters:
+  MainAccountID:
+    Type: String
+    AllowedPattern: "^\\d{12}$"
+    ConstraintDescription: Must enter a valid AWS account ID (12 digits)
+
+  NamingPrefix:
+    Type: String
+    Default: "SysdigCloud"
+    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern : "^[a-zA-Z0-9]+$"
+    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+
+  CloudConnectorDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  CloudBenchDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  CloudScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+Conditions:
+  DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
+  DeployCloudScanning: !Equals [!Ref CloudScanningDeploy, "Yes"]
+  DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
+
+Resources:
+
+  CloudConnectorRole:
+    Type: AWS::IAM::Role
+    Condition: DeployCloudConnector
+    Properties:
+      RoleName: !Sub "${NamingPrefix}-CloudConnectorRole"
+      AssumeRolePolicyDocument:
+        Fn::Sub: |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                    "AWS": "arn:aws:iam::${MainAccountID}:root"
+                    },
+                    "Action": "sts:AssumeRole",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:PrincipalARN": "arn:aws:iam::${MainAccountID}:role/${NamingPrefix}-CloudConnectorTaskRole"
+                        }
+                    }
+                }
+                ]
+            }
+      Path: /
+      Policies:
+        - PolicyName: CloudTrailIngestor
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:Get*"
+                - "s3:List*"
+                - "s3:Put*"
+                - "s3:Head*"
+                - 'sqs:DeleteMessage'
+                - 'sqs:DeleteMessageBatch'
+                - 'sqs:ReceiveMessage'
+              Resource: '*'
+
+  CloudScanningRole:
+    Type: AWS::IAM::Role
+    Condition: DeployCloudScanning
+    Properties:
+      RoleName: !Sub "${NamingPrefix}-CloudScanningRole"
+      AssumeRolePolicyDocument:
+        Fn::Sub: |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                    "AWS": "arn:aws:iam::${MainAccountID}:root"
+                    },
+                    "Action": "sts:AssumeRole",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:PrincipalARN": "arn:aws:iam::${MainAccountID}:role/${NamingPrefix}-CloudScanningTaskRole"
+                        }
+                    }
+                }
+                ]
+            }
+      Path: /
+      Policies:
+        - PolicyName: CloudTrailIngestor
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:Get*"
+                - "s3:List*"
+                - "s3:Put*"
+                - "s3:Head*"
+                - 'sqs:DeleteMessage'
+                - 'sqs:DeleteMessageBatch'
+                - 'sqs:ReceiveMessage'
+              Resource: '*'
+        - PolicyName: CodeBuildScanExecutor
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub "arn:aws:codebuild:*:${MainAccountID}:project/${NamingPrefix}-CloudScanningProject"
+        - PolicyName: TaskDefinitionReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecs:DescribeTaskDefinition"
+                Resource:
+                  - "*"
+        - PolicyName: SecretsReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:Decrypt"
+                  - "secretsmanager:GetSecretValue"
+                Resource:
+                  - "*"
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
+
+  CloudBenchRole:
+    Type: AWS::IAM::Role
+    Condition: DeployCloudBench
+    Properties:
+      RoleName: !Sub "${NamingPrefix}-CloudBenchRole"
+      AssumeRolePolicyDocument:
+        Fn::Sub: |
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                    "AWS": "arn:aws:iam::${MainAccountID}:root"
+                    },
+                    "Action": "sts:AssumeRole",
+                    "Condition": {
+                        "StringEquals": {
+                            "aws:PrincipalARN": "arn:aws:iam::${MainAccountID}:role/${NamingPrefix}-CloudBenchTaskRole"
+                        }
+                    }
+                }
+                ]
+            }
+      Path: /
+      Policies:
+        - PolicyName: CloudCustodianExecutor
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "access-analyzer:List*"
+                  - "acm:List*"
+                  - "cloudtrail:DescribeTrails"
+                  - "cloudtrail:Get*"
+                  - "cloudwatch:Describe*"
+                  - "cloudwatch:PutMetricData"
+                  - "config:Describe*"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:Describe*"
+                  - "elasticloadbalancing:DescribeLoadBalancers"
+                  - "events:PutRule"
+                  - "events:PutTargets"
+                  - "iam:DeleteAccessKey"
+                  - "iam:GenerateCredentialReport"
+                  - "iam:Get*"
+                  - "iam:List*"
+                  - "iam:UpdateAccessKey"
+                  - "lambda:AddPermission"
+                  - "lambda:CreateAlias"
+                  - "lambda:CreateEventSourceMapping"
+                  - "lambda:CreateFunction"
+                  - "lambda:DeleteAlias"
+                  - "lambda:DeleteEventSourceMapping"
+                  - "lambda:DeleteFunction"
+                  - "lambda:DeleteFunctionConcurrency"
+                  - "lambda:InvokeFunction"
+                  - "lambda:PutFunctionConcurrency"
+                  - "lambda:RemovePermission"
+                  - "lambda:TagResource"
+                  - "lambda:UntagResource"
+                  - "lambda:UpdateAlias"
+                  - "lambda:UpdateEventSourceMapping"
+                  - "lambda:UpdateFunctionCode"
+                  - "lambda:UpdateFunctionConfiguration"
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:Describe*"
+                  - "kms:ListAliases"
+                  - "kms:ListKeys"
+                  - "kms:DescribeKey"
+                  - "kms:GetKeyRotationStatus"
+                  - "s3:Get*"
+                  - "s3:Head*"
+                  - "s3:List*"
+                  - "s3:Put*"
+                  - "sns:ListSubscriptionsByTopic"
+                  - "tag:GetResources"
+                Resource: '*'

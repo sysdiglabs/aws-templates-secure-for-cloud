@@ -1,0 +1,251 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloud Connector for AWS
+
+Parameters:
+  LogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudConnector
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the workload is deployed
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets where the CloudConnector will be deployed
+  ECSCluster:
+    Type: String
+    Description: ECS Fargate Cluster where deploy the CloudConnector workload
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigSecureAPITokenSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  NamingPrefix:
+    Type: String
+    Default: "SysdigCloud"
+    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern : "^[a-zA-Z0-9]+$"
+    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+  AccountsAndRegionsList:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
+
+Conditions:
+  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+
+Resources:
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetention
+
+  AlertsLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref LogGroup
+      LogStreamName: alerts
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${NamingPrefix}-CloudConnectorTaskRole"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "sts:AssumeRole"
+              Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudConnectorRole"
+        - PolicyName: ConfigBucketAccess
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:ListBucket"
+              Resource: !Sub "arn:${AWS::Partition}:s3:::${S3ConfigBucket}"
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:PutObject"
+              Resource: !Sub "arn:${AWS::Partition}:s3:::${S3ConfigBucket}/*"
+        - PolicyName: SecurityHubPublisher
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "securityhub:GetFindings"
+                - "securityhub:BatchImportFindings"
+              Resource: '*'
+        - PolicyName: CloudWatchPublisher
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - 'logs:DescribeLogStreams'
+                - 'logs:GetLogEvents'
+                - 'logs:FilterLogEvents'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameters"
+              Resource:
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Family: !Sub "${AWS::StackName}-CloudConnector"
+      NetworkMode: awsvpc
+      TaskRoleArn: !Ref TaskRole
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Cpu: "256"
+      Memory: "512"
+      ContainerDefinitions:
+        - Name: Config
+          Environment:
+            - Name: BUCKET
+              Value: !Ref S3ConfigBucket
+            - Name: KEY
+              Value: cloud-connector.yaml
+            - Name: OUTPUT
+              Value: /tmp/cloud-connector.yaml
+            - Name: CONFIG
+              Value:
+                Fn::Base64:
+                    Fn::Sub:
+                    - |
+                      rules:
+                        - secure:
+                            url: ""
+                        - s3:
+                            bucket: ${S3ConfigBucket}
+                            path: rules
+                      ingestors:
+                        - cloudtrail-sns-sqs-multiaccount:
+                            queueName: ${NamingPrefix}-CloudConnector
+                            interval: 25s
+                            accountsAndRegions: "${AccountsAndRegionsList}"
+                            accountRole: ${NamingPrefix}-CloudConnectorRole
+                      notifiers:
+                        - cloudwatch:
+                            logGroup: ${LogGroup}
+                            logStream: ${AlertsLogStream}
+                        - securityhub:
+                            productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
+                        - secure:
+                            url: value overriden by SECURE_URL env var
+                    - AccountsAndRegionsList:
+                        Fn::Join: [",", !Ref AccountsAndRegionsList]
+
+
+          Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
+          Essential: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+        - Name: CloudConnector
+          Environment:
+            - Name: VERIFY_SSL
+              Value: !If [ VerifySSL, "true", "false" ]
+            - Name: TELEMETRY_DEPLOYMENT_METHOD
+              Value: cft
+            - Name: CONFIG_PATH
+              Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
+          Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+            - Name: SECURE_API_TOKEN
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+          DependsOn:
+            - ContainerName: Config
+              Condition: SUCCESS
+          Image: sysdiglabs/cloud-connector:airadier-test
+          Essential: true
+          PortMappings:
+            - ContainerPort: 5000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Sub "${AWS::StackName}-CloudConnector"
+      GroupDescription: CloudConnector workload Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudConnector"
+
+  CloudConnectorService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${AWS::StackName}-CloudConnector"
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: !Ref Subnets
+      TaskDefinition: !Ref TaskDefinition

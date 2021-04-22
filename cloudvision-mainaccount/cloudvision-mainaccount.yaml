@@ -1,0 +1,220 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sysdig for Cloud - Main account
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings"
+        Parameters:
+          - SysdigSecureEndpoint
+          - SysdigSecureAPIToken
+
+      - Label:
+          default: "Modules to Deploy"
+        Parameters:
+          - CloudBenchDeploy
+          - CloudConnectorDeploy
+          - ECRImageScanningDeploy
+          - ECSImageScanningDeploy
+
+      - Label:
+          default: Children accounts
+        Parameters:
+          - NamingPrefix
+          - AccountsAndRegionsList
+
+      - Label:
+          default: "Existing Infrastructure"
+        Parameters:
+          - ExistentECSCluster
+          - ExistentECSClusterVPC
+          - ExistentECSClusterPrivateSubnets
+
+    ParameterLabels:
+      NamingPrefix:
+        default: Resource naming convention - prefix
+      AccountsAndRegionsList:
+        default: Child AWS accounts and regions
+      SysdigSecureEndpoint:
+        default: "Sysdig Secure Endpoint"
+      SysdigSecureAPIToken:
+        default: "Sysdig Secure API Token"
+      CloudBenchDeploy:
+        default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
+      CloudConnectorDeploy:
+        default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
+      ECRImageScanningDeploy:
+        default: "Do you want to deploy ECR Image Registry Scanning?"
+      ECSImageScanningDeploy:
+        default: "Do you want to deploy Fargate Image Scanning?"
+      ExistentECSCluster:
+        default: "ECS Cluster Name"
+      ExistentECSClusterVPC:
+        default: "VPC Id"
+      ExistentECSClusterPrivateSubnets:
+        default: "Private subnet Id's"
+
+Parameters:
+  NamingPrefix:
+    Type: String
+    Default: "SysdigCloud"
+    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
+    MinLength: 1
+    MaxLength: 32
+    AllowedPattern : "^[a-zA-Z0-9]+$"
+    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+
+  AccountsAndRegionsList:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
+
+  CloudConnectorDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  CloudBenchDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  ExistentECSCluster:
+    Type: String
+    Default: ""
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+  ExistentECSClusterVPC:
+    Type: String
+    Default: ""
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+  ExistentECSClusterPrivateSubnets:
+    Type: List<String>
+    Default: ""
+    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+
+  SysdigSecureAPIToken:
+    Type: String
+    NoEcho: true
+  SysdigSecureEndpoint:
+    Type: String
+    AllowedValues:
+      - https://secure.sysdig.com
+      - https://us2.app.sysdig.com
+      - https://eu1.app.sysdig.com
+    Default: https://secure.sysdig.com
+
+Conditions:
+  RequiresNewECSCluster: !Or
+    - !Equals [!Ref ExistentECSCluster, ""]
+    - !Equals [!Ref ExistentECSClusterVPC, ""]
+    - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
+  DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
+  DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
+  DeployCloudScanning: !Or
+    - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+    - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  DeployNewECSCluster: !And
+    - !Condition RequiresNewECSCluster
+    - !Or
+      - !Condition DeployCloudConnector
+      - !Condition DeployCloudScanning
+      - !Condition DeployCloudBench
+  EndpointIsSaas: !Or
+    - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
+
+Resources:
+  S3ConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+  SysdigSecureAPITokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Secure API Token"
+      Type: String
+      Value: !Ref SysdigSecureAPIToken
+
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Secure Endpoint URL"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
+  ECSFargateClusterStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployNewECSCluster
+    Properties:
+      TemplateURL: ./substacks/ecsfargatecluster.yaml
+
+  CloudConnectorStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudConnector
+    Properties:
+      TemplateURL: ./substacks/cloudconnector.yaml
+      Parameters:
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        S3ConfigBucket: !Ref S3ConfigBucket
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        NamingPrefix: !Ref NamingPrefix
+
+  CloudScanningStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudScanning
+    Properties:
+      TemplateURL: ./substacks/cloudscanning.yaml
+      Parameters:
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        ECRDeployed: !Ref ECRImageScanningDeploy
+        ECSDeployed: !Ref ECSImageScanningDeploy
+        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        NamingPrefix: !Ref NamingPrefix
+
+  CloudBenchStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudBench
+    Properties:
+      TemplateURL: ./substacks/cloudbench.yaml
+      Parameters:
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        S3ConfigBucket: !Ref S3ConfigBucket
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        NamingPrefix: !Ref NamingPrefix
