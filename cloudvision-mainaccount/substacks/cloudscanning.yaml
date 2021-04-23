@@ -99,6 +99,16 @@ Resources:
               Action:
                 - "sts:AssumeRole"
               Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudScanningRole"
+        - PolicyName: CodeBuildScanExecutor
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  Fn::Sub:
+                    - "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+                    - BuildProject: !GetAtt [ "CodeBuildStack", "Outputs.BuildProject" ]
 
   ExecutionRole:
     Type: AWS::IAM::Role

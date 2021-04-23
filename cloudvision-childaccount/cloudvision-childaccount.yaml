@@ -150,14 +150,6 @@ Resources:
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource: '*'
-        - PolicyName: CodeBuildScanExecutor
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "codebuild:StartBuild"
-                Resource:
-                  - !Sub "arn:aws:codebuild:*:${MainAccountID}:project/${NamingPrefix}-CloudScanningProject"
         - PolicyName: TaskDefinitionReader
           PolicyDocument:
             Version: "2012-10-17"
