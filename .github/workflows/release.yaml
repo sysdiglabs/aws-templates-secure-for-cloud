@@ -56,9 +56,30 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
 
-    - name: Build and Upload Latest
+    - name: Build and Upload Trail CFT
       run: make ci
-      working-directory: ./templates
+      working-directory: ./cloudtrail
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: latest
+        S3_PREFIX: latest/cloudtrail
+
+    - name: Build and Upload Child Account CFT
+      run: make ci
+      working-directory: ./cloudvision-childaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest/childaccount
+
+    - name: Build and Upload Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-mainaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest/mainaccount
+
+    - name: Build and Upload Single Account CFT
+      run: make ci
+      working-directory: ./cloudvision-singleaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest/singleaccount

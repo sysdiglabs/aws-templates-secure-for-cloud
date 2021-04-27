@@ -1,5 +1,5 @@
 S3_BUCKET?=nestor-test-cf
-S3_PREFIX?=test-multiaccount
+S3_PREFIX?=cloudvision-multiaccount
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION="eu-west-1"
 CHILD_ACCOUNT_LIST?=000000000000,000000000001
@@ -23,6 +23,9 @@ test: packaged-template.yaml
 		--capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
 		--parameters ParameterKey=ChildAccountList,ParameterValue="$(CHILD_ACCOUNT_LIST)" ParameterKey=SysdigSecureAPIToken,ParameterValue=$(SECURE_API_TOKEN)
 
+clean:
+	aws cloudformation delete-stack --stack-name "CloudVision-MainAccount-Test"
+
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
 	aws cloudformation package \
@@ -33,5 +36,5 @@ packaged-template.yaml:
 		--force-upload \
 		--output-template-file packaged-template.yaml
 
-clean:
-	aws cloudformation delete-stack --stack-name "CloudVision-MainAccount-Test"
+ci: packaged-template.yaml
+		aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml

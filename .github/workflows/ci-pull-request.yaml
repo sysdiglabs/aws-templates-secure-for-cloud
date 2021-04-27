@@ -35,9 +35,30 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
-    - name: Build and Upload
+    - name: Build and Upload Trail CFT
       run: make ci
-      working-directory: ./templates
+      working-directory: ./cloudtrail
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}
+        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}/cloudtrail
+
+    - name: Build and Upload Child Account CFT
+      run: make ci
+      working-directory: ./cloudvision-childaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}/childaccount
+
+    - name: Build and Upload Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-mainaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}/mainaccount
+
+    - name: Build and Upload Single Account CFT
+      run: make ci
+      working-directory: ./cloudvision-singleaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}/singleaccount
