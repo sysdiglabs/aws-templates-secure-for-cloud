@@ -45,6 +45,7 @@ Parameters:
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  SingleAccount: !Equals [ !Join [",", !Ref AccountsAndRegionsList], ""]
 
 Resources:
   LogGroup:
@@ -71,13 +72,6 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-        - PolicyName: AssumeRole
-          PolicyDocument:
-            Statement:
-            - Effect: Allow
-              Action:
-                - "sts:AssumeRole"
-              Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudConnectorRole"
         - PolicyName: ConfigBucketAccess
           PolicyDocument:
             Statement:
@@ -108,6 +102,29 @@ Resources:
                 - 'logs:FilterLogEvents'
                 - 'logs:PutLogEvents'
               Resource: '*'
+        - !If
+          - SingleAccount
+          - PolicyName: CloudTrailIngestor
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:Get*"
+                  - "s3:List*"
+                  - "s3:Put*"
+                  - "s3:Head*"
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:DeleteMessageBatch'
+                  - 'sqs:ReceiveMessage'
+                Resource: '*'
+          - PolicyName: AssumeRole
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudConnectorRole"
+
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -170,11 +187,12 @@ Resources:
                             bucket: ${S3ConfigBucket}
                             path: rules
                       ingestors:
-                        - cloudtrail-sns-sqs-multiaccount:
-                            queueName: ${NamingPrefix}-CloudConnector
+                        - ${SQSIngestor}:
                             interval: 25s
-                            accountsAndRegions: "${AccountsAndRegionsList}"
-                            accountRole: ${NamingPrefix}-CloudConnectorRole
+                            queueURL: ${QueueURL}
+                            accountsAndRegions: ${AccountsAndRegionsList}
+                            accountRole: ${AccountRole}
+                            queueName: ${QueueName}
                       notifiers:
                         - cloudwatch:
                             logGroup: ${LogGroup}
@@ -183,9 +201,11 @@ Resources:
                             productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
                         - secure:
                             url: value overriden by SECURE_URL env var
-                    - AccountsAndRegionsList:
-                        Fn::Join: [",", !Ref AccountsAndRegionsList]
-
+                    - SQSIngestor: !If [ SingleAccount, "cloudtrail-sns-sqs", "cloudtrail-sns-sqs-multiaccount"]
+                      QueueURL: !If [ SingleAccount, !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${NamingPrefix}-CloudConnector", "" ]
+                      AccountsAndRegionsList: !Join [ ",", !Ref AccountsAndRegionsList ]
+                      QueueName: !If [ SingleAccount, "", !Sub "${NamingPrefix}-CloudConnector" ]
+                      AccountRole: !If [ SingleAccount, "", !Sub "${NamingPrefix}-CloudConnectorRole" ]
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false

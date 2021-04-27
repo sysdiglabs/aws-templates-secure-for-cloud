@@ -105,39 +105,22 @@ Parameters:
       - https://eu1.app.sysdig.com
     Default: https://secure.sysdig.com
 
-Conditions:
-  DeployCloudScanning: !Or
-    - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
-    - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
-
 Resources:
 
-  CloudTrailStack:
+  CloudVisionTrail:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../cloudtrail/cloudtrail.yaml
       Parameters:
-        NamingPrefix: !Join ['-', ['SysdigCloud', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+        NamingPrefix: !Join ['-', [!Ref AWS::StackName, !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
         ExistingCloudTrailSNSTopic: !Ref ExistentCloudTrailSNSTopic
 
-  RolesAndPermissionsStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ../cloudvision-childaccount/cloudvision-childaccount.yaml
-      Parameters:
-        NamingPrefix: !Join ['-', ['SysdigCloud', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
-        MainAccountID: !Ref AWS::AccountId
-        CloudConnectorDeploy: !Ref CloudConnectorDeploy
-        CloudScanningDeploy: !If [DeployCloudScanning, "Yes", "No"]
-        CloudBenchDeploy: !Ref CloudBenchDeploy
-
-  CloudVisionComponentsStack:
+  CloudVisionComponents:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ../cloudvision-mainaccount/cloudvision-mainaccount.yaml
       Parameters:
-        NamingPrefix: !Join ['-', ['SysdigCloud', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
-        AccountsAndRegionsList: !Sub "${AWS::AccountId}:${AWS::Region}"
+        NamingPrefix: !Join ['-', [!Ref AWS::StackName, !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
         CloudConnectorDeploy: !Ref CloudConnectorDeploy
         ECRImageScanningDeploy: !Ref ECRImageScanningDeploy
         ECSImageScanningDeploy: !Ref ECSImageScanningDeploy

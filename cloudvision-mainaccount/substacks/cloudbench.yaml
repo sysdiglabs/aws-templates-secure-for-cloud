@@ -45,6 +45,7 @@ Parameters:
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  SingleAccount: !Equals [ !Join [",", !Ref AccountsAndRegionsList], ""]
 
 Resources:
   LogGroup:
@@ -65,13 +66,6 @@ Resources:
             Action: [ 'sts:AssumeRole' ]
       Path: /
       Policies:
-        - PolicyName: AssumeRole
-          PolicyDocument:
-            Statement:
-            - Effect: Allow
-              Action:
-                - "sts:AssumeRole"
-              Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudBenchRole"
         - PolicyName: ConfigBucketAccess
           PolicyDocument:
             Statement:
@@ -84,6 +78,69 @@ Resources:
                 - "s3:GetObject"
                 - "s3:PutObject"
               Resource: !Sub "arn:${AWS::Partition}:s3:::${S3ConfigBucket}/*"
+        - !If
+          - SingleAccount
+          - PolicyName: CloudCustodianExecutor
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "access-analyzer:List*"
+                    - "acm:List*"
+                    - "cloudtrail:DescribeTrails"
+                    - "cloudtrail:Get*"
+                    - "cloudwatch:Describe*"
+                    - "cloudwatch:PutMetricData"
+                    - "config:Describe*"
+                    - "ec2:CreateNetworkInterface"
+                    - "ec2:DeleteNetworkInterface"
+                    - "ec2:Describe*"
+                    - "elasticloadbalancing:DescribeLoadBalancers"
+                    - "events:PutRule"
+                    - "events:PutTargets"
+                    - "iam:DeleteAccessKey"
+                    - "iam:GenerateCredentialReport"
+                    - "iam:Get*"
+                    - "iam:List*"
+                    - "iam:UpdateAccessKey"
+                    - "lambda:AddPermission"
+                    - "lambda:CreateAlias"
+                    - "lambda:CreateEventSourceMapping"
+                    - "lambda:CreateFunction"
+                    - "lambda:DeleteAlias"
+                    - "lambda:DeleteEventSourceMapping"
+                    - "lambda:DeleteFunction"
+                    - "lambda:DeleteFunctionConcurrency"
+                    - "lambda:InvokeFunction"
+                    - "lambda:PutFunctionConcurrency"
+                    - "lambda:RemovePermission"
+                    - "lambda:TagResource"
+                    - "lambda:UntagResource"
+                    - "lambda:UpdateAlias"
+                    - "lambda:UpdateEventSourceMapping"
+                    - "lambda:UpdateFunctionCode"
+                    - "lambda:UpdateFunctionConfiguration"
+                    - "logs:CreateLogGroup"
+                    - "logs:CreateLogStream"
+                    - "logs:Describe*"
+                    - "kms:ListAliases"
+                    - "kms:ListKeys"
+                    - "kms:DescribeKey"
+                    - "kms:GetKeyRotationStatus"
+                    - "s3:Get*"
+                    - "s3:Head*"
+                    - "s3:List*"
+                    - "s3:Put*"
+                    - "sns:ListSubscriptionsByTopic"
+                    - "tag:GetResources"
+                  Resource: '*'
+          - PolicyName: AssumeRole
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudBenchRole"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -148,10 +205,10 @@ Resources:
                     benchmarkType: "aws"
                     outputDir: "/tmp/cloud-custodian"
                     policyFile: "/home/custodian/aws-benchmarks.yml"
-                    accountsAndRegions: "${AccountsAndRegionsList}"
-                    accountRole: ${NamingPrefix}-CloudBenchRole
+                    accountsAndRegions: ${AccountsAndRegionsList}
+                    accountRole: ${AccountRole}
                   - AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
-                    NamingPrefix: !Ref NamingPrefix
+                    AccountRole: !If [ SingleAccount, "", !Sub "${NamingPrefix}-CloudBenchRole" ]
           Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false
           MountPoints:

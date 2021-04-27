@@ -12,7 +12,7 @@ Parameters:
     ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
 
 Resources:
-  VPCStack:
+  VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./ecsfargatecluster-vpc.yaml
@@ -29,12 +29,12 @@ Outputs:
 
   VPC:
     Description: The VPC ID
-    Value: !GetAtt ["VPCStack", "Outputs.VPC"]
+    Value: !GetAtt ["VPC", "Outputs.VPC"]
 
   PublicSubnets:
     Description: Public Subnets
-    Value: !GetAtt ["VPCStack", "Outputs.PublicSubnets"]
+    Value: !GetAtt ["VPC", "Outputs.PublicSubnets"]
 
   PrivateSubnets:
     Description: Private Subnets
-    Value: !GetAtt ["VPCStack", "Outputs.PrivateSubnets"]
+    Value: !GetAtt ["VPC", "Outputs.PrivateSubnets"]

@@ -55,9 +55,10 @@ Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
   ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
   ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
+  SingleAccount: !Equals [ !Join [",", !Ref AccountsAndRegionsList], ""]
 
 Resources:
-  CodeBuildStack:
+  CodeBuild:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./cloudscanning-codebuild.yaml
@@ -91,13 +92,6 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-        - PolicyName: AssumeRole
-          PolicyDocument:
-            Statement:
-            - Effect: Allow
-              Action:
-                - "sts:AssumeRole"
-              Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudScanningRole"
         - PolicyName: CodeBuildScanExecutor
           PolicyDocument:
             Statement:
@@ -107,7 +101,80 @@ Resources:
                 Resource:
                   Fn::Sub:
                     - "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
-                    - BuildProject: !GetAtt [ "CodeBuildStack", "Outputs.BuildProject" ]
+                    - BuildProject: !GetAtt [ "CodeBuild", "Outputs.BuildProject" ]
+        - !If
+          - SingleAccount
+          - PolicyName: CloudTrailIngestor
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:Get*"
+                  - "s3:List*"
+                  - "s3:Put*"
+                  - "s3:Head*"
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:DeleteMessageBatch'
+                  - 'sqs:ReceiveMessage'
+                Resource: '*'
+          - !Ref AWS::NoValue
+        - !If
+          - SingleAccount
+          - PolicyName: TaskDefinitionReader
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "ecs:DescribeTaskDefinition"
+                  Resource:
+                    - "*"
+          - !Ref AWS::NoValue
+        - !If
+          - SingleAccount
+          - PolicyName: SecretsReader
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "kms:Decrypt"
+                    - "secretsmanager:GetSecretValue"
+                  Resource:
+                    - "*"
+          - !Ref AWS::NoValue
+        - !If
+          - SingleAccount
+          - PolicyName: ECRReader
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "ecr:GetAuthorizationToken"
+                    - "ecr:BatchCheckLayerAvailability"
+                    - "ecr:GetDownloadUrlForLayer"
+                    - "ecr:GetRepositoryPolicy"
+                    - "ecr:DescribeRepositories"
+                    - "ecr:ListImages"
+                    - "ecr:DescribeImages"
+                    - "ecr:BatchGetImage"
+                    - "ecr:GetLifecyclePolicy"
+                    - "ecr:GetLifecyclePolicyPreview"
+                    - "ecr:ListTagsForResource"
+                    - "ecr:DescribeImageScanFindings"
+                  Resource: "*"
+          - !Ref AWS::NoValue
+        - !If
+          - SingleAccount
+          - !Ref AWS::NoValue
+          - PolicyName: AssumeRole
+            PolicyDocument:
+              Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudScanningRole"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -154,25 +221,36 @@ Resources:
           Environment:
             - Name: VERIFY_SSL
               Value: !If [ VerifySSL, "true", "false" ]
-            - Name: SQS_QUEUE_NAME
-              Value: !Sub "${NamingPrefix}-CloudScanning"
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
             - Name: CODEBUILD_PROJECT
-              Value:
-                Fn::Sub:
-                - "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
-                - BuildProject: !GetAtt [ "CodeBuildStack", "Outputs.BuildProject" ]
+              Value: !GetAtt [ "CodeBuild", "Outputs.BuildProject" ]
             - Name: ECR_DEPLOYED
               Value: !If [ ECRDeployed, "true", "false" ]
             - Name: ECS_DEPLOYED
               Value: !If [ ECSDeployed, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
-            - Name: ACCOUNTS_AND_REGIONS
-              Value: !Join [",", !Ref AccountsAndRegionsList]
-            - Name: ACCOUNT_ROLE
-              Value: !Sub "${NamingPrefix}-CloudScanningRole"
+            - !If
+              - SingleAccount
+              - Name: SQS_QUEUE_URL
+                Value: !If [ SingleAccount, !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${NamingPrefix}-CloudScanning", "" ]
+              - !Ref AWS::NoValue
+            - !If
+              - SingleAccount
+              - !Ref AWS::NoValue
+              - Name: SQS_QUEUE_NAME
+                Value: !Sub "${NamingPrefix}-CloudScanning"
+            - !If
+              - SingleAccount
+              - !Ref AWS::NoValue
+              - Name: ACCOUNTS_AND_REGIONS
+                Value: !Join [",", !Ref AccountsAndRegionsList]
+            - !If
+              - SingleAccount
+              - !Ref AWS::NoValue
+              - Name: ACCOUNT_ROLE
+                Value: !Sub "${NamingPrefix}-CloudScanningRole"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}

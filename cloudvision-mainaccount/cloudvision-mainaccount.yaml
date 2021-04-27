@@ -166,7 +166,7 @@ Resources:
       Type: String
       Value: !Ref SysdigSecureEndpoint
 
-  ECSFargateClusterStack:
+  ECSFargateCluster:
     Type: AWS::CloudFormation::Stack
     Condition: DeployNewECSCluster
     Properties:
@@ -174,15 +174,15 @@ Resources:
       Parameters:
         NamingPrefix: !Ref NamingPrefix
 
-  CloudConnectorStack:
+  CloudConnector:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudConnector
     Properties:
       TemplateURL: ./substacks/cloudconnector.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
@@ -190,15 +190,15 @@ Resources:
         AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
         NamingPrefix: !Ref NamingPrefix
 
-  CloudScanningStack:
+  CloudScanning:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudScanning
     Properties:
       TemplateURL: ./substacks/cloudscanning.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateCluster", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
@@ -207,15 +207,15 @@ Resources:
         AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
         NamingPrefix: !Ref NamingPrefix
 
-  CloudBenchStack:
+  CloudBench:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCloudBench
     Properties:
       TemplateURL: ./substacks/cloudbench.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
+        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateCluster", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
+        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateCluster", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateCluster", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
