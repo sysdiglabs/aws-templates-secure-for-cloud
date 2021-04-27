@@ -22,7 +22,8 @@ Metadata:
           default: Children accounts
         Parameters:
           - NamingPrefix
-          - AccountsAndRegionsList
+          - TrailAccountsAndRegionsList
+          - BenchAccountsAndRegionsList
 
       - Label:
           default: "Existing Infrastructure"
@@ -34,8 +35,10 @@ Metadata:
     ParameterLabels:
       NamingPrefix:
         default: Resource naming convention - prefix
-      AccountsAndRegionsList:
-        default: Child AWS accounts and regions
+      TrailAccountsAndRegionsList:
+        default: CloudTrail ingestion child AWS accounts and regions
+      BenchAccountsAndRegionsList:
+        default: Benchmarking child AWS accounts and regions
       SysdigSecureEndpoint:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
@@ -65,10 +68,15 @@ Parameters:
     AllowedPattern : "^[a-zA-Z0-9\\-]+$"
     ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
 
-  AccountsAndRegionsList:
+  TrailAccountsAndRegionsList:
     Type: CommaDelimitedList
     Default: ""
-    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
+    Description: "A comma separated list of child AWS accounts and regions where CloudTrail is enabled. Format: account1:region1,account2:region2,..."
+
+  BenchAccountsAndRegionsList:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: "A comma separated list of child AWS accounts and regions where benchmarks will run. Format: account1:region1,account2:region2,..."
 
   CloudConnectorDeploy:
     Type: String
@@ -187,7 +195,7 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        AccountsAndRegionsList: !Join [",", !Ref TrailAccountsAndRegionsList]
         NamingPrefix: !Ref NamingPrefix
 
   CloudScanning:
@@ -204,7 +212,7 @@ Resources:
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
         ECRDeployed: !Ref ECRImageScanningDeploy
         ECSDeployed: !Ref ECSImageScanningDeploy
-        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        AccountsAndRegionsList: !Join [",", !Ref TrailAccountsAndRegionsList]
         NamingPrefix: !Ref NamingPrefix
 
   CloudBench:
@@ -220,5 +228,5 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+        AccountsAndRegionsList: !Join [",", !Ref BenchAccountsAndRegionsList]
         NamingPrefix: !Ref NamingPrefix
