@@ -34,8 +34,8 @@ Parameters:
     Default: "SysdigCloud"
     Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
     MinLength: 1
-    MaxLength: 32
-    AllowedPattern : "^[a-zA-Z0-9]+$"
+    MaxLength: 64
+    AllowedPattern : "^[a-zA-Z0-9\\-]+$"
     ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
 
   ExistingCloudTrailSNSTopic:

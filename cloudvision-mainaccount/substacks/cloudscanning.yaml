@@ -42,8 +42,8 @@ Parameters:
     Default: "SysdigCloud"
     Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
     MinLength: 1
-    MaxLength: 32
-    AllowedPattern : "^[a-zA-Z0-9]+$"
+    MaxLength: 64
+    AllowedPattern : "^[a-zA-Z0-9\\-]+$"
     ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
   AccountsAndRegionsList:
     Type: CommaDelimitedList
@@ -57,7 +57,6 @@ Conditions:
   ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
 
 Resources:
-
   CodeBuildStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -71,7 +70,7 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref AWS::StackName
+      LogGroupName: !Sub "${NamingPrefix}-CloudScanning"
       RetentionInDays: !Ref LogRetention
 
   AlertsLogStream:
@@ -121,7 +120,7 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
+        - PolicyName: ExecutionRolePolicy
           PolicyDocument:
             Statement:
             - Effect: Allow
@@ -129,7 +128,7 @@ Resources:
                 - 'logs:CreateLogStream'
                 - 'logs:PutLogEvents'
               Resource: '*'
-        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+        - PolicyName: TaskReadParameters
           PolicyDocument:
             Statement:
             - Effect: Allow
@@ -144,7 +143,7 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      Family: !Sub "${AWS::StackName}-CloudScanning"
+      Family: !Sub "${NamingPrefix}-CloudScanning"
       NetworkMode: awsvpc
       TaskRoleArn: !Ref TaskRole
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
@@ -192,19 +191,19 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPC
-      GroupName: !Sub "${AWS::StackName}-CloudScanning"
+      GroupName: !Sub "${NamingPrefix}-CloudScanning"
       GroupDescription: CloudScanning workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: "-1"
       Tags:
         - Key: Name
-          Value: !Sub "${AWS::StackName}-CloudScanning"
+          Value: !Sub "${NamingPrefix}-CloudScanning"
 
   CloudScanningService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub "${AWS::StackName}-CloudScanning"
+      ServiceName: !Sub "${NamingPrefix}-CloudScanning"
       Cluster: !Ref ECSCluster
       DesiredCount: 1
       LaunchType: FARGATE
