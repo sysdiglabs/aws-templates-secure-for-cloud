@@ -49,12 +49,12 @@ jobs:
       run: |
         echo ::set-output name=VERSION::$(echo "${{ github.ref }}" | sed -e 's/.*\/v\(.*\)/\1/')
 
-    - name: Build and Upload Version
+    - name: Build and Upload Version for Trail CFT
       run: make ci
-      working-directory: ./templates
+      working-directory: ./cloudtrail
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}/cloudtrail
 
     - name: Build and Upload Trail CFT
       run: make ci
@@ -63,6 +63,14 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest/cloudtrail
 
+    - name: Build and Upload Version for Child Account CFT
+      run: make ci
+      working-directory: ./cloudvision-childaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}/childaccount
+
+
     - name: Build and Upload Child Account CFT
       run: make ci
       working-directory: ./cloudvision-childaccount
@@ -70,12 +78,26 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest/childaccount
 
+    - name: Build and Upload Version for Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-mainaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}/mainaccount
+
     - name: Build and Upload Main Account CFT
       run: make ci
       working-directory: ./cloudvision-mainaccount
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest/mainaccount
+
+    - name: Build and Upload Version for Single Account CFT
+      run: make ci
+      working-directory: ./cloudvision-singleaccount
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}/singleaccount
 
     - name: Build and Upload Single Account CFT
       run: make ci
