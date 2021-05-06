@@ -44,7 +44,7 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     AllowedPattern : "^[a-zA-Z0-9\\-]+$"
-    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+    ConstraintDescription: Must enter a naming prefix up to 64 alphanumeric characters
   AccountsAndRegionsList:
     Type: CommaDelimitedList
     Default: ""
@@ -73,12 +73,6 @@ Resources:
     Properties:
       LogGroupName: !Sub "${NamingPrefix}-CloudScanning"
       RetentionInDays: !Ref LogRetention
-
-  AlertsLogStream:
-    Type: AWS::Logs::LogStream
-    Properties:
-      LogGroupName: !Ref LogGroup
-      LogStreamName: alerts
 
   TaskRole:
     Type: AWS::IAM::Role

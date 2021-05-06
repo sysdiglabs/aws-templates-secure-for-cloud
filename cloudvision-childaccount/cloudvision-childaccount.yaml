@@ -41,7 +41,7 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     AllowedPattern : "^[a-zA-Z0-9\\-]+$"
-    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+    ConstraintDescription: Must enter a naming prefix up to 64 alphanumeric characters
 
   CloudConnectorDeploy:
     Type: String
@@ -106,9 +106,9 @@ Resources:
                 - "s3:List*"
                 - "s3:Put*"
                 - "s3:Head*"
-                - 'sqs:DeleteMessage'
-                - 'sqs:DeleteMessageBatch'
-                - 'sqs:ReceiveMessage'
+                - "sqs:DeleteMessage"
+                - "sqs:DeleteMessageBatch"
+                - "sqs:ReceiveMessage"
               Resource: '*'
 
   CloudScanningRole:

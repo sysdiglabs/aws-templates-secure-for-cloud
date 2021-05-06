@@ -36,7 +36,7 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     AllowedPattern : "^[a-zA-Z0-9\\-]+$"
-    ConstraintDescription: Must enter a naming prefix up to 32 alphanumeric characters
+    ConstraintDescription: Must enter a naming prefix up to 64 alphanumeric characters
 
   ExistingCloudTrailSNSTopic:
     Type: String
@@ -182,7 +182,6 @@ Resources:
       AliasName: !Sub "alias/${NamingPrefix}-CloudTrail"
       TargetKeyId: !Ref KMSKey
 
-
   Trail:
     Type: AWS::CloudTrail::Trail
     Condition: DeployCloudTrail
@@ -198,7 +197,6 @@ Resources:
       KMSKeyId: !Ref KMSKey
       S3BucketName: !Ref CloudTrailBucket
       SnsTopicName: !Ref SNSTopic
-
 
   SQSCloudConnector:
     Type: AWS::SQS::Queue
