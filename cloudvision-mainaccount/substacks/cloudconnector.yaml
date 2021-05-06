@@ -197,8 +197,8 @@ Resources:
                         - cloudwatch:
                             logGroup: ${LogGroup}
                             logStream: ${AlertsLogStream}
-                        - securityhub:
-                            productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
+                        #- securityhub:
+                        #    productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
                         - secure:
                             url: value overriden by SECURE_URL env var
                     - SQSIngestor: !If [ SingleAccount, "cloudtrail-sns-sqs", "cloudtrail-sns-sqs-multiaccount"]
