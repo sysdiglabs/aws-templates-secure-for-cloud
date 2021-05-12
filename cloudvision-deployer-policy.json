@@ -1,0 +1,272 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Vpc",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AllocateAddress",
+                "ec2:AssociateRouteTable",
+                "ec2:AttachInternetGateway",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:CreateInternetGateway",
+                "ec2:CreateNatGateway",
+                "ec2:CreateNetworkInterface",
+                "ec2:CreateRoute",
+                "ec2:CreateRouteTable",
+                "ec2:CreateSecurityGroup",
+                "ec2:CreateSubnet",
+                "ec2:CreateTags",
+                "ec2:CreateVpc",
+                "ec2:ModifyVpcAttribute",
+                "ec2:DeleteSubnet",
+                "ec2:DeleteRouteTable",
+                "ec2:DeleteInternetGateway",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DeleteNatGateway",
+                "ec2:DeleteRoute",
+                "ec2:DeleteSecurityGroup",
+                "ec2:DeleteVpc",
+                "ec2:DetachInternetGateway",
+                "ec2:DisassociateAddress",
+                "ec2:DisassociateRouteTable",
+                "ec2:ReleaseAddress"
+            ],
+            "Resource": [
+                "arn:aws:ec2:*:845151661675:vpc-peering-connection/*",
+                "arn:aws:ec2:*:845151661675:network-interface/*",
+                "arn:aws:ec2:*:845151661675:ipv6pool-ec2/*",
+                "arn:aws:ec2:*:845151661675:vpc-endpoint/*",
+                "arn:aws:ec2:*:845151661675:instance/*",
+                "arn:aws:ec2:*:845151661675:vpc/*",
+                "arn:aws:ec2:*:845151661675:vpn-gateway/*",
+                "arn:aws:ec2:*:845151661675:ipv4pool-ec2/*",
+                "arn:aws:ec2:*:845151661675:local-gateway/*",
+                "arn:aws:ec2:*:845151661675:carrier-gateway/*",
+                "arn:aws:ec2:*:845151661675:route-table/*",
+                "arn:aws:ec2:*:845151661675:natgateway/*",
+                "arn:aws:ec2:*:845151661675:prefix-list/*",
+                "arn:aws:ec2:*:845151661675:security-group/*",
+                "arn:aws:ec2:*:845151661675:internet-gateway/*",
+                "arn:aws:ec2:*:845151661675:subnet/*",
+                "arn:aws:ec2:*:845151661675:egress-only-internet-gateway/*",
+                "arn:aws:ec2:*:845151661675:transit-gateway/*",
+                "arn:aws:ec2:*:845151661675:elastic-ip/*"
+            ]
+        },
+        {
+            "Sid": "VpcDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeAccountAttributes",
+                "ec2:DescribeAddresses",
+                "ec2:DescribeAvailabilityZones",
+                "ec2:DescribeInternetGateways",
+                "ec2:DescribeNatGateways",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DescribeRouteTables",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudTrail",
+            "Effect": "Allow",
+            "Action": [
+                "cloudtrail:CreateTrail",
+                "cloudtrail:StartLogging",
+                "cloudtrail:DeleteTrail"
+            ],
+            "Resource": [
+                "arn:aws:cloudtrail:*:845151661675:trail/*"
+            ]
+        },
+        {
+            "Sid": "CloudTrailDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "cloudtrail:DescribeTrails"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "KMSCreate",
+            "Effect": "Allow",
+            "Action": [
+                "kms:CreateKey"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "KMS",
+            "Effect": "Allow",
+            "Action": [
+                "kms:CreateAlias",
+                "kms:DescribeKey",
+                "kms:PutKeyPolicy",
+                "kms:DeleteAlias",
+                "kms:ScheduleKeyDeletion"
+            ],
+            "Resource": [
+                "arn:aws:kms:*:845151661675:alias/*",
+                "arn:aws:kms:*:845151661675:key/*"
+            ]
+        },
+        {
+            "Sid": "IAM",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:GetRole",
+                "iam:GetRolePolicy",
+                "iam:PassRole",
+                "iam:PutRolePolicy",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:DeleteRole",
+                "iam:DeleteRolePolicy"
+            ],
+            "Resource": [
+                "arn:aws:iam::845151661675:role/*"
+            ]
+        },
+        {
+            "Sid": "S3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:GetBucketPolicy",
+                "s3:GetObject",
+                "s3:PutBucketPolicy",
+                "s3:PutBucketVersioning",
+                "s3:PutLifecycleConfiguration",
+                "s3:PutObject",
+                "s3:DeleteBucket",
+                "s3:DeleteBucketPolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SSM",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:AddTagsToResource",
+                "ssm:GetParameter",
+                "ssm:GetParameters",
+                "ssm:PutParameter",
+                "ssm:DeleteParameter",
+                "ssm:RemoveTagsFromResource"
+            ],
+            "Resource": "arn:aws:ssm:*:845151661675:parameter/*"
+        },
+        {
+            "Sid": "SSMDescribe",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:DescribeParameters"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ECS",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:CreateService",
+                "ecs:DescribeClusters",
+                "ecs:DescribeServices",
+                "ecs:UpdateService",
+                "ecs:DeleteCluster",
+                "ecs:DeleteService"
+
+            ],
+            "Resource": [
+                "arn:aws:ecs:*:845151661675:service/*",
+                "arn:aws:ecs:*:845151661675:cluster/*"
+            ]
+        },
+        {
+            "Sid": "ECSUnscoped",
+            "Effect": "Allow",
+            "Action": [
+                "ecs:CreateCluster",
+                "ecs:DescribeTaskDefinition",
+                "ecs:RegisterTaskDefinition",
+                "ecs:DeregisterTaskDefinition"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "Cloudwatch",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutRetentionPolicy",
+                "logs:DeleteLogGroup",
+                "logs:DeleteLogStream",
+                "logs:DeleteRetentionPolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SQS",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:AddPermission",
+                "sqs:CreateQueue",
+                "sqs:GetQueueAttributes",
+                "sqs:SetQueueAttributes",
+                "sqs:DeleteQueue",
+                "sqs:RemovePermission"
+            ],
+            "Resource": [
+                "arn:aws:sqs:*:845151661675:*"
+            ]
+        },
+
+        {
+            "Sid": "SQSList",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:ListQueues"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SNS",
+            "Effect": "Allow",
+            "Action": [
+                "sns:CreateTopic",
+                "sns:GetTopicAttributes",
+                "sns:SetTopicAttributes",
+                "sns:Subscribe",
+                "sns:DeleteTopic"
+            ],
+            "Resource": [
+                "arn:aws:sns:*:845151661675:*"
+            ]
+        },
+        {
+            "Sid": "SNSUnsubscribe",
+            "Effect": "Allow",
+            "Action": [
+                "sns:Unsubscribe"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CodeBuild",
+            "Effect": "Allow",
+            "Action": [
+                "codebuild:CreateProject",
+                "codebuild:DeleteProject"
+            ],
+            "Resource": [
+                "arn:aws:codebuild:*:845151661675:project/*"
+            ]
+        }
+    ]
+}
