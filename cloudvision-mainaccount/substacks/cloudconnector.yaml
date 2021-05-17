@@ -181,8 +181,6 @@ Resources:
                     Fn::Sub:
                     - |
                       rules:
-                        - secure:
-                            url: ""
                         - s3:
                             bucket: ${S3ConfigBucket}
                             path: rules
@@ -199,8 +197,6 @@ Resources:
                             logStream: ${AlertsLogStream}
                         #- securityhub:
                         #    productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
-                        - secure:
-                            url: value overriden by SECURE_URL env var
                     - SQSIngestor: !If [ SingleAccount, "cloudtrail-sns-sqs", "cloudtrail-sns-sqs-multiaccount"]
                       QueueURL: !If [ SingleAccount, !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${NamingPrefix}-CloudConnector", "" ]
                       AccountsAndRegionsList: !Join [ ",", !Ref AccountsAndRegionsList ]
