@@ -163,8 +163,6 @@ Resources:
                 "Fn::Base64":
                     !Sub |
                       rules:
-                        - secure:
-                            url: ""
                         - s3:
                             bucket: ${S3ConfigBucket}
                             path: rules
@@ -176,10 +174,8 @@ Resources:
                         - cloudwatch:
                             logGroup: ${LogGroup}
                             logStream: ${AlertsLogStream}
-                        - securityhub:
-                            productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
-                        - secure:
-                            url: value overriden by SECURE_URL env var
+                        #- securityhub:
+                        #    productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-cloud-connector
 
           Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false
