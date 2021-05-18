@@ -48,3 +48,10 @@ jobs:
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: master/singleaccount
+
+    - name: Build and Upload Organization Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-organization
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: master/organization

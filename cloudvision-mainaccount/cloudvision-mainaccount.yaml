@@ -23,7 +23,7 @@ Metadata:
         Parameters:
           - NamingPrefix
           - TrailAccountsAndRegionsList
-          - BenchAccountsAndRegionsList
+          - BenchAccountsList
 
       - Label:
           default: "Existing Infrastructure"
@@ -37,8 +37,8 @@ Metadata:
         default: Resource naming convention - prefix
       TrailAccountsAndRegionsList:
         default: CloudTrail ingestion child AWS accounts and regions
-      BenchAccountsAndRegionsList:
-        default: Benchmarking child AWS accounts and regions
+      BenchAccountsList:
+        default: Benchmarking child AWS accounts
       SysdigSecureEndpoint:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
@@ -73,10 +73,10 @@ Parameters:
     Default: ""
     Description: "A comma separated list of child AWS accounts and regions where CloudTrail is enabled. Format: account1:region1,account2:region2,..."
 
-  BenchAccountsAndRegionsList:
+  BenchAccountsList:
     Type: CommaDelimitedList
     Default: ""
-    Description: "A comma separated list of child AWS accounts and regions where benchmarks will run. Format: account1:region1,account2:region2,..."
+    Description: "A comma separated list of child AWS accounts where benchmarks will run. Format: account1,account2,..."
 
   CloudConnectorDeploy:
     Type: String
@@ -224,5 +224,5 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        AccountsAndRegionsList: !Join [",", !Ref BenchAccountsAndRegionsList]
+        AccountsList: !Join [",", !Ref BenchAccountsList]
         NamingPrefix: !Ref NamingPrefix

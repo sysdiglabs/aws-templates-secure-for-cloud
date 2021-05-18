@@ -38,14 +38,14 @@ Parameters:
     MaxLength: 64
     AllowedPattern : "^[a-zA-Z0-9\\-]+$"
     ConstraintDescription: Must enter a naming prefix up to 64 alphanumeric characters
-  AccountsAndRegionsList:
+  AccountsList:
     Type: CommaDelimitedList
     Default: ""
-    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
+    Description: "A comma separated list of child AWS accounts. Format: account1,account2,..."
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
-  SingleAccount: !Equals [ !Join [",", !Ref AccountsAndRegionsList], ""]
+  SingleAccount: !Equals [ !Join [",", !Ref AccountsList], ""]
 
 Resources:
   LogGroup:
@@ -205,9 +205,9 @@ Resources:
                     benchmarkType: "aws"
                     outputDir: "/tmp/cloud-custodian"
                     policyFile: "/home/custodian/aws-benchmarks.yml"
-                    accountsAndRegions: ${AccountsAndRegionsList}
+                    accounts: ${AccountsList}
                     accountRole: ${AccountRole}
-                  - AccountsAndRegionsList: !Join [",", !Ref AccountsAndRegionsList]
+                  - AccountsList: !Join [",", !Ref AccountsList]
                     AccountRole: !If [ SingleAccount, "", !Sub "${NamingPrefix}-CloudBenchRole" ]
           Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
           Essential: false

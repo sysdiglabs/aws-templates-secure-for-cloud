@@ -105,3 +105,17 @@ jobs:
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest/singleaccount
+
+    - name: Build and Upload Version for Organization Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-organization
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}/organization
+
+    - name: Build and Upload Organization Main Account CFT
+      run: make ci
+      working-directory: ./cloudvision-organization
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest/organization
