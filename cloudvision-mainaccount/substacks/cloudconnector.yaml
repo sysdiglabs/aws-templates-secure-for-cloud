@@ -227,7 +227,7 @@ Resources:
           DependsOn:
             - ContainerName: Config
               Condition: SUCCESS
-          Image: sysdiglabs/cloud-connector:airadier-test
+          Image: sysdiglabs/cloud-connector:latest
           Essential: true
           PortMappings:
             - ContainerPort: 5000
