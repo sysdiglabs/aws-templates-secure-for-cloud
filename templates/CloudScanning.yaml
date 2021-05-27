@@ -240,7 +240,17 @@ Resources:
       GroupDescription: CloudScanning workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          IpProtocol: "-1"
+          IpProtocol: "tcp"
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "tcp"
+          FromPort: 443
+          ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "tcp"
+          FromPort: 5000
+          ToPort: 5000
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudScanning"

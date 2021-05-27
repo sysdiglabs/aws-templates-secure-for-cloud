@@ -134,6 +134,23 @@ Resources:
     Properties:
       VersioningConfiguration:
         Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref SysdigConfigLoggingBucket
+        LogFilePrefix: sysdig-config-bucket-logs
+  SysdigConfigLoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   SysdigSecureAPITokenParameter:
     Type: AWS::SSM::Parameter
