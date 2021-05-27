@@ -15,6 +15,13 @@ Resources:
         Rules:
           - ExpirationInDays: !Ref CloudTrailLogRetention
             Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+        LogFilePrefix: cloudtrail-s3bucket-logs
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
