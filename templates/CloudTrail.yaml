@@ -15,13 +15,23 @@ Resources:
         Rules:
           - ExpirationInDays: !Ref CloudTrailLogRetention
             Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       LoggingConfiguration:
-        DestinationBucketName: !Ref LoggingBucket
-        LogFilePrefix: cloudtrail-s3bucket-logs
-  LoggingBucket:
+        DestinationBucketName: !Ref CloudTrailLoggingBucket
+        LogFilePrefix: sysdig-cloudtrail-bucket-logs
+  CloudTrailLoggingBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
