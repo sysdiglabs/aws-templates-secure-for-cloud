@@ -37,47 +37,62 @@ Parameters:
     AllowedValues:
       - "Yes"
       - "No"
-  NamingPrefix:
+  BuildProject:
     Type: String
-    Default: "SysdigCloud"
-    Description: Prefix for resource names. Use the default unless you need to install multiple instances, and modify the deployment at the main account accordingly
-    MinLength: 1
-    MaxLength: 64
-    AllowedPattern : "^[a-zA-Z0-9\\-]+$"
-    ConstraintDescription: Must enter a naming prefix up to 64 alphanumeric characters
-  AccountsAndRegionsList:
-    Type: CommaDelimitedList
     Default: ""
-    Description: "A comma separated list of child AWS accounts and regions. Format: account1:region1,account2:region2,..."
-
+  CloudTrailTopic:
+    Type: String
+    Description: ARN of the SNS Topic to subscribe
 
 Conditions:
   VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
   ECRDeployed: !Equals [!Ref ECRDeployed, "Yes"]
   ECSDeployed: !Equals [!Ref ECSDeployed, "Yes"]
-  SingleAccount: !Equals [ !Join [",", !Ref AccountsAndRegionsList], ""]
 
 Resources:
-  CodeBuild:
-    Type: AWS::CloudFormation::Stack
+
+  CloudTrailQueue:
+    Type: AWS::SQS::Queue
+
+  CloudTrailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
     Properties:
-      TemplateURL: ./cloudscanning-codebuild.yaml
-      Parameters:
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointSsm
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenSsm
-        VerifySSL: !Ref VerifySSL
-        NamingPrefix: !Ref NamingPrefix
+      Queues:
+        - !Ref CloudTrailQueue
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow CloudTrail to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt CloudTrailQueue.Arn
+
+  Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt CloudTrailQueue.Arn
+      TopicArn: !Ref CloudTrailTopic
 
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "${NamingPrefix}-CloudScanning"
+      LogGroupName: !Ref AWS::StackName
       RetentionInDays: !Ref LogRetention
+
+  AlertsLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref LogGroup
+      LogStreamName: alerts
 
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${NamingPrefix}-CloudScanningTaskRole"
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
@@ -86,89 +101,65 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-        - PolicyName: CodeBuildScanExecutor
+        - PolicyName: !Sub "${AWS::StackName}-TaskRolePolicy"
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "s3:Get*"
+                - "s3:List*"
+                - "s3:Put*"
+                - "s3:Head*"
+                - 'sqs:DeleteMessage'
+                - 'sqs:DeleteMessageBatch'
+                - 'sqs:ReceiveMessage'
+              Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
           PolicyDocument:
             Statement:
               - Effect: Allow
                 Action:
                   - "codebuild:StartBuild"
                 Resource:
-                  Fn::Sub:
-                    - "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
-                    - BuildProject: !GetAtt [ "CodeBuild", "Outputs.BuildProject" ]
-        - !If
-          - SingleAccount
-          - PolicyName: CloudTrailIngestor
-            PolicyDocument:
-              Statement:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+        - PolicyName: TaskDefinitionReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
               - Effect: Allow
                 Action:
-                  - "s3:Get*"
-                  - "s3:List*"
-                  - "s3:Put*"
-                  - "s3:Head*"
-                  - 'sqs:DeleteMessage'
-                  - 'sqs:DeleteMessageBatch'
-                  - 'sqs:ReceiveMessage'
-                Resource: '*'
-          - !Ref AWS::NoValue
-        - !If
-          - SingleAccount
-          - PolicyName: TaskDefinitionReader
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - "ecs:DescribeTaskDefinition"
-                  Resource:
-                    - "*"
-          - !Ref AWS::NoValue
-        - !If
-          - SingleAccount
-          - PolicyName: SecretsReader
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - "kms:Decrypt"
-                    - "secretsmanager:GetSecretValue"
-                  Resource:
-                    - "*"
-          - !Ref AWS::NoValue
-        - !If
-          - SingleAccount
-          - PolicyName: ECRReader
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - "ecr:GetAuthorizationToken"
-                    - "ecr:BatchCheckLayerAvailability"
-                    - "ecr:GetDownloadUrlForLayer"
-                    - "ecr:GetRepositoryPolicy"
-                    - "ecr:DescribeRepositories"
-                    - "ecr:ListImages"
-                    - "ecr:DescribeImages"
-                    - "ecr:BatchGetImage"
-                    - "ecr:GetLifecyclePolicy"
-                    - "ecr:GetLifecyclePolicyPreview"
-                    - "ecr:ListTagsForResource"
-                    - "ecr:DescribeImageScanFindings"
-                  Resource: "*"
-          - !Ref AWS::NoValue
-        - !If
-          - SingleAccount
-          - !Ref AWS::NoValue
-          - PolicyName: AssumeRole
-            PolicyDocument:
-              Statement:
+                  - "ecs:DescribeTaskDefinition"
+                Resource:
+                  - "*"
+        - PolicyName: SecretsReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
               - Effect: Allow
                 Action:
-                  - "sts:AssumeRole"
-                Resource: !Sub "arn:aws:iam::*:role/${NamingPrefix}-CloudScanningRole"
+                  - "kms:Decrypt"
+                  - "secretsmanager:GetSecretValue"
+                Resource:
+                  - "*"
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -181,7 +172,7 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-        - PolicyName: ExecutionRolePolicy
+        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
           PolicyDocument:
             Statement:
             - Effect: Allow
@@ -189,7 +180,7 @@ Resources:
                 - 'logs:CreateLogStream'
                 - 'logs:PutLogEvents'
               Resource: '*'
-        - PolicyName: TaskReadParameters
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
           PolicyDocument:
             Statement:
             - Effect: Allow
@@ -204,7 +195,7 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      Family: !Sub "${NamingPrefix}-CloudScanning"
+      Family: !Sub "${AWS::StackName}-CloudScanning"
       NetworkMode: awsvpc
       TaskRoleArn: !Ref TaskRole
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
@@ -215,36 +206,18 @@ Resources:
           Environment:
             - Name: VERIFY_SSL
               Value: !If [ VerifySSL, "true", "false" ]
+            - Name: SQS_QUEUE_URL
+              Value: !Ref CloudTrailQueue
             - Name: SQS_QUEUE_INTERVAL
               Value: 30s
             - Name: CODEBUILD_PROJECT
-              Value: !GetAtt [ "CodeBuild", "Outputs.BuildProject" ]
+              Value: !Sub ${BuildProject}
             - Name: ECR_DEPLOYED
               Value: !If [ ECRDeployed, "true", "false" ]
             - Name: ECS_DEPLOYED
               Value: !If [ ECSDeployed, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
-            - !If
-              - SingleAccount
-              - Name: SQS_QUEUE_URL
-                Value: !If [ SingleAccount, !Sub "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${NamingPrefix}-CloudScanning", "" ]
-              - !Ref AWS::NoValue
-            - !If
-              - SingleAccount
-              - !Ref AWS::NoValue
-              - Name: SQS_QUEUE_NAME
-                Value: !Sub "${NamingPrefix}-CloudScanning"
-            - !If
-              - SingleAccount
-              - !Ref AWS::NoValue
-              - Name: ACCOUNTS_AND_REGIONS
-                Value: !Join [",", !Ref AccountsAndRegionsList]
-            - !If
-              - SingleAccount
-              - !Ref AWS::NoValue
-              - Name: ACCOUNT_ROLE
-                Value: !Sub "${NamingPrefix}-CloudScanningRole"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
@@ -263,7 +236,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPC
-      GroupName: !Sub "${NamingPrefix}-CloudScanning"
+      GroupName: !Sub "${AWS::StackName}-CloudScanning"
       GroupDescription: CloudScanning workload Security Group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
@@ -280,12 +253,12 @@ Resources:
           ToPort: 5000
       Tags:
         - Key: Name
-          Value: !Sub "${NamingPrefix}-CloudScanning"
+          Value: !Sub "${AWS::StackName}-CloudScanning"
 
   CloudScanningService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: !Sub "${NamingPrefix}-CloudScanning"
+      ServiceName: !Sub "${AWS::StackName}-CloudScanning"
       Cluster: !Ref ECSCluster
       DesiredCount: 1
       LaunchType: FARGATE
