@@ -59,6 +59,7 @@ Resources:
                 Action:
                   - "access-analyzer:List*"
                   - "acm:List*"
+                  - "acm:DescribeCertificate"
                   - "cloudtrail:DescribeTrails"
                   - "cloudtrail:Get*"
                   - "cloudwatch:Describe*"
@@ -67,6 +68,7 @@ Resources:
                   - "ec2:CreateNetworkInterface"
                   - "ec2:DeleteNetworkInterface"
                   - "ec2:Describe*"
+                  - "elasticloadbalancing:DescribeLoadBalancerAttributes"
                   - "elasticloadbalancing:DescribeLoadBalancers"
                   - "events:PutRule"
                   - "events:PutTargets"
