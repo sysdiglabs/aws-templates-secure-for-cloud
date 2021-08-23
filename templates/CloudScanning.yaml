@@ -218,12 +218,14 @@ Resources:
               Value: !If [ ECSDeployed, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: !Sub ${SysdigSecureAPITokenSsm}
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-          Image: sysdiglabs/cloud-scanning:latest
+          Image: quay.io/sysdig/cloud-scanning:latest
           Essential: true
           LogConfiguration:
             LogDriver: awslogs

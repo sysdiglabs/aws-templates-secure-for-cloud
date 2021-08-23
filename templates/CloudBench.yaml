@@ -171,7 +171,7 @@ Resources:
                   outputDir: "/tmp/cloud-custodian"
                   policyFile: "/home/custodian/aws-benchmarks.yml"
 
-          Image: sysdiglabs/cloud-connector-s3-bucket-config:latest
+          Image: quay.io/sysdig/cloud-connector-s3-bucket-config:latest
           Essential: false
           MountPoints:
             - SourceVolume: config
