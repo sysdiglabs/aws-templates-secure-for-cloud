@@ -219,7 +219,7 @@ Resources:
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
             - Name: SECURE_API_TOKEN_SECRET
-              Value: ${SysdigSecureAPITokenSsm}
+              Value: !Sub ${SysdigSecureAPITokenSsm}
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
