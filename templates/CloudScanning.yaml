@@ -218,6 +218,8 @@ Resources:
               Value: !If [ ECSDeployed, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
               Value: cft
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: ${SysdigSecureAPITokenSsm}
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
