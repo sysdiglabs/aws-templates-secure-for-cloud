@@ -225,7 +225,7 @@ Resources:
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
             - Name: SECURE_API_TOKEN
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
-          Image: sysdiglabs/cloud-scanning:latest
+          Image: quay.io/sysdig/cloud-scanning:latest
           Essential: true
           LogConfiguration:
             LogDriver: awslogs
