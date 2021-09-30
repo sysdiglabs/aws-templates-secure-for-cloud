@@ -169,7 +169,6 @@ Resources:
                       ingestors:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailQueue}
-                            interval: 25s
                       notifiers:
                         - cloudwatch:
                             logGroup: ${LogGroup}
