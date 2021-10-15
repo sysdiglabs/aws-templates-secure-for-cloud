@@ -9,6 +9,9 @@ Metadata:
         Parameters:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
+          - SysdigRoleName
+          - SysdigExternalID
+          - SysdigTrustedIdentity
 
       - Label:
           default: "Modules to Deploy"
@@ -31,6 +34,12 @@ Metadata:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
         default: "Sysdig Secure API Token"
+      SysdigRoleName:
+        default: "Sysdig Role Name"
+      SysdigExternalID:
+        default: "Sysdig External ID"
+      SysdigTrustedIdentity:
+        default: "Sysdig Trusted Identity"
       CloudBenchDeploy:
         default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
@@ -100,6 +109,20 @@ Parameters:
   SysdigSecureEndpoint:
     Type: String
     Default: "https://secure.sysdig.com"
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+  SysdigExternalID:
+    Type: String
+  SysdigTrustedIdentity:
+    Type: String
+
+  CreateSysdigRole:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
@@ -127,6 +150,7 @@ Conditions:
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
+  RequireSysdigRole: !Equals [ !Ref CreateSysdigRole, "Yes" ]
 
 Resources:
   S3ConfigBucket:
@@ -233,3 +257,13 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+
+  CloudAgentlessRole:
+    Type: AWS::CloudFormation::Stack
+    Condition: RequireSysdigRole
+    Properties:
+      TemplateURL: ./CloudAgentlessRole.yaml
+      Parameters:
+        SysdigRoleName: !Ref SysdigRoleName
+        SysdigExternalID: !Ref SysdigExternalID
+        SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
