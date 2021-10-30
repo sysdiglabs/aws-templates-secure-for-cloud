@@ -16,7 +16,6 @@ Metadata:
       - Label:
           default: "Modules to Deploy"
         Parameters:
-          - CloudBenchDeploy
           - CloudConnectorDeploy
           - ECRImageScanningDeploy
           - ECSImageScanningDeploy
@@ -40,8 +39,6 @@ Metadata:
         default: "Sysdig External ID"
       SysdigTrustedIdentity:
         default: "Sysdig Trusted Identity"
-      CloudBenchDeploy:
-        default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
       CloudConnectorDeploy:
         default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
       ECRImageScanningDeploy:
@@ -58,13 +55,6 @@ Metadata:
         default: "CloudTrail SNS Topic"
 
 Parameters:
-  CloudBenchDeploy:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "Yes"
-
   CloudConnectorDeploy:
     Type: String
     AllowedValues:
@@ -114,15 +104,17 @@ Parameters:
     Default: "SysdigAgentlessRole"
   SysdigExternalID:
     Type: String
+    Default: ""
   SysdigTrustedIdentity:
     Type: String
+    Default: ""
 
   CreateSysdigRole:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
-    Default: "Yes"
+    Default: "No"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
@@ -131,7 +123,6 @@ Conditions:
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
-  DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
   DeployCloudScanning: !Or
     - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
@@ -145,7 +136,6 @@ Conditions:
     - !Or
       - !Condition DeployCloudConnector
       - !Condition DeployCloudScanning
-      - !Condition DeployCloudBench
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
@@ -243,20 +233,6 @@ Resources:
         ECSDeployed: !Ref ECSImageScanningDeploy
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
-
-  CloudBenchStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudBench
-    Properties:
-      TemplateURL: ./CloudBench.yaml
-      Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        S3ConfigBucket: !Ref S3ConfigBucket
-        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack

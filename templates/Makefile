@@ -31,9 +31,8 @@ test: packaged-template.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
 			"ECRImageScanningDeploy=Yes" \
 			"ECSImageScanningDeploy=Yes" \
-			"CloudBenchDeploy=Yes" \
 			"CloudConnectorDeploy=Yes" \
-			"CreateSysdigRole=Yes"
+			"CreateSysdigRole=No"
 
 ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
