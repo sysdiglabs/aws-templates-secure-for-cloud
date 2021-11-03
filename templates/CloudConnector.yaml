@@ -94,20 +94,17 @@ Resources:
             Statement:
             - Effect: Allow
               Action:
-                - "s3:Get*"
-                - "s3:List*"
-                - "s3:Put*"
-                - "s3:Head*"
-                - "securityhub:GetFindings"
-                - "securityhub:BatchImportFindings"
-                - 'logs:DescribeLogStreams'
-                - 'logs:GetLogEvents'
-                - 'logs:FilterLogEvents'
-                - 'logs:PutLogEvents'
+                - "s3:GetObject"
+                - "s3:ListBucket"
+              Resource: '*'
+            - Effect: Allow
+              Action:
                 - 'sqs:DeleteMessage'
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
-              Resource: '*'
+              Resource:
+                - "arn:aws:sqs:*:{AWS::AccountId}:*"
+
 
   ExecutionRole:
     Type: AWS::IAM::Role

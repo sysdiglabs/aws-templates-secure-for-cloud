@@ -106,14 +106,16 @@ Resources:
             Statement:
             - Effect: Allow
               Action:
-                - "s3:Get*"
-                - "s3:List*"
-                - "s3:Put*"
-                - "s3:Head*"
+                - "s3:GetObject"
+                - "s3:ListBucket"
+              Resource: '*'
+            - Effect: Allow
+              Action:
                 - 'sqs:DeleteMessage'
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
-              Resource: '*'
+              Resource:
+                - "arn:aws:sqs:*:{AWS::AccountId}:*"
         - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
           PolicyDocument:
             Statement:
