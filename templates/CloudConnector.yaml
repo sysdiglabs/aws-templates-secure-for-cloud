@@ -96,6 +96,7 @@ Resources:
               Action:
                 - "s3:GetObject"
                 - "s3:ListBucket"
+                - "s3:PutObject"
               Resource: '*'
             - Effect: Allow
               Action:
@@ -103,8 +104,7 @@ Resources:
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource:
-                - "arn:aws:sqs:*:{AWS::AccountId}:*"
-
+                - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
 
   ExecutionRole:
     Type: AWS::IAM::Role

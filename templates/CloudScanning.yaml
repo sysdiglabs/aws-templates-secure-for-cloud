@@ -115,7 +115,7 @@ Resources:
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
               Resource:
-                - "arn:aws:sqs:*:{AWS::AccountId}:*"
+                - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
         - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
           PolicyDocument:
             Statement:
