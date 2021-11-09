@@ -166,12 +166,6 @@ Resources:
                       ingestors:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailQueue}
-                      notifiers:
-                        - cloudwatch:
-                            logGroup: ${LogGroup}
-                            logStream: ${AlertsLogStream}
-                        #- securityhub:
-                        #    productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-secure-for-cloud
 
           Image: quay.io/sysdig/cloud-connector-s3-bucket-config:latest
           Essential: false
