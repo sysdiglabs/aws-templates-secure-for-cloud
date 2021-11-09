@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IAM Role for Agentless
+Parameters:
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+    Description: Unique role for monitoring AWS accounts
+  SysdigExternalID:
+    Type: String
+    Description: ExternalID required for the policy
+  SysdigTrustedIdentity:
+    Type: String
+    Description: Trusted identity required for policy
+
+Resources:
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref SysdigRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS: !Ref SysdigTrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref SysdigExternalID
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
