@@ -94,20 +94,17 @@ Resources:
             Statement:
             - Effect: Allow
               Action:
-                - "s3:Get*"
-                - "s3:List*"
-                - "s3:Put*"
-                - "s3:Head*"
-                - "securityhub:GetFindings"
-                - "securityhub:BatchImportFindings"
-                - 'logs:DescribeLogStreams'
-                - 'logs:GetLogEvents'
-                - 'logs:FilterLogEvents'
-                - 'logs:PutLogEvents'
+                - "s3:GetObject"
+                - "s3:ListBucket"
+                - "s3:PutObject"
+              Resource: '*'
+            - Effect: Allow
+              Action:
                 - 'sqs:DeleteMessage'
                 - 'sqs:DeleteMessageBatch'
                 - 'sqs:ReceiveMessage'
-              Resource: '*'
+              Resource:
+                - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
 
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -169,12 +166,6 @@ Resources:
                       ingestors:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailQueue}
-                      notifiers:
-                        - cloudwatch:
-                            logGroup: ${LogGroup}
-                            logStream: ${AlertsLogStream}
-                        #- securityhub:
-                        #    productArn: arn:aws:securityhub:${AWS::Region}::product/sysdig/sysdig-secure-for-cloud
 
           Image: quay.io/sysdig/cloud-connector-s3-bucket-config:latest
           Essential: false
