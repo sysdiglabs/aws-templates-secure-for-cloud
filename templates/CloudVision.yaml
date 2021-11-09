@@ -9,11 +9,13 @@ Metadata:
         Parameters:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
+          - SysdigRoleName
+          - SysdigExternalID
+          - SysdigTrustedIdentity
 
       - Label:
           default: "Modules to Deploy"
         Parameters:
-          - CloudBenchDeploy
           - CloudConnectorDeploy
           - ECRImageScanningDeploy
           - ECSImageScanningDeploy
@@ -31,8 +33,12 @@ Metadata:
         default: "Sysdig Secure Endpoint"
       SysdigSecureAPIToken:
         default: "Sysdig Secure API Token"
-      CloudBenchDeploy:
-        default: "Do you want to deploy Cloud Security Posture Management / Compliance?"
+      SysdigRoleName:
+        default: "Sysdig Role Name"
+      SysdigExternalID:
+        default: "Sysdig External ID"
+      SysdigTrustedIdentity:
+        default: "Sysdig Trusted Identity"
       CloudConnectorDeploy:
         default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
       ECRImageScanningDeploy:
@@ -49,13 +55,6 @@ Metadata:
         default: "CloudTrail SNS Topic"
 
 Parameters:
-  CloudBenchDeploy:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "Yes"
-
   CloudConnectorDeploy:
     Type: String
     AllowedValues:
@@ -100,6 +99,22 @@ Parameters:
   SysdigSecureEndpoint:
     Type: String
     Default: "https://secure.sysdig.com"
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+  SysdigExternalID:
+    Type: String
+    Default: ""
+  SysdigTrustedIdentity:
+    Type: String
+    Default: ""
+
+  CreateSysdigRole:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
@@ -108,7 +123,6 @@ Conditions:
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
   DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
-  DeployCloudBench: !Equals [ !Ref CloudBenchDeploy, "Yes" ]
   DeployCloudScanning: !Or
     - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
@@ -122,11 +136,11 @@ Conditions:
     - !Or
       - !Condition DeployCloudConnector
       - !Condition DeployCloudScanning
-      - !Condition DeployCloudBench
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
+  RequireSysdigRole: !Equals [ !Ref CreateSysdigRole, "Yes" ]
 
 Resources:
   S3ConfigBucket:
@@ -220,16 +234,12 @@ Resources:
         BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
-  CloudBenchStack:
+  CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudBench
+    Condition: RequireSysdigRole
     Properties:
-      TemplateURL: ./CloudBench.yaml
+      TemplateURL: ./CloudAgentlessRole.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.ClusterName" ], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.VPC" ], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt [ "ECSFargateClusterStack", "Outputs.PrivateSubnets" ], !Join [ ",", !Ref ExistentECSClusterPrivateSubnets ] ]
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        S3ConfigBucket: !Ref S3ConfigBucket
-        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        SysdigRoleName: !Ref SysdigRoleName
+        SysdigExternalID: !Ref SysdigExternalID
+        SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
