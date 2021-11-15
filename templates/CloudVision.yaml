@@ -205,6 +205,7 @@ Resources:
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
   ScanningCodeBuildStack:
@@ -216,23 +217,6 @@ Resources:
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-
-  CloudScanningStack:
-    Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudScanning
-    Properties:
-      TemplateURL: ./CloudScanning.yaml
-      Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
-        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
-        ECRDeployed: !Ref ECRImageScanningDeploy
-        ECSDeployed: !Ref ECSImageScanningDeploy
-        BuildProject: !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ]
-        CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
