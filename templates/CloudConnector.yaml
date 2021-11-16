@@ -36,9 +36,17 @@ Parameters:
   CloudTrailTopic:
     Type: String
     Description: ARN of the SNS Topic to subscribe
+  DeployCloudScanning:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy cloud scanning or not
 
 Conditions:
-  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
+  DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
 
 Resources:
 
@@ -86,36 +94,36 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: ['sts:AssumeRole']
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
       Path: /
       Policies:
         - PolicyName: !Sub "${AWS::StackName}-TaskRolePolicy"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - "s3:GetObject"
-                - "s3:ListBucket"
-                - "s3:PutObject"
-              Resource: '*'
-            - Effect: Allow
-              Action:
-                - 'sqs:DeleteMessage'
-                - 'sqs:DeleteMessageBatch'
-                - 'sqs:ReceiveMessage'
-              Resource:
-                - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:PutObject"
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:DeleteMessageBatch'
+                  - 'sqs:ReceiveMessage'
+                Resource:
+                  - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
         - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - "codebuild:StartBuild"
-              Resource:
-                - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
         - PolicyName: TaskDefinitionReader
           PolicyDocument:
             Version: "2012-10-17"
@@ -159,29 +167,29 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: ['sts:AssumeRole']
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
       Path: /
       Policies:
         - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - 'logs:CreateLogStream'
-                - 'logs:PutLogEvents'
-              Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
         - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - "ssm:GetParameters"
-              Resource:
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameters"
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -203,28 +211,35 @@ Resources:
               Value: cloud-connector.yaml
             - Name: OUTPUT
               Value: /tmp/cloud-connector.yaml
-            - Name: CODEBUILD_PROJECT
-              Value: !Sub ${BuildProject}
             - Name: SECURE_API_TOKEN_SECRET
               Value: !Sub ${SysdigSecureAPITokenSsm}
             - Name: CONFIG
               Value:
                 "Fn::Base64":
-                    !Sub |
-                      rules:
-                        - s3:
-                            bucket: ${S3ConfigBucket}
-                            path: rules
-                      ingestors:
-                        - cloudtrail-sns-sqs:
-                            queueURL: ${CloudTrailQueue}
-                      scanners:
-                        - aws-ecr:
-                            codeBuildProject: ${BuildProject}
-                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
-                        - aws-ecs:
-                            codeBuildProject: ${BuildProject}
-                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                  !Sub
+                  - |
+                    rules:
+                      - s3:
+                          bucket: ${S3ConfigBucket}
+                          path: rules
+                    ingestors:
+                      - cloudtrail-sns-sqs:
+                          queueURL: ${CloudTrailQueue}
+                    scanners: ${Scanners}
+                  - S3ConfigBucket: !Ref S3ConfigBucket
+                    CloudTrailQueue: !Ref CloudTrailQueue
+                    Scanners:
+                      'Fn::If':
+                        - DeployCloudScanning
+                        - !Sub |
+
+                          - aws-ecr:
+                                codeBuildProject: ${BuildProject}
+                                secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                          - aws-ecs:
+                              codeBuildProject: ${BuildProject}
+                              secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                        - "[]"
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
