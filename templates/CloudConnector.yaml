@@ -30,12 +30,23 @@ Parameters:
       - "Yes"
       - "No"
     Default: "Yes"
+  BuildProject:
+    Type: String
+    Default: ""
   CloudTrailTopic:
     Type: String
     Description: ARN of the SNS Topic to subscribe
+  DeployCloudScanning:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy cloud scanning or not
 
 Conditions:
-  VerifySSL: !Equals [!Ref VerifySSL, "Yes"]
+  VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
+  DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
 
 Resources:
 
@@ -83,57 +94,102 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: ['sts:AssumeRole']
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
       Path: /
       Policies:
         - PolicyName: !Sub "${AWS::StackName}-TaskRolePolicy"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - "s3:GetObject"
-                - "s3:ListBucket"
-                - "s3:PutObject"
-              Resource: '*'
-            - Effect: Allow
-              Action:
-                - 'sqs:DeleteMessage'
-                - 'sqs:DeleteMessageBatch'
-                - 'sqs:ReceiveMessage'
-              Resource:
-                - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
-
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:PutObject"
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:DeleteMessageBatch'
+                  - 'sqs:ReceiveMessage'
+                Resource:
+                  - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
+        - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+        - PolicyName: TaskDefinitionReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecs:DescribeTaskDefinition"
+                Resource:
+                  - "*"
+        - PolicyName: SecretsReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:Decrypt"
+                  - "secretsmanager:GetSecretValue"
+                Resource:
+                  - "*"
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
   ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: ['sts:AssumeRole']
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
       Path: /
       Policies:
         - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - 'logs:CreateLogStream'
-                - 'logs:PutLogEvents'
-              Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
         - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-                - "ssm:GetParameters"
-              Resource:
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
-                - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameters"
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -155,18 +211,40 @@ Resources:
               Value: cloud-connector.yaml
             - Name: OUTPUT
               Value: /tmp/cloud-connector.yaml
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: !Sub ${SysdigSecureAPITokenSsm}
             - Name: CONFIG
               Value:
                 "Fn::Base64":
-                    !Sub |
-                      rules:
-                        - s3:
-                            bucket: ${S3ConfigBucket}
-                            path: rules
-                      ingestors:
-                        - cloudtrail-sns-sqs:
-                            queueURL: ${CloudTrailQueue}
+                  !Sub
+                  - |
+                    rules:
+                      - s3:
+                          bucket: ${S3ConfigBucket}
+                          path: rules
+                    ingestors:
+                      - cloudtrail-sns-sqs:
+                          queueURL: ${CloudTrailQueue}
+                    scanners: ${Scanners}
+                  - S3ConfigBucket: !Ref S3ConfigBucket
+                    CloudTrailQueue: !Ref CloudTrailQueue
+                    Scanners:
+                      'Fn::If':
+                        - DeployCloudScanning
+                        - !Sub |
 
+                          - aws-ecr:
+                                codeBuildProject: ${BuildProject}
+                                secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                          - aws-ecs:
+                              codeBuildProject: ${BuildProject}
+                              secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                        - "[]"
+          Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+            - Name: SECURE_API_TOKEN
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
           Image: quay.io/sysdig/cloud-connector-s3-bucket-config:latest
           Essential: false
           LogConfiguration:
@@ -177,6 +255,14 @@ Resources:
               awslogs-stream-prefix: "ecs"
         - Name: CloudConnector
           Environment:
+            - Name: SQS_QUEUE_URL
+              Value: !Ref CloudTrailQueue
+            - Name: SQS_QUEUE_INTERVAL
+              Value: 30s
+            - Name: CODEBUILD_PROJECT
+              Value: !Sub ${BuildProject}
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: !Sub ${SysdigSecureAPITokenSsm}
             - Name: VERIFY_SSL
               Value: !If [ VerifySSL, "true", "false" ]
             - Name: TELEMETRY_DEPLOYMENT_METHOD
@@ -221,7 +307,6 @@ Resources:
           IpProtocol: "tcp"
           FromPort: 5000
           ToPort: 5000
-
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudConnector"
