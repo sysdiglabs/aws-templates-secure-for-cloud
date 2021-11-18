@@ -43,10 +43,20 @@ Parameters:
       - "No"
     Default: "Yes"
     Description: Whether to deploy cloud scanning or not
+  RequireSysdigRole:
+    Description: Make this stack dependent on CloudAgentlessRole resource
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+
 
 Conditions:
   VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
   DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
+  RequireSysdigRole: !Equals [ !Ref RequireSysdigRole, "Yes" ]
 
 Resources:
 

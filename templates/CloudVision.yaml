@@ -218,6 +218,7 @@ Resources:
         BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
         DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
+        RequireSysdigRole: !If [ RequireSysdigRole, "Yes", "No" ]
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
