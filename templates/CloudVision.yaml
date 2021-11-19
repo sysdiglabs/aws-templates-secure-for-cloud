@@ -126,6 +126,8 @@ Conditions:
   DeployCloudScanning: !Or
     - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
+  ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
   DeployCloudTrail: !And
     - !Condition RequiresCloudTrail
     - !Or
@@ -218,6 +220,8 @@ Resources:
         BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
         CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
         DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
+        ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
+        ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack

@@ -43,10 +43,26 @@ Parameters:
       - "No"
     Default: "Yes"
     Description: Whether to deploy cloud scanning or not
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECR Image Scanning or not
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECS Image Scanning or not
 
 Conditions:
   VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
   DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
+  ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
+  ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
 
 Resources:
 
@@ -231,15 +247,31 @@ Resources:
                     Scanners:
                       'Fn::If':
                         - DeployCloudScanning
-                        - !Sub |
+                        - !Sub
+                            - |
 
-                          - aws-ecr:
-                                codeBuildProject: ${BuildProject}
-                                secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
-                          - aws-ecs:
-                              codeBuildProject: ${BuildProject}
-                              secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                              ${ECRCode}
+                              ${ECSCode}
+                            - ECRCode:
+                                'Fn::If':
+                                  - ECRImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecr:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
+                              ECSCode:
+                                'Fn::If':
+                                  - ECSImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecs:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
                         - "[]"
+
           Secrets:
             - Name: SECURE_URL
               ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
