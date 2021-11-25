@@ -16,7 +16,6 @@ Metadata:
       - Label:
           default: "Modules to Deploy"
         Parameters:
-          - CloudConnectorDeploy
           - ECRImageScanningDeploy
           - ECSImageScanningDeploy
 
@@ -39,8 +38,6 @@ Metadata:
         default: "Sysdig External ID"
       SysdigTrustedIdentity:
         default: "Sysdig Trusted Identity"
-      CloudConnectorDeploy:
-        default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
       ECRImageScanningDeploy:
         default: "Do you want to deploy ECR Image Registry Scanning?"
       ECSImageScanningDeploy:
@@ -55,13 +52,6 @@ Metadata:
         default: "CloudTrail SNS Topic"
 
 Parameters:
-  CloudConnectorDeploy:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "Yes"
-
   ECRImageScanningDeploy:
     Type: String
     AllowedValues:
@@ -108,7 +98,6 @@ Parameters:
   SysdigTrustedIdentity:
     Type: String
     Default: ""
-
   CreateSysdigRole:
     Type: String
     AllowedValues:
@@ -122,7 +111,6 @@ Conditions:
     - !Equals [!Ref ExistentECSCluster, ""]
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
-  DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   DeployCloudScanning: !Or
     - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
@@ -130,14 +118,10 @@ Conditions:
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
   DeployCloudTrail: !And
     - !Condition RequiresCloudTrail
-    - !Or
-      - !Condition DeployCloudConnector
-      - !Condition DeployCloudScanning
+    - !Condition DeployCloudScanning
   DeployNewECSCluster: !And
     - !Condition RequiresNewECSCluster
-    - !Or
-      - !Condition DeployCloudConnector
-      - !Condition DeployCloudScanning
+    - !Condition DeployCloudScanning
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
@@ -206,7 +190,6 @@ Resources:
 
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudConnector
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
