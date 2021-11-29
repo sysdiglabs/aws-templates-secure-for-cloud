@@ -10,6 +10,7 @@ Metadata:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
           - SysdigRoleName
+          - CreateSysdigRole
           - SysdigExternalID
           - SysdigTrustedIdentity
 
@@ -35,6 +36,8 @@ Metadata:
         default: "Sysdig Secure API Token"
       SysdigRoleName:
         default: "Sysdig Role Name"
+      CreateSysdigRole:
+        default: "Do you want to create Sysdig Role?"
       SysdigExternalID:
         default: "Sysdig External ID"
       SysdigTrustedIdentity:
