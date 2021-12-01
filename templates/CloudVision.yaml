@@ -10,14 +10,12 @@ Metadata:
           - SysdigSecureEndpoint
           - SysdigSecureAPIToken
           - SysdigRoleName
-          - CreateSysdigRole
           - SysdigExternalID
           - SysdigTrustedIdentity
 
       - Label:
           default: "Modules to Deploy"
         Parameters:
-          - CloudConnectorDeploy
           - ECRImageScanningDeploy
           - ECSImageScanningDeploy
 
@@ -36,14 +34,10 @@ Metadata:
         default: "Sysdig Secure API Token"
       SysdigRoleName:
         default: "Sysdig Role Name"
-      CreateSysdigRole:
-        default: "Do you want to create Sysdig Role?"
       SysdigExternalID:
         default: "Sysdig External ID"
       SysdigTrustedIdentity:
         default: "Sysdig Trusted Identity"
-      CloudConnectorDeploy:
-        default: "Do you want to deploy Real-Time Threat Investigation based on CloudTrail?"
       ECRImageScanningDeploy:
         default: "Do you want to deploy ECR Image Registry Scanning?"
       ECSImageScanningDeploy:
@@ -58,13 +52,6 @@ Metadata:
         default: "CloudTrail SNS Topic"
 
 Parameters:
-  CloudConnectorDeploy:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "Yes"
-
   ECRImageScanningDeploy:
     Type: String
     AllowedValues:
@@ -112,20 +99,12 @@ Parameters:
     Type: String
     Default: ""
 
-  CreateSysdigRole:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "No"
-
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
   RequiresNewECSCluster: !Or
     - !Equals [!Ref ExistentECSCluster, ""]
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
-  DeployCloudConnector: !Equals [!Ref CloudConnectorDeploy, "Yes"]
   DeployCloudScanning: !Or
     - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
@@ -133,19 +112,14 @@ Conditions:
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
   DeployCloudTrail: !And
     - !Condition RequiresCloudTrail
-    - !Or
-      - !Condition DeployCloudConnector
-      - !Condition DeployCloudScanning
+    - !Condition DeployCloudScanning
   DeployNewECSCluster: !And
     - !Condition RequiresNewECSCluster
-    - !Or
-      - !Condition DeployCloudConnector
-      - !Condition DeployCloudScanning
+    - !Condition DeployCloudScanning
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
-  RequireSysdigRole: !Equals [ !Ref CreateSysdigRole, "Yes" ]
 
 Resources:
   S3ConfigBucket:
@@ -209,7 +183,6 @@ Resources:
 
   CloudConnectorStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudConnector
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
@@ -228,7 +201,6 @@ Resources:
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
-    Condition: RequireSysdigRole
     Properties:
       TemplateURL: ./CloudAgentlessRole.yaml
       Parameters:

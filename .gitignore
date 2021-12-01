@@ -1,3 +1,4 @@
 packaged-template.yaml
 *.zip
 .idea/
+.DS_Store

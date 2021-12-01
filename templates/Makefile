@@ -2,7 +2,7 @@ S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1"
-SECURE_API_TOKEN=""
+SECURE_API_TOKEN ?= ""
 
 .PHONY: packaged-template.yaml
 
@@ -30,9 +30,7 @@ test: packaged-template.yaml
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
 			"ECRImageScanningDeploy=Yes" \
-			"ECSImageScanningDeploy=Yes" \
-			"CloudConnectorDeploy=Yes" \
-			"CreateSysdigRole=No"
+			"ECSImageScanningDeploy=Yes"
 
 ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
