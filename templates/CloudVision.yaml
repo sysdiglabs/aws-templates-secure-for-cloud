@@ -98,12 +98,6 @@ Parameters:
   SysdigTrustedIdentity:
     Type: String
     Default: ""
-  CreateSysdigRole:
-    Type: String
-    AllowedValues:
-      - "Yes"
-      - "No"
-    Default: "No"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
@@ -126,7 +120,6 @@ Conditions:
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
-  RequireSysdigRole: !Equals [ !Ref CreateSysdigRole, "Yes" ]
 
 Resources:
   S3ConfigBucket:
@@ -208,7 +201,6 @@ Resources:
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
-    Condition: RequireSysdigRole
     Properties:
       TemplateURL: ./CloudAgentlessRole.yaml
       Parameters:
