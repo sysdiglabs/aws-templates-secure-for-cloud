@@ -19,8 +19,3 @@ jobs:
         uses: sysdiglabs/cloud-iac-scanner-action@v0.0.13
         with:
           parser: 'cloudformation'
-        id: iac-scanner
-      - name: Print output
-        shell: bash
-        run: |
-          echo ${{steps.iac-scanner.outputs.scanner-output}} | sed 1,2d | while read line; do echo "$line"; done
