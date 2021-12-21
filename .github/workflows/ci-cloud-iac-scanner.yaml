@@ -16,6 +16,6 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Cloud IAC parser
-        uses: sysdiglabs/cloud-iac-scanner-action@v0.0.10
+        uses: sysdiglabs/cloud-iac-scanner-action@v0.0.11
         with:
           parser: 'cloudformation'
