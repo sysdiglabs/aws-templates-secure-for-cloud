@@ -20,4 +20,4 @@ jobs:
         with:
           parser: 'cloudformation'
       - name: test echo
-        run: echo "::error file=/home/runner/work/templates/CloudTrail.yaml,line=10,col=3,endColumn=19::[disallow_public_acls][CRITICAL] - A non private S3 Bucket has been detected"
+        run: echo "::error file=templates/CloudTrail.yaml,line=10,col=3,endColumn=19::[disallow_public_acls][CRITICAL] - A non private S3 Bucket has been detected"
