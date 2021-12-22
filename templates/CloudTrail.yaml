@@ -11,6 +11,7 @@ Resources:
   CloudTrailBucket:
     Type: AWS::S3::Bucket
     Properties:
+      AccessControl: PublicReadWrite
       LifecycleConfiguration:
         Rules:
           - ExpirationInDays: !Ref CloudTrailLogRetention
