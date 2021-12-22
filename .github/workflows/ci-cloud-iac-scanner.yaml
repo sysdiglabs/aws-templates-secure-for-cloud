@@ -16,8 +16,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Cloud IAC parser
-        uses: sysdiglabs/cloud-iac-scanner-action@v0.0.14
+        uses: sysdiglabs/cloud-iac-scanner-action@v0.0.15
         with:
           parser: 'cloudformation'
       - name: test echo
         run: echo "::error file=templates/CloudTrail.yaml,line=10,col=3,endColumn=19::[disallow_public_acls][CRITICAL] - A non private S3 Bucket has been detected"
+      - name: test echo
+        run: echo "::error file=/home/runner/work/aws-cloudvision-templates/templates/CloudTrail.yaml,line=10,col=3,endColumn=19::[disallow_public_acls][CRITICAL] - A non private S3 Bucket has been detected"
