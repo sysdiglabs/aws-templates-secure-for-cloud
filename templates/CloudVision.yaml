@@ -69,15 +69,15 @@ Parameters:
   ExistentECSCluster:
     Type: String
     Default: ""
-    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: If left blank we will deploy new required infrastructure; ECS, VPC and Subnet. Otherwise, specify all three resource names
   ExistentECSClusterVPC:
     Type: String
     Default: ""
-    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: If ExistentECSCluster is not left blank, specified VPC will be used
   ExistentECSClusterPrivateSubnets:
     Type: List<String>
     Default: ""
-    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: If ExistentECSCluster is not left blank, specified PrivateSubnets will be used. Two subnets are taken into consideration
   ExistentCloudTrailSNSTopic:
     Type: String
     Default: ""
