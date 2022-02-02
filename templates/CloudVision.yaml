@@ -69,15 +69,25 @@ Parameters:
   ExistentECSCluster:
     Type: String
     Default: ""
-    Description: If left blank we will deploy new required infrastructure; ECS, VPC and Subnet. Otherwise, specify all three resource names
+    Description: |
+      If left blank new required infrastructure will be deployed; ECS, VPC and Subnet.
+      Otherwise, specify all three parameters.
+    
   ExistentECSClusterVPC:
     Type: String
     Default: ""
-    Description: If ExistentECSCluster is not left blank, specified VPC will be used
+    Description: | 
+      If left blank new required infrastructure will be deployed; ECS, VPC and Subnet.
+      Otherwise, specify all three parameters.
+    
   ExistentECSClusterPrivateSubnets:
     Type: List<String>
     Default: ""
-    Description: If ExistentECSCluster is not left blank, specified PrivateSubnets will be used. Two subnets are taken into consideration
+    Description: | 
+      If left blank new required infrastructure will be deployed; ECS, VPC and Subnet.
+      Otherwise, specify all three parameters.
+      Two subnets are required. eg. 'subnet-foo, subnet-bar'
+    
   ExistentCloudTrailSNSTopic:
     Type: String
     Default: ""

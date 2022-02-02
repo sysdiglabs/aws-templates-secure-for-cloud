@@ -1,7 +1,9 @@
+# requires AWS_PROFILE
+# bucket will be created if it does not exist
 S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-S3_REGION ?= "eu-west-1"
+S3_REGION ?= "eu-west-1" # paris
 SECURE_API_TOKEN ?= ""
 
 .PHONY: packaged-template.yaml
@@ -37,3 +39,11 @@ ci: packaged-template.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"
+	
+	
+#	
+# local-test-manual:
+# (have not found a way to do it via cli)
+# aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
+# note: this will upload the template into an s3 bucket, remember to delete it afterwards 
+#
