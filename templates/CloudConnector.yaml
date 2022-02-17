@@ -317,10 +317,21 @@ Resources:
       GroupName: !Sub "${AWS::StackName}-CloudConnector"
       GroupDescription: CloudConnector workload Security Group
       SecurityGroupEgress:
+        # Allow outbound HTTPS traffic over TCP
+        # Used by Cloud Connector to send events to https://secure.sysdig.com
         - CidrIp: 0.0.0.0/0
           IpProtocol: "tcp"
           FromPort: 443
           ToPort: 443
+        # Allow outbound DNS traffic over UDP and TCP
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "tcp"
+          FromPort: 53
+          ToPort: 53
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "udp"
+          FromPort: 53
+          ToPort: 53
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudConnector"
