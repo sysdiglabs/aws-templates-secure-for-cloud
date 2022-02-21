@@ -97,7 +97,7 @@ Parameters:
     Type: String
     NoEcho: true
     AllowedPattern: ".+"
-    ConstraintDescription: "SysdigSecureAPIToken is required"    
+    ConstraintDescription: "SysdigSecureAPIToken is required"
     
   SysdigSecureEndpoint:
     Type: String
@@ -110,14 +110,16 @@ Parameters:
   SysdigExternalID:
     Type: String
     Default: ""
-    
+    AllowedPattern: "^[a-zA-Z0-9]*$"
+    ConstraintDescription: "SysdigExternalID is required"
+
   SysdigTrustedIdentity:
     Type: String
-    Default: ""
+    Default: "arn:aws:iam::273107874544:role/us-east-1-production-secure-assume-role"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
-  RequiresNewECSCluster: !Or
+  RequiresNewECSCluster: !And
     - !Equals [!Ref ExistentECSCluster, ""]
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
@@ -128,10 +130,8 @@ Conditions:
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
   DeployCloudTrail: !And
     - !Condition RequiresCloudTrail
-    - !Condition DeployCloudScanning
   DeployNewECSCluster: !And
     - !Condition RequiresNewECSCluster
-    - !Condition DeployCloudScanning
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
