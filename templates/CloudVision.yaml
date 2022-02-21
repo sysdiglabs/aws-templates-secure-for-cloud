@@ -113,7 +113,7 @@ Parameters:
 
   SysdigTrustedIdentity:
     Type: String
-    Default: ""
+    Default: "arn:aws:iam::273107874544:role/us-east-1-production-secure-assume-role"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
