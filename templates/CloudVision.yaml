@@ -173,7 +173,7 @@ Resources:
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
-    Condition: RequiresCloudTrail
+    Condition: RequiresNewECSCluster
     Properties:
       TemplateURL: ./ECSFargateCluster.yaml
 
@@ -198,9 +198,9 @@ Resources:
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
-        ECSCluster: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        ECSCluster: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
