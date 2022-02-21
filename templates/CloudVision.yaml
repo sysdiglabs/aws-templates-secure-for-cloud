@@ -97,7 +97,7 @@ Parameters:
     Type: String
     NoEcho: true
     AllowedPattern: ".+"
-    ConstraintDescription: "SysdigSecureAPIToken is required"    
+    ConstraintDescription: "SysdigSecureAPIToken is required"
     
   SysdigSecureEndpoint:
     Type: String
@@ -110,14 +110,14 @@ Parameters:
   SysdigExternalID:
     Type: String
     Default: ""
-    
+
   SysdigTrustedIdentity:
     Type: String
-    Default: ""
+    Default: "arn:aws:iam::273107874544:role/us-east-1-production-secure-assume-role"
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
-  RequiresNewECSCluster: !Or
+  RequiresNewECSCluster: !And
     - !Equals [!Ref ExistentECSCluster, ""]
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
@@ -126,12 +126,6 @@ Conditions:
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
   ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
-  DeployCloudTrail: !And
-    - !Condition RequiresCloudTrail
-    - !Condition DeployCloudScanning
-  DeployNewECSCluster: !And
-    - !Condition RequiresNewECSCluster
-    - !Condition DeployCloudScanning
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
@@ -177,13 +171,13 @@ Resources:
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployNewECSCluster
+    Condition: RequiresNewECSCluster
     Properties:
       TemplateURL: ./ECSFargateCluster.yaml
 
   CloudTrailStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudTrail
+    Condition: RequiresCloudTrail
     Properties:
       TemplateURL: ./CloudTrail.yaml
 
@@ -202,15 +196,15 @@ Resources:
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        ECSCluster: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ RequiresNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
         BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
-        CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
+        CloudTrailTopic: !If [ RequiresCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
         DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
         ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
         ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]

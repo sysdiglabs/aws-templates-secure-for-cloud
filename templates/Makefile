@@ -3,7 +3,7 @@
 S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-S3_REGION ?= "eu-west-1" # ireland
+S3_REGION ?= "eu-west-3" # ireland
 SECURE_API_TOKEN ?= ""
 
 .PHONY: packaged-template.yaml
