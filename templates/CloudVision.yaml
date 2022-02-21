@@ -128,10 +128,6 @@ Conditions:
     - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
   ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
-  DeployCloudTrail: !And
-    - !Condition RequiresCloudTrail
-  DeployNewECSCluster: !And
-    - !Condition RequiresNewECSCluster
   EndpointIsSaas: !Or
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
@@ -177,13 +173,13 @@ Resources:
 
   ECSFargateClusterStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployNewECSCluster
+    Condition: RequiresCloudTrail
     Properties:
       TemplateURL: ./ECSFargateCluster.yaml
 
   CloudTrailStack:
     Type: AWS::CloudFormation::Stack
-    Condition: DeployCloudTrail
+    Condition: RequiresCloudTrail
     Properties:
       TemplateURL: ./CloudTrail.yaml
 
@@ -202,15 +198,15 @@ Resources:
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
-        ECSCluster: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
-        VPC: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
-        Subnets: !If [ DeployNewECSCluster, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
+        ECSCluster: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.ClusterName"], !Ref ExistentECSCluster ]
+        VPC: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.VPC"], !Ref ExistentECSClusterVPC ]
+        Subnets: !If [ RequiresCloudTrail, !GetAtt ["ECSFargateClusterStack", "Outputs.PrivateSubnets"], !Join [",", !Ref ExistentECSClusterPrivateSubnets] ]
         SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
         BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
-        CloudTrailTopic: !If [ DeployCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
+        CloudTrailTopic: !If [ RequiresCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
         DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
         ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
         ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
