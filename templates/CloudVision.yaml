@@ -110,8 +110,6 @@ Parameters:
   SysdigExternalID:
     Type: String
     Default: ""
-    AllowedPattern: "^[a-zA-Z0-9]*$"
-    ConstraintDescription: "SysdigExternalID is required"
 
   SysdigTrustedIdentity:
     Type: String
