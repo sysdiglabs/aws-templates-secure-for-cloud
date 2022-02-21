@@ -96,15 +96,21 @@ Parameters:
   SysdigSecureAPIToken:
     Type: String
     NoEcho: true
+    AllowedPattern: ".+"
+    ConstraintDescription: "SysdigSecureAPIToken is required"    
+    
   SysdigSecureEndpoint:
     Type: String
     Default: "https://secure.sysdig.com"
+
   SysdigRoleName:
     Type: String
     Default: "SysdigAgentlessRole"
+    
   SysdigExternalID:
     Type: String
     Default: ""
+    
   SysdigTrustedIdentity:
     Type: String
     Default: ""
