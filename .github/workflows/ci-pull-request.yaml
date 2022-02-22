@@ -19,7 +19,6 @@ jobs:
 
     - name: Print the Cloud Formation Linter Version & run Linter
       run: |
-        args: "templates/**/*.yaml"
         setopt -s globstar
         cfn-lint --version
         cfn-lint -t templates/**/*.yaml
