@@ -122,8 +122,11 @@ Conditions:
     - !Equals [!Ref ExistentECSClusterVPC, ""]
     - !Equals [!Join [",", !Ref ExistentECSClusterPrivateSubnets], ""]
   DeployCloudScanning: !Or
-    - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
-    - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+      - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+    - !Equals [!Ref ECSImageScanningDeploy,
+               "Yes"]
+  Foo: !And
+    - Bar
   ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
   EndpointIsSaas: !Or
