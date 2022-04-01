@@ -91,7 +91,10 @@ Parameters:
   ExistentCloudTrailSNSTopic:
     Type: String
     Default: ""
-    Description: Leave it blank to let us to deploy the infrastructure required for running Sysdig for Cloud
+    Description: |
+      If left blank new required infrastructure will be deployed; Cloudtrail, SNS, S3.
+      Otherwise, specify Cloudtrail SNS Topic ARN.
+      It's required AWS Stackset deployment region to match Cloudtrail S3 bucket region.
 
   SysdigSecureAPIToken:
     Type: String
