@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sysdig for Cloud AppRunner - AWS Edition
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings"
+        Parameters:
+          - SysdigSecureEndpoint
+          - SysdigSecureAPIToken
+          - SysdigRoleName
+          - SysdigExternalID
+          - SysdigTrustedIdentity
+
+      - Label:
+          default: "Modules to Deploy"
+        Parameters:
+          - ECRImageScanningDeploy
+          - ECSImageScanningDeploy
+
+      - Label:
+          default: "Existing Infrastructure"
+        Parameters:
+          - ExistentCloudTrailSNSTopic
+
+    ParameterLabels:
+      SysdigSecureEndpoint:
+        default: "Sysdig Secure Endpoint"
+      SysdigSecureAPIToken:
+        default: "Sysdig Secure API Token"
+      SysdigRoleName:
+        default: "Sysdig Role Name"
+      SysdigExternalID:
+        default: "Sysdig External ID"
+      SysdigTrustedIdentity:
+        default: "Sysdig Trusted Identity"
+      ECRImageScanningDeploy:
+        default: "Do you want to deploy ECR Image Registry Scanning?"
+      ECSImageScanningDeploy:
+        default: "Do you want to deploy Fargate Image Scanning?"
+      ExistentCloudTrailSNSTopic:
+        default: "CloudTrail SNS Topic"
+
+Parameters:
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+
+  ExistentCloudTrailSNSTopic:
+    Type: String
+    Default: ""
+    Description: |
+      If left blank new required infrastructure will be deployed; Cloudtrail, SNS, S3.
+      Otherwise, specify Cloudtrail SNS Topic ARN.
+      It's required AWS Stackset deployment region to match Cloudtrail S3 bucket region.
+
+  SysdigSecureAPIToken:
+    Type: String
+    NoEcho: true
+    AllowedPattern: ".+"
+    ConstraintDescription: "SysdigSecureAPIToken is required"
+    Default: 71d02242-2594-46b3-a8c2-49ac0c251570
+    
+  SysdigSecureEndpoint:
+    Type: String
+    Default: "https://secure.sysdig.com"
+
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+    
+  SysdigExternalID:
+    Type: String
+    Default: "45967c732254e9fc1e4ecb653b5f38cb"
+
+  SysdigTrustedIdentity:
+    Type: String
+    Default: "arn:aws:iam::273107874544:role/us-east-1-production-secure-assume-role"
+
+Conditions:
+  RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]
+  DeployCloudScanning: !Or
+    - !Equals [!Ref ECRImageScanningDeploy, "Yes"]
+    - !Equals [!Ref ECSImageScanningDeploy, "Yes"]
+  ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
+  ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
+  EndpointIsSaas: !Or
+    - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
+    - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
+
+Resources:
+  S3ConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref SysdigConfigLoggingBucket
+        LogFilePrefix: sysdig-config-bucket-logs
+  SysdigConfigLoggingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  SysdigSecureAPITokenParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Secure API Token"
+      Type: String
+      Value: !Ref SysdigSecureAPIToken
+
+  SysdigSecureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "Sysdig Secure Endpoint URL"
+      Type: String
+      Value: !Ref SysdigSecureEndpoint
+
+  CloudTrailStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: RequiresCloudTrail
+    Properties:
+      TemplateURL: ./CloudTrail.yaml
+
+  ScanningCodeBuildStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCloudScanning
+    Properties:
+      TemplateURL: ./ScanningCodeBuild.yaml
+      Parameters:
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+
+  CloudConnectorStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./CloudConnector.yaml
+      Parameters:
+        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
+        S3ConfigBucket: !Ref S3ConfigBucket
+        VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
+        BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
+        CloudTrailTopic: !If [ RequiresCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
+        DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
+        ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
+        ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
+
+  CloudAgentlessRole:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./CloudAgentlessRole.yaml
+      Parameters:
+        SysdigRoleName: !Ref SysdigRoleName
+        SysdigExternalID: !Ref SysdigExternalID
+        SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
