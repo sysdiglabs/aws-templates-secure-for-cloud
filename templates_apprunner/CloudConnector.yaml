@@ -6,9 +6,12 @@ Parameters:
     Type: Number
     Default: 5
     Description: Days to keep logs from CloudConnector
-  SysdigSecureEndpointSsm:
-    Type: AWS::SSM::Parameter::Name
-    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Sysdig Secure Endpoint URL"
+  SysdigSecureAPIToken:
+    Type: String
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
@@ -106,15 +109,13 @@ Resources:
           ImageConfiguration:
             Port: "5000"
             RuntimeEnvironmentVariables:
-              - Name: CONFIG_PATH
+              - Name: CONFIG
                 Value:
                   "Fn::Base64":
                     !Sub
                     - |
-                      rules:
-                        - s3:
-                            bucket: ${S3ConfigBucket}
-                            path: rules
+                      logging: info
+                      rules: []
                       ingestors:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailQueue}
@@ -148,12 +149,15 @@ Resources:
                                           secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
                                   - ""
                           - "[]"
+
               - Name: SECURE_API_TOKEN
-                Value: !Sub ${SysdigSecureAPITokenSsm}
+                Value: !Ref SysdigSecureAPIToken
               - Name: SECURE_URL
-                Value: !Sub ${SysdigSecureAPITokenSsm}
+                Value: !Ref SysdigSecureEndpoint
               - Name: VERIFY_SSL
                 Value: !If [ VerifySSL, "true", "false" ]
+              - Name: TELEMETRY_DEPLOYMENT_METHOD
+                Value: "cft_aws_apprunner_single"
           ImageIdentifier: "public.ecr.aws/o5x4u2t4/penguinjournals-cloudconnector:latest"
           ImageRepositoryType: "ECR_PUBLIC"
       Tags:

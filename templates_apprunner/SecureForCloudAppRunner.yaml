@@ -159,7 +159,8 @@ Resources:
     Properties:
       TemplateURL: ./CloudConnector.yaml
       Parameters:
-        SysdigSecureEndpointSsm: !Ref SysdigSecureEndpointParameter
+        SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
+        SysdigSecureAPIToken: !Ref SysdigSecureAPIToken
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
         S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
@@ -169,11 +170,11 @@ Resources:
         ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
         ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
 
-  CloudAgentlessRole:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./CloudAgentlessRole.yaml
-      Parameters:
-        SysdigRoleName: !Ref SysdigRoleName
-        SysdigExternalID: !Ref SysdigExternalID
-        SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
+ # CloudAgentlessRole:
+ #   Type: AWS::CloudFormation::Stack
+ #   Properties:
+ #     TemplateURL: ./CloudAgentlessRole.yaml
+ #     Parameters:
+ #       SysdigRoleName: !Ref SysdigRoleName
+ #       SysdigExternalID: !Ref SysdigExternalID
+ #       SysdigTrustedIdentity: !Ref SysdigTrustedIdentity

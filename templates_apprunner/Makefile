@@ -1,9 +1,9 @@
 # requires AWS_PROFILE
 # bucket will be created if it does not exist
-S3_BUCKET ?= "s4c-cft-ireland"
 S3_PREFIX ?= "test"
+S3_BUCKET ?= "s4c-cft-ireland"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-S3_REGION = "eu-west-1" # ireland
+S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
 
 .PHONY: packaged-template.yaml
@@ -12,7 +12,8 @@ validate:
 	aws cloudformation validate-template --template-body file://./SecureForCloudAPPRunner.yaml
 
 lint:
-	cfn-lint *.yaml
+	cf-nlint *.yaml
+
 
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
