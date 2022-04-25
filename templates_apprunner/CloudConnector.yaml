@@ -103,6 +103,8 @@ Resources:
     Type: AWS::AppRunner::Service
     Properties:
       ServiceName: "CloudConnector_AppRunner"
+      InstanceConfiguration:
+        InstanceRoleArn: !GetAtt AppRunnerRole.Arn
       SourceConfiguration:
         AutoDeploymentsEnabled: false
         ImageRepository:
@@ -158,12 +160,13 @@ Resources:
                 Value: !If [ VerifySSL, "true", "false" ]
               - Name: TELEMETRY_DEPLOYMENT_METHOD
                 Value: "cft_aws_apprunner_single"
-          ImageIdentifier: "public.ecr.aws/o5x4u2t4/penguinjournals-cloudconnector:latest"
+          ImageIdentifier: "public.ecr.aws/o5x4u2t4/cloud-connector:latest"
           ImageRepositoryType: "ECR_PUBLIC"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudConnector"
-  TaskRole:
+
+  AppRunnerRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:

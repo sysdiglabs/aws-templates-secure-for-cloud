@@ -70,8 +70,7 @@ Parameters:
     NoEcho: true
     AllowedPattern: ".+"
     ConstraintDescription: "SysdigSecureAPIToken is required"
-    Default: 71d02242-2594-46b3-a8c2-49ac0c251570
-    
+
   SysdigSecureEndpoint:
     Type: String
     Default: "https://secure.sysdig.com"
@@ -82,11 +81,11 @@ Parameters:
     
   SysdigExternalID:
     Type: String
-    Default: "45967c732254e9fc1e4ecb653b5f38cb"
+    Default: ""
 
   SysdigTrustedIdentity:
     Type: String
-    Default: "arn:aws:iam::273107874544:role/us-east-1-production-secure-assume-role"
+    Default: ""
 
 Conditions:
   RequiresCloudTrail: !Equals [!Ref ExistentCloudTrailSNSTopic, ""]

@@ -3,7 +3,7 @@
 S3_PREFIX ?= "test"
 S3_BUCKET ?= "s4c-cft-ireland"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-S3_REGION ?= "eu-west-1" # ireland
+S3_REGION = "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
 
 .PHONY: packaged-template.yaml
@@ -42,9 +42,4 @@ clean:
 	aws cloudformation delete-stack --stack-name "SecureForCloudTest"
 	
 	
-#	
-# local-test-manual:
-# (have not found a way to do it via cli)
-# aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
-# note: this will upload the template into an s3 bucket, remember to delete it afterwards 
-#
+
