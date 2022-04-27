@@ -39,9 +39,8 @@ jobs:
         aws-region: eu-west-1
 
     - name: Build and Upload ECS Templates
-      if:
       run: make ci
-      working-directory: ./templates_appruner
+      working-directory: templates_appruner
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}
