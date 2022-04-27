@@ -35,7 +35,7 @@ test: packaged-template.yaml
 			"ECSImageScanningDeploy=Yes"
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/ecs/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name "CloudVisionTest"
