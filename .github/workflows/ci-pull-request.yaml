@@ -40,7 +40,7 @@ jobs:
 
     - name: Build and Upload ECS Templates
       run: make ci
-      working-directory: templates_appruner
+      working-directory: templates_apprunner
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}
