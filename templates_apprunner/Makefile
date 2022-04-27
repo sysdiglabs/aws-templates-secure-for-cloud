@@ -5,6 +5,7 @@ S3_BUCKET ?= "s4c-cft-ireland"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION = "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
+STACK_NAME = "SecureForCloudAppRunnerTest"
 
 .PHONY: packaged-template.yaml
 
@@ -27,7 +28,7 @@ packaged-template.yaml:
 
 test: packaged-template.yaml
 	aws cloudformation deploy \
-		--stack-name "SecureForCloudAppRunnerTest" \
+		--stack-name $(STACK_NAME) \
 		--template-file packaged-template.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
@@ -39,7 +40,4 @@ ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX)/entry-point.yaml
 
 clean:
-	aws cloudformation delete-stack --stack-name "SecureForCloudTest"
-	
-	
-
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)

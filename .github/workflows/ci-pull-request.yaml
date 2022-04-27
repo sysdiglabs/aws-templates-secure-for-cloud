@@ -44,10 +44,3 @@ jobs:
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}
-
-    - name: Build and Upload AppRunner templates
-      run: make ci
-      working-directory: ./templates_apprunner
-      env:
-        S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: pr/${{ github.event.pull_request.head.ref }}

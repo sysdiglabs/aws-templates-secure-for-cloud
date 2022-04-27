@@ -5,6 +5,7 @@ S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
+STACK_NAME = "SecureForCloudECSTest"
 
 .PHONY: packaged-template.yaml
 
@@ -26,7 +27,7 @@ packaged-template.yaml:
 
 test: packaged-template.yaml
 	aws cloudformation deploy \
-		--stack-name "CloudVisionTest" \
+		--stack-name $(STACK_NAME) \
 		--template-file packaged-template.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
@@ -38,7 +39,7 @@ ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
 
 clean:
-	aws cloudformation delete-stack --stack-name "CloudVisionTest"
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)
 	
 	
 #	
