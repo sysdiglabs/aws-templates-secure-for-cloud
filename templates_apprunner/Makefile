@@ -9,7 +9,7 @@ SECURE_API_TOKEN ?= ""
 .PHONY: packaged-template.yaml
 
 validate:
-	aws cloudformation validate-template --template-body file://./SecureForCloudAPPRunner.yaml
+	aws cloudformation validate-template --template-body file://./SecureForCloudAppRunner.yaml
 
 lint:
 	cf-nlint *.yaml
@@ -19,7 +19,7 @@ packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
-		--template-file SecureForCloudAPPRunner.yaml \
+		--template-file SecureForCloudAppRunner.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--s3-prefix $(S3_PREFIX) \
 		--force-upload \
@@ -27,7 +27,7 @@ packaged-template.yaml:
 
 test: packaged-template.yaml
 	aws cloudformation deploy \
-		--stack-name "SecureForCloudTest" \
+		--stack-name "SecureForCloudAppRunnerTest" \
 		--template-file packaged-template.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
@@ -36,7 +36,7 @@ test: packaged-template.yaml
 			"ECSImageScanningDeploy=Yes"
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name "SecureForCloudTest"
