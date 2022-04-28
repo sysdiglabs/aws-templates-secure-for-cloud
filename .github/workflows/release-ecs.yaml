@@ -1,16 +1,18 @@
-name: Release
+name: Release ECS
 
 on:
   push:
     tags:
       - v*
+    paths:
+      - 'templates_ecs/**'
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -49,16 +51,16 @@ jobs:
       run: |
         echo ::set-output name=VERSION::$(echo "${{ github.ref }}" | sed -e 's/.*\/v\(.*\)/\1/')
 
-    - name: Build and Upload Version
+    - name: Build and Upload ECS Version
       run: make ci
-      working-directory: ./templates
+      working-directory: ./templates_ecs
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
 
-    - name: Build and Upload Latest
+    - name: Build and Upload ECS Latest
       run: make ci
-      working-directory: ./templates
+      working-directory: ./templates_ecs
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest

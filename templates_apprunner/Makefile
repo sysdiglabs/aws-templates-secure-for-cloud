@@ -1,6 +1,7 @@
 # requires AWS_PROFILE
 # bucket will be created if it does not exist
 S3_PREFIX ?= "test"
+# using ireland to run App Runner
 S3_BUCKET ?= "s4c-cft-ireland"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION = "eu-west-1" # ireland
@@ -13,7 +14,7 @@ validate:
 	aws cloudformation validate-template --template-body file://./SecureForCloudAppRunner.yaml
 
 lint:
-	cf-nlint *.yaml
+	cfn-lint *.yaml
 
 
 packaged-template.yaml:
