@@ -1,0 +1,351 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloud Connector for AWS
+
+Parameters:
+  LogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudConnector
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the workload is deployed
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets where the CloudConnector will be deployed
+  ECSCluster:
+    Type: String
+    Description: ECS Fargate Cluster where deploy the CloudConnector workload
+  SysdigSecureEndpointSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure Endpoint URL"
+  SysdigSecureAPITokenSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  BuildProject:
+    Type: String
+    Default: ""
+  CloudTrailTopic:
+    Type: String
+    Description: ARN of the SNS Topic to subscribe
+  DeployCloudScanning:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy cloud scanning or not
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECR Image Scanning or not
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECS Image Scanning or not
+
+Conditions:
+  VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
+  DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
+  ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
+  ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
+
+Resources:
+
+  CloudTrailQueue:
+    Type: AWS::SQS::Queue
+
+  CloudTrailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref CloudTrailQueue
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow CloudTrail to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt CloudTrailQueue.Arn
+
+  Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt CloudTrailQueue.Arn
+      TopicArn: !Ref CloudTrailTopic
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetention
+
+  AlertsLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref LogGroup
+      LogStreamName: alerts
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-TaskRolePolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:PutObject"
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:DeleteMessageBatch'
+                  - 'sqs:ReceiveMessage'
+                Resource:
+                  - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
+        - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+        - PolicyName: TaskDefinitionReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecs:DescribeTaskDefinition"
+                Resource:
+                  - "*"
+        - PolicyName: ECRReader
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:GetRepositoryPolicy"
+                  - "ecr:DescribeRepositories"
+                  - "ecr:ListImages"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                  - "ecr:GetLifecyclePolicy"
+                  - "ecr:GetLifecyclePolicyPreview"
+                  - "ecr:ListTagsForResource"
+                  - "ecr:DescribeImageScanFindings"
+                Resource: "*"
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-ExecutionRolePolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
+        - PolicyName: !Sub "${AWS::StackName}-TaskReadParameters"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameters"
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      Family: !Sub "${AWS::StackName}-CloudConnector"
+      NetworkMode: awsvpc
+      TaskRoleArn: !Ref TaskRole
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      Cpu: "256"
+      Memory: "512"
+      ContainerDefinitions:
+        - Name: Config
+          Environment:
+            - Name: BUCKET
+              Value: !Ref S3ConfigBucket
+            - Name: KEY
+              Value: cloud-connector.yaml
+            - Name: OUTPUT
+              Value: /tmp/cloud-connector.yaml
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: !Sub ${SysdigSecureAPITokenSsm}
+            - Name: CONFIG
+              Value:
+                "Fn::Base64":
+                  !Sub
+                  - |
+                    rules:
+                      - s3:
+                          bucket: ${S3ConfigBucket}
+                          path: rules
+                    ingestors:
+                      - cloudtrail-sns-sqs:
+                          queueURL: ${CloudTrailQueue}
+                    scanners: ${Scanners}
+                  - S3ConfigBucket: !Ref S3ConfigBucket
+                    CloudTrailQueue: !Ref CloudTrailQueue
+                    Scanners:
+                      'Fn::If':
+                        - DeployCloudScanning
+                        - !Sub
+                            - |
+
+                              ${ECRCode}
+                              ${ECSCode}
+                            - ECRCode:
+                                'Fn::If':
+                                  - ECRImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecr:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
+                              ECSCode:
+                                'Fn::If':
+                                  - ECSImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecs:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
+                        - "[]"
+
+          Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+            - Name: SECURE_API_TOKEN
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+          Image: quay.io/sysdig/cloud-connector-s3-bucket-config:latest
+          Essential: false
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+        - Name: CloudConnector
+          Environment:
+            - Name: SQS_QUEUE_URL
+              Value: !Ref CloudTrailQueue
+            - Name: SQS_QUEUE_INTERVAL
+              Value: 30s
+            - Name: CODEBUILD_PROJECT
+              Value: !Sub ${BuildProject}
+            - Name: SECURE_API_TOKEN_SECRET
+              Value: !Sub ${SysdigSecureAPITokenSsm}
+            - Name: VERIFY_SSL
+              Value: !If [ VerifySSL, "true", "false" ]
+            - Name: TELEMETRY_DEPLOYMENT_METHOD
+              Value: cft
+            - Name: CONFIG_PATH
+              Value: !Sub s3://${S3ConfigBucket}/cloud-connector.yaml
+          Secrets:
+            - Name: SECURE_URL
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureEndpointSsm}
+            - Name: SECURE_API_TOKEN
+              ValueFrom: !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SysdigSecureAPITokenSsm}
+          DependsOn:
+            - ContainerName: Config
+              Condition: SUCCESS
+          Image: quay.io/sysdig/cloud-connector:latest
+          Essential: true
+          PortMappings:
+            - ContainerPort: 5000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: !Sub "${AWS::StackName}-CloudConnector"
+      GroupDescription: CloudConnector workload Security Group
+      SecurityGroupEgress:
+        # Allow outbound HTTPS traffic over TCP
+        # Used by Cloud Connector to send events to https://secure.sysdig.com
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "tcp"
+          FromPort: 443
+          ToPort: 443
+        # Allow outbound DNS traffic over UDP and TCP
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "tcp"
+          FromPort: 53
+          ToPort: 53
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "udp"
+          FromPort: 53
+          ToPort: 53
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudConnector"
+
+  CloudConnectorService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${AWS::StackName}-CloudConnector"
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref SecurityGroup
+          Subnets: !Ref Subnets
+      TaskDefinition: !Ref TaskDefinition
