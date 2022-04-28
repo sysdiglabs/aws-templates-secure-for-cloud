@@ -1,17 +1,18 @@
 # Sysdig CloudVision for AWS
 
 This repository contains the CloudFormation templates to deploy the Sysdig
-CloudVision suite in an AWS Account.
+CloudVision suite in an AWS Account using ECS or AppRunner.
 
-[Deploy latest version!](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/master/entry-point.yaml)
+**[Deploy ECS latest version!](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/latest/entry-point.yaml)**
 
+**[Deploy AppRunner latest version!](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/latest/entry-point.yaml)**
 
 ## Contribute
 
 
 ### Release
 
-- Template is [uploaded on the CI release cycle](https://github.com/sysdiglabs/aws-cloudvision-templates/blob/main/.github/workflows/release.yaml#L63) to `cf-templates-cloudvision-ci` on Sysdig `draios-demo` account
+Templates are [uploaded on the CI release cycle](https://github.com/sysdiglabs/aws-cloudvision-templates/blob/main/.github/workflows/release.yaml#L63) to `cf-templates-cloudvision-ci` on Sysdig `draios-demo` account.
 
 Leading to the latest entry-point, which will be used on the Sysdig Secure > Getting Started > AWS Cloudformation
 <br/>`https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/master/entry-point.yaml`
@@ -19,13 +20,16 @@ Leading to the latest entry-point, which will be used on the Sysdig Secure > Get
 
 ### Pull Request
 
-When the PR is drafter a new template will be available for  testing at 
-<br/>`https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/pr/<PR_NAME>/entry-point.yaml`
+When the PR is drafted, a new template will be available for testing:  
+- For AppRunner
+<br/>`https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/pr/<PR_NAME>/entry-point.yaml`
+- For ECS
+<br/>`https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/pr/<PR_NAME>/entry-point.yaml`
 
 
 ### Testing
 
-see [Makefile](./templates/Makefile)
+see [Makefile](templates_ecs/Makefile)
 
 - Validation
 
