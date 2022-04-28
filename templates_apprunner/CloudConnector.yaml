@@ -15,9 +15,6 @@ Parameters:
   SysdigSecureAPITokenSsm:
     Type: AWS::SSM::Parameter::Name
     Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
-  S3ConfigBucket:
-    Type: String
-    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
   VerifySSL:
     Type: String
     AllowedValues:
@@ -122,8 +119,7 @@ Resources:
                         - cloudtrail-sns-sqs:
                             queueURL: ${CloudTrailQueue}
                       scanners: ${Scanners}
-                    - S3ConfigBucket: !Ref S3ConfigBucket
-                      CloudTrailQueue: !Ref CloudTrailQueue
+                    - CloudTrailQueue: !Ref CloudTrailQueue
                       Scanners:
                         'Fn::If':
                           - DeployCloudScanning

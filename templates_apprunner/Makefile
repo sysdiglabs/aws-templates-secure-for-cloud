@@ -14,7 +14,7 @@ validate:
 	aws cloudformation validate-template --template-body file://./SecureForCloudAppRunner.yaml
 
 lint:
-	cf-nlint *.yaml
+	cfn-lint *.yaml
 
 
 packaged-template.yaml:

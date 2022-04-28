@@ -100,19 +100,6 @@ Conditions:
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
 
 Resources:
-  S3ConfigBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LoggingConfiguration:
-        DestinationBucketName: !Ref SysdigConfigLoggingBucket
-        LogFilePrefix: sysdig-config-bucket-logs
   SysdigConfigLoggingBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -161,7 +148,6 @@ Resources:
         SysdigSecureEndpoint: !Ref SysdigSecureEndpoint
         SysdigSecureAPIToken: !Ref SysdigSecureAPIToken
         SysdigSecureAPITokenSsm: !Ref SysdigSecureAPITokenParameter
-        S3ConfigBucket: !Ref S3ConfigBucket
         VerifySSL: !If [ EndpointIsSaas, "Yes", "No" ]
         BuildProject: !If [ DeployCloudScanning, !GetAtt [ "ScanningCodeBuildStack", "Outputs.BuildProject" ], ""]
         CloudTrailTopic: !If [ RequiresCloudTrail, !GetAtt ["CloudTrailStack", "Outputs.Topic"], !Ref ExistentCloudTrailSNSTopic ]
@@ -169,11 +155,11 @@ Resources:
         ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
         ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
 
- # CloudAgentlessRole:
- #   Type: AWS::CloudFormation::Stack
- #   Properties:
- #     TemplateURL: ./CloudAgentlessRole.yaml
- #     Parameters:
- #       SysdigRoleName: !Ref SysdigRoleName
- #       SysdigExternalID: !Ref SysdigExternalID
- #       SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
+  CloudAgentlessRole:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./CloudAgentlessRole.yaml
+      Parameters:
+        SysdigRoleName: !Ref SysdigRoleName
+        SysdigExternalID: !Ref SysdigExternalID
+        SysdigTrustedIdentity: !Ref SysdigTrustedIdentity
