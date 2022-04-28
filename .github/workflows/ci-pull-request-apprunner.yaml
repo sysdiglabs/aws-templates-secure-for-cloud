@@ -1,4 +1,4 @@
-name: CI - Pull Request ECS
+name: CI - Pull Request AppRunner
 
 on:
   pull_request:
