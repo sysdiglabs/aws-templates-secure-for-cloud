@@ -1,25 +1,26 @@
 # requires AWS_PROFILE
 # bucket will be created if it does not exist
-S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
+S3_BUCKET ?= "s4c-cft-ireland"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-S3_REGION ?= "eu-west-1" # ireland
+S3_REGION = "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
-STACK_NAME = "SecureForCloudECSTest"
+STACK_NAME = "SecureForCloudAppRunnerTest"
 
 .PHONY: packaged-template.yaml
 
 validate:
-	aws cloudformation validate-template --template-body file://./CloudVision.yaml
+	aws cloudformation validate-template --template-body file://./SecureForCloudAppRunner.yaml
 
 lint:
-	cfn-lint *.yaml
+	cf-nlint *.yaml
+
 
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
-		--template-file CloudVision.yaml \
+		--template-file SecureForCloudAppRunner.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--s3-prefix $(S3_PREFIX) \
 		--force-upload \
@@ -36,15 +37,7 @@ test: packaged-template.yaml
 			"ECSImageScanningDeploy=Yes"
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
-	
-	
-#	
-# local-test-manual:
-# (have not found a way to do it via cli)
-# aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
-# note: this will upload the template into an s3 bucket, remember to delete it afterwards 
-#

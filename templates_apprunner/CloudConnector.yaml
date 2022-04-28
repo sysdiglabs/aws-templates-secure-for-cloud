@@ -1,0 +1,223 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cloud Connector for AWS
+
+Parameters:
+  LogRetention:
+    Type: Number
+    Default: 5
+    Description: Days to keep logs from CloudConnector
+  SysdigSecureEndpoint:
+    Type: String
+    Description: "Sysdig Secure Endpoint URL"
+  SysdigSecureAPIToken:
+    Type: String
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  SysdigSecureAPITokenSsm:
+    Type: AWS::SSM::Parameter::Name
+    Description: "Name of the parameter in SSM containing the Sysdig Secure API Token"
+  S3ConfigBucket:
+    Type: String
+    Description: Name of a bucket (must exist) where the configuration YAML files will be stored
+  VerifySSL:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  BuildProject:
+    Type: String
+    Default: ""
+  CloudTrailTopic:
+    Type: String
+    Description: ARN of the SNS Topic to subscribe
+  DeployCloudScanning:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy cloud scanning or not
+  ECRImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECR Image Scanning or not
+  ECSImageScanningDeploy:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Description: Whether to deploy ECS Image Scanning or not
+
+Conditions:
+  VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
+  DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
+  ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
+  ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
+
+Resources:
+
+  CloudTrailQueue:
+    Type: AWS::SQS::Queue
+
+  CloudTrailQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref CloudTrailQueue
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Allow CloudTrail to send messages
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+              - sqs:SendMessageBatch
+            Resource: !GetAtt CloudTrailQueue.Arn
+
+  Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt CloudTrailQueue.Arn
+      TopicArn: !Ref CloudTrailTopic
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetention
+
+  AlertsLogStream:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName: !Ref LogGroup
+      LogStreamName: alerts
+
+  CloudConnectorAppRunner:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: "CloudConnector_AppRunner"
+      InstanceConfiguration:
+        InstanceRoleArn: !GetAtt AppRunnerRole.Arn
+      SourceConfiguration:
+        AutoDeploymentsEnabled: false
+        ImageRepository:
+          ImageConfiguration:
+            Port: "5000"
+            RuntimeEnvironmentVariables:
+              - Name: CONFIG
+                Value:
+                  "Fn::Base64":
+                    !Sub
+                    - |
+                      logging: info
+                      rules: []
+                      ingestors:
+                        - cloudtrail-sns-sqs:
+                            queueURL: ${CloudTrailQueue}
+                      scanners: ${Scanners}
+                    - S3ConfigBucket: !Ref S3ConfigBucket
+                      CloudTrailQueue: !Ref CloudTrailQueue
+                      Scanners:
+                        'Fn::If':
+                          - DeployCloudScanning
+                          - !Sub
+                            - |
+
+                              ${ECRCode}
+                              ${ECSCode}
+                            - ECRCode:
+                                'Fn::If':
+                                  - ECRImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecr:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
+                              ECSCode:
+                                'Fn::If':
+                                  - ECSImageScanningDeploy
+                                  - !Sub |
+
+                                    - aws-ecs:
+                                          codeBuildProject: ${BuildProject}
+                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - ""
+                          - "[]"
+
+              - Name: SECURE_API_TOKEN
+                Value: !Ref SysdigSecureAPIToken
+              - Name: SECURE_URL
+                Value: !Ref SysdigSecureEndpoint
+              - Name: VERIFY_SSL
+                Value: !If [ VerifySSL, "true", "false" ]
+              - Name: TELEMETRY_DEPLOYMENT_METHOD
+                Value: "cft_aws_apprunner_single"
+          ImageIdentifier: "public.ecr.aws/o5x4u2t4/cloud-connector:latest"
+          ImageRepositoryType: "ECR_PUBLIC"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudConnector"
+
+  AppRunnerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ tasks.apprunner.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-AppRunnerPolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'sqs:GetQueueUrl'
+                  - 'sqs:ListQueues'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:ReceiveMessage'
+                Resource:
+                  - !Sub "arn:aws:sqs:*:${AWS::AccountId}:*"
+        - PolicyName: !Sub "${AWS::StackName}-TriggerScan"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codebuild:StartBuild"
+                Resource:
+                  - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BuildProject}"
+        - PolicyName: !Sub "${AWS::StackName}-ECRReader"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:DescribeImages"
+                  - "ecr:BatchGetImage"
+                Resource: "*"
+        - PolicyName: !Sub "${AWS::StackName}-SSMReader"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameters"
+                Resource: "*"
