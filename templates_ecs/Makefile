@@ -41,8 +41,7 @@ ci: packaged-template.yaml
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
 	
-	
-#	
+#
 # local-test-manual:
 # (have not found a way to do it via cli)
 # aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
