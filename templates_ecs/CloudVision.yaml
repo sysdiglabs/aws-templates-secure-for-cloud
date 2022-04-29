@@ -57,14 +57,14 @@ Parameters:
     AllowedValues:
       - "Yes"
       - "No"
-    Default: "Yes"
+    Default: "No"
 
   ECSImageScanningDeploy:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
-    Default: "Yes"
+    Default: "No"
 
   ExistentECSCluster:
     Type: String
