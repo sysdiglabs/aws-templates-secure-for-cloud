@@ -1,11 +1,17 @@
-# Sysdig CloudVision for AWS
+# Sysdig Secure for Cloud in AWS - Cloudformation Template
 
 This repository contains the CloudFormation templates to deploy the Sysdig
 CloudVision suite in an AWS Account using ECS or AppRunner.
 
-**[Deploy ECS latest version!](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/latest/entry-point.yaml)**
+Deploy latest versions of Sysdig Secure for Cloud using one of the worklfows that most suit you:
 
-**[Deploy AppRunner latest version!](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/latest/entry-point.yaml)**
+- **[Op1) Template for ECS workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/latest/entry-point.yaml)**
+- **[Op2) Tempalte for AppRunner workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/latest/entry-point.yaml)**
+
+
+If needed, we also have an <a href="https://github.com/sysdiglabs/terraform-aws-secure-for-cloud">Sysdig Secure for Cloud Terraform version</a>
+
+--- 
 
 ## Contribute
 
@@ -31,25 +37,25 @@ When the PR is drafted, a new template will be available for testing:
 
 see [Makefile](templates_ecs/Makefile)
 
-- Validation
+- **Validation**
 
-```bash
-$ aws cloudformation validate-template --template-body file://./templates/CloudVision.yaml
-```
+  ```bash
+  $ aws cloudformation validate-template --template-body file://./templates/CloudVision.yaml
+  ```
 
-- Launch Template
+- **Launch** Template
 
-full cycle
+  full cycle
+  
+  ```
+  -- test
+  $ aws cloudformation delete-stack --stack-name test ; \
+  sleep 10 ; \
+  aws cloudformation deploy --template-file templates/CloudVision.yaml --stack-name test ; \
+  aws cloudformation describe-stack-events --stack-name test
+  ```
 
-```
--- test
-$ aws cloudformation delete-stack --stack-name test ; \
-sleep 10 ; \
-aws cloudformation deploy --template-file templates/CloudVision.yaml --stack-name test ; \
-aws cloudformation describe-stack-events --stack-name test
-```
-
-- Test Template wizard (UI)
+- Test **Template wizard** (UI)
   ```
   Aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
   ```
