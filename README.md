@@ -40,7 +40,7 @@ see [Makefile](templates_ecs/Makefile)
 - **Validation**
 
   ```bash
-  $ aws cloudformation validate-template --template-body file://./templates/CloudVision.yaml
+  $ aws cloudformation validate-template --template-body file://./templates_ecs/CloudVision.yaml
   ```
 
 - **Launch** Template
@@ -57,7 +57,7 @@ see [Makefile](templates_ecs/Makefile)
 
 - Test **Template wizard** (UI)
   ```
-  Aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
+  Aws console > cloudformation > create new stack (template, upload template: select ./templates_ecs/Cloudvision.yaml)
   ```
   - note: this will upload the template into an s3 bucket, remember to delete it afterwards 
 

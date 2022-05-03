@@ -44,6 +44,6 @@ clean:
 #
 # local-test-manual:
 # (have not found a way to do it via cli)
-# aws console > cloudformation > create new stack (template, upload template: select ./templates/Cloudvision.yaml)
+# aws console > cloudformation > create new stack (template, upload template: select ./templates_ecs/Cloudvision.yaml)
 # note: this will upload the template into an s3 bucket, remember to delete it afterwards 
 #
