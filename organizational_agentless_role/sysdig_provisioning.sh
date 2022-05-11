@@ -117,19 +117,19 @@ deleteSysdigTask(){
 #
 
 fetchOrganizationAccounts
-listSysdigCloudAccounts | sort > sysdig_initial
+listSysdigCloudAccounts | sort > sysdig_result_initial
 
 createSysdigCloudAccounts
-listSysdigCloudAccounts | sort > sysdig_post_upsert
+listSysdigCloudAccounts | sort > sysdig_result_post_upsert
 echo "-- Creation Diff"
-diff sysdig_initial sysdig_post_upsert
+diff sysdig_result_initial sysdig_result_post_upsert
 
 
-listSysdigTasks > sysdig_task_initial
+listSysdigTasks > sysdig_result_task_initial
 createSysdigTask
-listSysdigTasks > sysdig_task_post_insert
+listSysdigTasks > sysdig_result_task_post_insert
 echo "-- Creation Diff"
-diff sysdig_task_initial sysdig_task_post_insert
+diff sysdig_result_task_initial sysdig_result_task_post_insert
 
 echo
 echo
@@ -138,22 +138,20 @@ echo "####### GET THIS VALUES FOR AWS PROVISIONING #####"
 getExternalId
 echo
 getTrustIdentity
-echo
-echo
 echo "###################################################"
 
 if [ $doCleanup == true ]; then
   echo "--- Cleanup SysdigCloudAccount"
   deleteSysdigCloudAccount
-  listSysdigCloudAccounts | sort > sysdig_post_delete
+  listSysdigCloudAccounts | sort > sysdig_result_post_delete
   echo "-- Cleanup Diff"
-  diff sysdig_initial sysdig_post_delete
+  diff sysdig_result_initial sysdig_result_post_delete
 
   echo "-- Cleanup SysdigTask"
   deleteSysdigTask
-  listSysdigTasks > sysdig_task_post_delete
+  listSysdigTasks > sysdig_result_task_post_delete
   echo "-- Cleanup Diff"
-  diff sysdig_task_initial sysdig_task_post_delete
+  diff sysdig_result_task_initial sysdig_result_task_post_delete
 fi
-rm sysdig_initial sysdig_post_upsert sysdig_post_delete
+rm sysdig_result_*
 echo
