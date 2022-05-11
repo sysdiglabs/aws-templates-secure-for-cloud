@@ -1,11 +1,9 @@
-name: Release AppRunner
+name: Release Templates
 
 on:
   push:
     tags:
       - v*
-    paths:
-      - 'templates_apprunner/**'
 
 jobs:
   release:
@@ -61,6 +59,20 @@ jobs:
     - name: Build and Upload AppRunner Latest
       run: make ci
       working-directory: ./templates_apprunner
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest
+
+    - name: Build and Upload ECS Version
+      run: make ci
+      working-directory: ./templates_ecs
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
+
+    - name: Build and Upload ECS Latest
+      run: make ci
+      working-directory: ./templates_ecs
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest
