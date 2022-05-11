@@ -7,10 +7,10 @@ Parameters:
     Description: Unique role for monitoring AWS accounts
   SysdigExternalID:
     Type: String
-    Description: ExternalID required for the policy
+    Description: Sysdig ExternalID required for the policy creation
   SysdigTrustedIdentity:
     Type: String
-    Description: Trusted identity required for policy
+    Description: Sysdig Trusted identity required for policy creation
 
 Resources:
   CloudAgentlessRole:
