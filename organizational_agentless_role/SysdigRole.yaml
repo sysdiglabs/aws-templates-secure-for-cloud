@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: IAM Role for Agentless
+Description: Sysdig IAM Role for Security Audit
 Parameters:
   SysdigRoleName:
     Type: String
@@ -13,20 +13,18 @@ Parameters:
     Description: Sysdig Trusted identity required for policy creation
 
 Resources:
-  CloudAgentlessRole:
-    Type: "AWS::IAM::Role"
+  SysdigCloudBench:
+    Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref SysdigRoleName
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: Allow
             Principal:
-              AWS: !Ref SysdigTrustedIdentity
-            Action: "sts:AssumeRole"
+              AWS: [ !Ref SysdigTrustedIdentity ]
+            Action: [ 'sts:AssumeRole' ]
             Condition:
               StringEquals:
                 sts:ExternalId: !Ref SysdigExternalID
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/SecurityAudit
+        - "arn:aws:iam::aws:policy/SecurityAudit"
