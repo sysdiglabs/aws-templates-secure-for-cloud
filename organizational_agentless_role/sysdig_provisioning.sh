@@ -1,8 +1,13 @@
 #!/bin/bash
 
 # usage
-# 1. configure api token
+# 1. configure api token, optionally regions
 SYSDIG_API_TOKEN=
+
+# specify where benchmark tasks should analyse
+# ex.: ("eu-central-1" "eu-west-2")
+# default; all regions
+BENCHMARK_REGIONS=()
 
 # 2. set this value to false
 doCleanup=true
@@ -53,6 +58,16 @@ createSysdigTask(){
   done
   accountIdTxt=${accountIdTxt:0:${#accountIdTxt}-1}
 
+
+  regionsTxt=
+  for region in "${BENCHMARK_REGIONS[@]}"
+  do
+    regionsTxt="$regionsTxt\\\""${region}\\\"","
+  done
+  if [[ -n $regionsTxt ]]; then
+    regionsTxt=" and aws.region in ("${regionsTxt:0:${#regionsTxt}-1}")"
+  fi
+
   taskId=$(curl -s "$SYSDIG_ENDPOINT/api/benchmarks/v2/tasks" \
   --header "Authorization: Bearer $SYSDIG_API_TOKEN" \
   -X POST \
@@ -62,7 +77,7 @@ createSysdigTask(){
       "name": "Sysdig Secure for Cloud (AWS) - Organization",
       "schedule": "0 3 * * *",
       "schema": "aws_foundations_bench-1.3.0",
-      "scope": "aws.accountId in ('"$accountIdTxt"')",
+      "scope": "aws.accountId in ('"$accountIdTxt"')'"$regionsTxt"'",
       "enabled": true
     }' | jq '.id')
     echo "Created task with Id: $taskId"
@@ -105,7 +120,7 @@ deleteSysdigCloudAccount(){
 }
 
 deleteSysdigTask(){
-  echo "-- Delete SysdigTag"
+  echo "-- Delete SysdigTask"
   curl -s "$SYSDIG_ENDPOINT/api/benchmarks/v2/tasks/$taskId" \
   --header "Authorization: Bearer $SYSDIG_API_TOKEN" \
   -X DELETE
