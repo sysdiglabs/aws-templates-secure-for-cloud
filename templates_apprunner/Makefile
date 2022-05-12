@@ -18,12 +18,12 @@ lint:
 
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file SecureForCloudAppRunner.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix $(S3_PREFIX) \
+		--s3-prefix apprunner/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template.yaml
 

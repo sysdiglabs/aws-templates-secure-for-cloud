@@ -16,12 +16,12 @@ lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/ecs/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudVision.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix $(S3_PREFIX) \
+		--s3-prefix ecs/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template.yaml
 
