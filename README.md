@@ -1,20 +1,40 @@
-# Sysdig Secure for Cloud in AWS - Cloudformation Template
+# Sysdig Secure for Cloud in AWS - Cloudformation Templates
 
-This repository contains the CloudFormation templates to deploy the Sysdig
-CloudVision suite in an AWS Account using ECS or AppRunner.
+This repository contains the CloudFormation templates to deploy [Sysdig Secure for Cloud](https://docs.sysdig.com/en/docs/sysdig-secure/sysdig-secure-for-cloud/)
+suite.
 
-Deploy latest versions of Sysdig Secure for Cloud using one of the worklfows that most suit you:
+## UseCases
 
-- **[Op1) Template for ECS workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/latest/entry-point.yaml)**
-- **[Op2) Tempalte for AppRunner workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/latest/entry-point.yaml)**
+### Single-Account
+
+Deploy the latest versions using one of the workloads that most suit you:
+
+#### ECS-based workload
+
+[Template for ECS workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/ecs/latest/entry-point.yaml)
+ 
+![single-account diagram](https://raw.githubusercontent.com/sysdiglabs/terraform-aws-secure-for-cloud/master/examples/single-account-ecs/diagram-single.png)
+
+
+#### AppRunner-based workload
+
+Less resource-demanding and economic deployment (ECS requires VPCs and Gateways), but Apprunner is not available on all regions yet
+
+[Template for AppRunner workload](https://console.aws.amazon.com/cloudformation/home#/stacks/quickCreate?stackName=Sysdig-CloudVision&templateURL=https://cf-templates-cloudvision-ci.s3-eu-west-1.amazonaws.com/apprunner/latest/entry-point.yaml)
+
+![single-account diagram on apprunner](https://raw.githubusercontent.com/sysdiglabs/terraform-aws-secure-for-cloud/master/examples/single-account-apprunner/diagram-single.png)
 
 
 If needed, we also have an <a href="https://github.com/sysdiglabs/terraform-aws-secure-for-cloud">Sysdig Secure for Cloud Terraform version</a>
 
+
+## Organizational
+
+WIP.
+
 --- 
 
 ## Contribute
-
 
 ### Release
 
