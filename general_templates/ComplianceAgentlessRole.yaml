@@ -3,7 +3,7 @@ Description: Sysdig IAM Role for Security Audit
 Parameters:
   SysdigRoleName:
     Type: String
-    Default: "SysdigAgentlessRole"
+    Default: "SysdigComplianceAgentlessRole"
     Description: Unique role for monitoring AWS accounts
   SysdigExternalID:
     Type: String
@@ -13,18 +13,19 @@ Parameters:
     Description: Sysdig Trusted identity required for policy creation
 
 Resources:
-  SysdigCloudBench:
-    Type: AWS::IAM::Role
+  ComplianceAgentlessRole:
+    Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Ref SysdigRoleName
       AssumeRolePolicyDocument:
+        Version: "2012-10-17"
         Statement:
-          - Effect: Allow
+            Effect: "Allow"
             Principal:
-              AWS: [ !Ref SysdigTrustedIdentity ]
-            Action: [ 'sts:AssumeRole' ]
+              AWS: !Ref SysdigTrustedIdentity
+            Action: "sts:AssumeRole"
             Condition:
               StringEquals:
                 sts:ExternalId: !Ref SysdigExternalID
       ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/SecurityAudit"
+        - arn:aws:iam::aws:policy/SecurityAudit

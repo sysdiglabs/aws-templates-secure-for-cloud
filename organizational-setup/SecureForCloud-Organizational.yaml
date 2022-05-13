@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Sysdig Secure for cloud deployment for Organizational Setup.
+  Before launching this template, launch 'sysdig_provisioning.sh' script to prepare Sysdig backend.
+Parameters:
+  # threat-detection, compliance, identity&access
+  SysdigManagementAccountRole:
+    Type: String
+    Default: "SysdigManagementAccountRole"
+    Description: Name of the role to be created on the organization management account
+  AssumeRoleBenefficiary:
+    Type: String
+    Description: Role to which we will allow `sts:assumeRole` permissions for the SysdigManagementAccountRole
+  CloudtrailS3Arn:
+    Type: String
+    Description: Arn of the S3 that contains the cloudtrail events
+
+  # compliance
+  OrganizationaUnitId:
+    Type: String
+    Description: Organizational Unit Id where StackSet is to be applied
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigComplianceRole"
+    Description: Unique role for monitoring AWS accounts
+  SysdigExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  SysdigTrustedIdentity:
+    Type: String
+    Description: Sysdig Trusted identity required for policy creation
+
+Resources:
+  SysdigManagementRole:
+    Type: 'AWS::CloudFormation::StackSet'
+    Properties:
+      StackSetName: SysdigComplianceRole
+      Description: Deploy a SysdigRole for Security Audit tasks
+      PermissionModel: SERVICE_MANAGED
+      AutoDeployment:
+        Enabled: True
+        RetainStacksOnAccountRemoval: False
+      ManagedExecution:
+        Active: true
+      Tags:
+        - Key: product
+          Value: sysdig-secure-for-cloud
+        - Key: stackname
+          Value: !Sub "${AWS::StackName}"
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Sub "${AWS::AccountId}"
+          Regions:
+            - !Sub "${AWS::Region}"
+      Parameters:
+        - ParameterKey: SysdigManagementAccountRole
+          ParameterValue: !Ref SysdigManagementAccountRole
+        - ParameterKey: AssumeRoleBenefficiary
+          ParameterValue: !Ref AssumeRoleBenefficiary
+        - ParameterKey: CloudtrailS3Arn
+          ParameterValue: !Ref CloudtrailS3Arn
+      TemplateURL: ./OrgManagementAccountSysdigRole.yaml
+
+  SysdigComplianceRoleStackSet:
+    Type: 'AWS::CloudFormation::StackSet'
+    Properties:
+      StackSetName: SysdigComplianceRole
+      Description: Deploy a SysdigRole for Security Audit tasks
+      PermissionModel: SERVICE_MANAGED
+      AutoDeployment:
+        Enabled: True
+        RetainStacksOnAccountRemoval: False
+      ManagedExecution:
+        Active: true
+      Tags:
+        - Key: product
+          Value: sysdig-secure-for-cloud
+        - Key: stackname
+          Value: !Sub "${AWS::StackName}"
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref OrganizationaUnitId
+          Regions:
+            - !Sub "${AWS::Region}"
+      Parameters:
+        - ParameterKey: SysdigRoleName
+          ParameterValue: !Ref SysdigRoleName
+        - ParameterKey: SysdigExternalID
+          ParameterValue: !Ref SysdigExternalID
+        - ParameterKey: SysdigTrustedIdentity
+          ParameterValue: !Ref SysdigTrustedIdentity
+      TemplateURL: ../../general_templates/ComplianceAgentlessRole.yaml

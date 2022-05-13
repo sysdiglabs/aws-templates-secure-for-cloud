@@ -1,6 +1,12 @@
-# Sysdig Agentless Role Provisioning for AW Organization
+# Secure for Cloud - Organizational
+
+<!-- 
+    TODO, add diagram image 
+-->
 
 ## Usage
+
+This template is to be **deployed on an Organization Management account**
 
 1. Before launching StackSet you will need a pre-provisioning on Sysdig Cloud
 Review `./sysdig_provisioning.sh` and get `SysdigTrustedEntity` and `ExternalId` values for next step.
