@@ -1,19 +1,40 @@
 #!/bin/bash
 
-# usage
-# 1. configure api token, optionally regions
+# --------------------------------------------------------------------------------
+# Sysdig Cloud Compliance Provisioning
+# --------------------------------------------------------------------------------
+#
+# following script will serve as utility to
+# 1. get Sysdig TrustIdentity and ExternalId values for AWS client-side Compliance role creation
+#
+# 2. and provision Sysdig Backend resources for Compliance features by
+# 2.1. registering each member account of the organization, where compliance is wanted to be checked
+# 2.2 creating a task to run aws_foundations_bench-1.3.0 schema on previously defined accounts
+#
+# Resources:
+# - Sysdig Secure REST API https://secure.sysdig.com/swagger.html
+
+
+# --------------------------------------------------------------------------------
+# Usage
+# --------------------------------------------------------------------------------
+#
+#
+# 1. configure sysdig endpoint and api token
+SYSDIG_ENDPOINT=https://secure.sysdig.com
 SYSDIG_API_TOKEN=
 
-# specify where benchmark tasks should analyse
-# ex.: ("eu-central-1" "eu-west-2")
+# 2. optionally, specify what regions benchmark tasks should analyse
 # default; all regions
+# ex.: ("eu-central-1" "eu-west-2")
 BENCHMARK_REGIONS=()
 
-# 2. set this value to false
+# 3. set this value to false for a persistent provisioning :)
 doCleanup=true
+# --------------------------------------------------------------------------------
 
-SYSDIG_ENDPOINT=https://secure.sysdig.com
-SYSDIG_AGENTLESS_ROLE_NAME=SysdigAgentlessRole
+
+SYSDIG_AGENTLESS_ROLE_NAME=SysdigComplianceRole
 
 accounts=()
 taskId=
@@ -127,9 +148,11 @@ deleteSysdigTask(){
 }
 
 
-#
+
+
+# ----------------------------------
 # main
-#
+# ----------------------------------
 
 fetchOrganizationAccounts
 listSysdigCloudAccounts | sort > sysdig_result_initial

@@ -4,5 +4,5 @@ repos:
     -   id: format
         pass_filenames: false
         name: lint
-        entry: make -C organizational_setup lint && make -C templates_apprunner lint && make -C templates_ecs lint
+        entry: make -C templates_apprunner lint && make -C templates_ecs lint
         language: system

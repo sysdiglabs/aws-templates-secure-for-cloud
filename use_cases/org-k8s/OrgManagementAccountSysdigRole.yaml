@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
+  Organizationa Use case. 
   Role for Sysdig to be able to handle Organizational Cloudtrail Resources.
   Note: Image scanning support is not implemented yet
 Parameters:
