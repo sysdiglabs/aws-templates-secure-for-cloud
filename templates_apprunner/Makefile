@@ -1,5 +1,5 @@
 # requires AWS_PROFILE
-# bucket will be created if it does not exist
+# bucket must exist, prefix will be created
 S3_PREFIX ?= "test"
 # using ireland to run App Runner
 S3_BUCKET ?= "s4c-cft-ireland"
