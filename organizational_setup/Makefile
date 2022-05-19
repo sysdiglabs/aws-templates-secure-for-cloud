@@ -1,29 +1,29 @@
 # requires AWS_PROFILE
-# bucket will be created if it does not exist
-#S3_BUCKET ?= "s4c-cft"
-#S3_PREFIX ?= "test"
-## We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
-#S3_REGION ?= "eu-west-1" # ireland
+# bucket must exist, prefix will be created
+S3_BUCKET ?= "s4c-cft-iru"
+S3_PREFIX ?= "test"
+# We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
+S3_REGION ?= "eu-west-1" # ireland
 #SECURE_API_TOKEN ?= ""
 #STACK_NAME = "SecureForCloudECSTest"
 
 .PHONY: packaged-template.yaml
 
 validate:
-	aws cloudformation validate-template --template-body file://./main.yaml
+	aws cloudformation validate-template --template-body file://./SecureForCloudOrganizational.yaml
 
 lint:
-	cfn-lint *.yaml
+	cfn-lint *.yaml --format quiet
 
-package:
-	#aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
+package: lint
+	aws s3 rm s3://$(S3_BUCKET)/$(S3_PREFIX) --recursive
 	aws cloudformation package \
-		--template-file main.yaml \
-#		--region $(S3_REGION) \
-#		--s3-bucket $(S3_BUCKET) \
-#		--s3-prefix $(S3_PREFIX) \
-#		--force-upload \
-		--output-template-file entry-point.yaml
+		--template-file SecureForCloudOrganizational.yaml \
+		--region $(S3_REGION) \
+		--s3-bucket $(S3_BUCKET) \
+		--s3-prefix $(S3_PREFIX) \
+		--force-upload \
+		--output-template-file packaged-template.yaml
 
 #test: packaged-template.yaml
 #	aws cloudformation deploy \
@@ -35,8 +35,8 @@ package:
 #			"ECRImageScanningDeploy=Yes" \
 #			"ECSImageScanningDeploy=Yes"
 
-#ci: packaged-template.yaml
-#	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/ecs/$(S3_PREFIX)/entry-point.yaml
+ci: package
+	aws s3 cp ./entry-point.yaml s3://$(S3_BUCKET)/ecs/$(S3_PREFIX)/entry-point.yaml
 
 #clean:
 #	aws cloudformation delete-stack --stack-name $(STACK_NAME)

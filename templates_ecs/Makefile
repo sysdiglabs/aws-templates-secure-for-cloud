@@ -1,6 +1,6 @@
 # requires AWS_PROFILE
-# bucket will be created if it does not exist
-S3_BUCKET ?= "s4c-cft"
+# bucket must exist, prefix will be created
+S3_BUCKET ?= "s4c-cft-iru"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1" # ireland

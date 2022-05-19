@@ -9,7 +9,7 @@ client needs to deploy things on different levels of accounts
 2. all member accounts, require the creation of a SysdigAgentlessRole for benchmark
 3. sysdig workload (ecs,apprunner or eks) must be deployed
 
-each requirement is separated on its own `Stack` and put all together on a `Stackset` within the [organizational-setup](./organizational-setup) use-case
+each requirement is separated on its own `Stack` and put all together on a `Stackset` within the [organizational-setup](./organizational_setup) use-case
 We use the [`AWS::CloudFormation::StackSet` `StackInstancesGroup.DeploymentTargets`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cloudformation-stackset-stackinstances.html#cfn-cloudformation-stackset-stackinstances-deploymenttargets)
 attribute to configure where to deploy what.
 
