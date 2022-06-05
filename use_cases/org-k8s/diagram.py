@@ -16,7 +16,7 @@ with Diagram("Permission Schema", filename="diagram", show=True, direction="LR")
          cloudtrail_s3 = S3("cloudtrail-s3")
 
          s3_role = IAM("cloudtrail-s3 role")
-         s3_role >> Edge(color=color_event, style="dashed", label="s3:GetObject") >> cloudtrail_s3
+         s3_role >> Edge(color=color_event, style="dashed", label="s3:GetObject") << cloudtrail_s3
 
     with Cluster("account - compute"):
         cloudtrail_sns_sqs = SQS("cloudtrail-sns-sqs")
@@ -25,4 +25,4 @@ with Diagram("Permission Schema", filename="diagram", show=True, direction="LR")
         eks - eks_role
 
     eks_role >> Edge(color=color_event, style="dashed", xlabel="sts:AssumeRole\n+TrustedEntity") << s3_role
-    eks_role >> Edge(color=color_event, style="dashed", label="sqs:Receive+Delete")  >> cloudtrail_sns_sqs
+    eks_role >> Edge(color=color_event, style="dashed", label="sqs:Receive+Delete")  << cloudtrail_sns_sqs
