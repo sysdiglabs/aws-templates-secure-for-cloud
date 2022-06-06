@@ -11,7 +11,7 @@
 
 **Sysdig Secure for Cloud [Features](https://docs.sysdig.com/en/docs/installation/sysdig-secure-for-cloud/)**
 
-- Thread-Detection
+- Threat-Detection
 - Posture; Compliance + Identity Access Management
 <br/><br/>
 
