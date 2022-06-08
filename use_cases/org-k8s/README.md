@@ -157,7 +157,7 @@ Provided the following `values.yaml` template
 sysdig:
   url: "https://secure.sysdig.com"
   secureAPIToken: "SYSDIG_API_TOKEN"
-
+telemetryDeploymentMethod: "helm_aws_k8s_org"		# not required but would help product
 aws:
     region: <SQS-AWS-REGION>
 ingestors:
