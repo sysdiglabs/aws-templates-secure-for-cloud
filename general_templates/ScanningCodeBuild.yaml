@@ -81,7 +81,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_MEDIUM
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/standard:5.0
         PrivilegedMode: true
       LogsConfig:
         CloudWatchLogs:
