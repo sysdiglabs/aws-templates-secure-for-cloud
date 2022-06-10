@@ -1,7 +1,20 @@
 # Sysdig Secure for Cloud in AWS - Cloudformation Templates
 
-This repository contains the CloudFormation templates to deploy [Sysdig Secure for Cloud](https://docs.sysdig.com/en/docs/sysdig-secure/sysdig-secure-for-cloud/)
-suite.
+This repository contains the CloudFormation templates to deploy [Sysdig Secure for Cloud](https://docs.sysdig.com/en/docs/sysdig-secure/sysdig-secure-for-cloud/) suite.
+
+## Features
+Provides unified threat-detection, compliance, forensics and analysis through these major components:
+
+* **[Threat Detection](https://docs.sysdig.com/en/docs/sysdig-secure/insights/)**: Tracks abnormal and suspicious activities in your cloud environment based on Falco language. Managed through `cloud-connector` module. <br/>
+
+* **[Compliance](https://docs.sysdig.com/en/docs/sysdig-secure/posture/compliance/compliance-unified-/)**: Enables the evaluation of standard compliance frameworks. Requires both modules  `cloud-connector` and `cloud-bench`. <br/>
+
+* **[Identity and Access Management](https://docs.sysdig.com/en/docs/sysdig-secure/posture/permissions-and-entitlements/)**: Analyses user access overly permissive policies. Requires both modules  `cloud-connector` and `cloud-bench`. <br/>
+
+* **[Image Scanning](https://docs.sysdig.com/en/docs/sysdig-secure/scanning/)**: Automatically scans all container images pushed to the registry (ECR) and the images that run on the AWS workload (currently ECS). Managed through `cloud-connector`. <br/>Disabled by Default, can be enabled through `deploy_image_scanning_ecr` and `deploy_image_scanning_ecs` input variable parameters.<br/>
+
+For Terraform flavor, check [Secure for cloud - Terraform](https://github.com/sysdiglabs/terraform-aws-secure-for-cloud/)
+
 
 ## UseCases
 
