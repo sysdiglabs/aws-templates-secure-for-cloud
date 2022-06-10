@@ -73,13 +73,26 @@ Use following snipped if required
 ```
 <br/><br/>
 
+### 4. **Cross-Account Access Role**
 
-### 4. **Cloudtrail-S3 Account AssumeRole**
+This step provisions a role for Sysdig compute workload to be able to assume, and access resources outside the account, such as S3 bucket.
+Create a `SYSDIG_S3_ACCESS_ROLE`  and setup a Trust Relationship, for Sysdig Compute role to be able to assume it.
+```
+{
+    "Sid": "AllowSysdigAssumeRole",
+    "Effect": "Allow",
+    "Principal": {
+        "AWS": "<ARN_SYSDIG_COMPUTE_ROLE>"
+    },
+    "Action": "sts:AssumeRole"
+}
+```
+<br/><br/>
 
-This step is required when Cloudtrail-S3 bucket is stored in a different account than the cluster where we will deploy Sysdig workload.
-We will need to create a role to assume from our workload, due to cross-account S3 restrictions.
+### 5. **Cross-Account Access Setup for S3**
 
-Create a `SYSDIG_S3_ACCESS_ROLE` role and give it following **permission** Statement 
+In the previously created `SYSDIG_S3_ACCESS_ROLE`, we're gonna enable it to acces the `ARN_CLOUDTRAIL_S3` bucket where the events are stored
+Give the following **permission** Statement 
 ```
  {
     "Sid": "AllowSysdigReadS3",
@@ -91,17 +104,6 @@ Create a `SYSDIG_S3_ACCESS_ROLE` role and give it following **permission** State
 }
 ```
 
-We will also allow a Trust Relationship, for Sysdig Compute to be able to assume this role
-```
-{
-    "Sid": "AllowSysdigAssumeRole",
-    "Effect": "Allow",
-    "Principal": {
-        "AWS": "<ARN_SYSDIG_COMPUTE_ROLE>"
-    },
-    "Action": "sts:AssumeRole"
-}
-```
 
 Now we will need to perform same **permissions setup on the S3 bucket**. Add following Statement to the **Bucket policy**
 
@@ -119,7 +121,7 @@ Now we will need to perform same **permissions setup on the S3 bucket**. Add fol
 <br/><br/>
 
 
-### 5. **Sysdig Compute** Workload deployment in **K8s**
+### 6. **Sysdig Compute** Workload deployment in **K8s**
 
 First let's review permission schema.
 ![permission schema](./diagram.png)
