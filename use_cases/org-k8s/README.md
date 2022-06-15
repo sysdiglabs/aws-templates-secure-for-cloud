@@ -8,6 +8,7 @@
 - AWS Organizational Cloudtrail with a managed account level SNS activated + reporting to an S3 bucket
 - K8s cluster available for Sysdig compute workload to deploy
 - Permission provisioning will be performed manually
+   - don't want to use IAM user, prefer role
 
 **Sysdig Secure for Cloud [Features](https://docs.sysdig.com/en/docs/installation/sysdig-secure-for-cloud/)**
 
