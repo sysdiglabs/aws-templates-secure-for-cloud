@@ -107,6 +107,7 @@ Conditions:
     - !Equals [!Ref SysdigSecureEndpoint, "https://secure.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://eu1.app.sysdig.com"]
     - !Equals [!Ref SysdigSecureEndpoint, "https://us2.app.sysdig.com"]
+  UseScanningV2: !Equals [ !Ref UseScanningV2, "Yes" ]
 
 Resources:
   SysdigConfigLoggingBucket:

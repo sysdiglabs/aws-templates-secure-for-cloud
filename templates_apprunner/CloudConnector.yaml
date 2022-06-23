@@ -138,7 +138,7 @@ Resources:
                             - ECRCode:
                                 'Fn::If':
                                   - ECRImageScanningDeploy
-                                  - !If |
+                                  - !If
                                     - UseScanningV2 
                                     - "- aws-ecr-inline: {}"
                                     - !Sub |
@@ -149,7 +149,7 @@ Resources:
                               ECSCode:
                                 'Fn::If':
                                   - ECSImageScanningDeploy
-                                  - !If |
+                                  - !If
                                     - UseScanningV2
                                     - "- aws-ecs-inline: {}"
                                     - !Sub |
