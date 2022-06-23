@@ -48,21 +48,29 @@ Parameters:
     AllowedValues:
       - "Yes"
       - "No"
-    Default: "Yes"
+    Default: "No"
     Description: Whether to deploy ECR Image Scanning or not
   ECSImageScanningDeploy:
     Type: String
     AllowedValues:
       - "Yes"
       - "No"
-    Default: "Yes"
+    Default: "No"
     Description: Whether to deploy ECS Image Scanning or not
+  UseScanningV2:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
+    Description: Whether to deploy Image Scanner V2
 
 Conditions:
   VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
   DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
   ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
+  UseScanningV2: !Equals [ !Ref UseScanningV2, "Yes"]
 
 Resources:
 
@@ -224,41 +232,40 @@ Resources:
                 "Fn::Base64":
                   !Sub
                   - |
-                    rules:
-                      - s3:
-                          bucket: ${S3ConfigBucket}
-                          path: rules
+                    rules: []
                     ingestors:
                       - cloudtrail-sns-sqs:
                           queueURL: ${CloudTrailQueue}
                     scanners: ${Scanners}
-                  - S3ConfigBucket: !Ref S3ConfigBucket
-                    CloudTrailQueue: !Ref CloudTrailQueue
+                  - CloudTrailQueue: !Ref CloudTrailQueue
                     Scanners:
                       'Fn::If':
                         - DeployCloudScanning
                         - !Sub
                             - |
-
                               ${ECRCode}
                               ${ECSCode}
                             - ECRCode:
                                 'Fn::If':
                                   - ECRImageScanningDeploy
-                                  - !Sub |
-
-                                    - aws-ecr:
-                                          codeBuildProject: ${BuildProject}
-                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - !If |
+                                    - UseScanningV2 
+                                    - "- aws-ecr-inline: {}"
+                                    - !Sub |
+                                      - aws-ecr:
+                                            codeBuildProject: ${BuildProject}
+                                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
                                   - ""
                               ECSCode:
                                 'Fn::If':
                                   - ECSImageScanningDeploy
-                                  - !Sub |
-
-                                    - aws-ecs:
-                                          codeBuildProject: ${BuildProject}
-                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - !If |
+                                    - UseScanningV2
+                                    - "- aws-ecs-inline: {}"
+                                    - !Sub |
+                                      - aws-ecs:
+                                            codeBuildProject: ${BuildProject}
+                                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
                                   - ""
                         - "[]"
 

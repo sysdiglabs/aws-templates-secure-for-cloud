@@ -50,8 +50,17 @@ Metadata:
         default: "Private subnet Id's"
       ExistentCloudTrailSNSTopic:
         default: "CloudTrail SNS Topic"
+      UseScanningV2:
+        default: "Do you want to use image scanner version 2?"
 
 Parameters:
+  UseScanningV2:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
+
   ECRImageScanningDeploy:
     Type: String
     AllowedValues:
@@ -211,6 +220,7 @@ Resources:
         DeployCloudScanning: !If [ DeployCloudScanning, "Yes", "No" ]
         ECRImageScanningDeploy: !If [ ECRImageScanningDeploy, "Yes", "No"]
         ECSImageScanningDeploy: !If [ ECSImageScanningDeploy, "Yes", "No"]
+        UseScanningV2: !If [ UseScanningV2, "Yes", "No"]
 
   CloudAgentlessRole:
     Type: AWS::CloudFormation::Stack
