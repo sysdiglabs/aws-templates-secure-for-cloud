@@ -66,8 +66,7 @@ Use following snipped if required
       },
       "Action": [
         "SQS:ReceiveMessage",
-        "SQS:DeleteMessage",
-        "SQS:DeleteMessageBatch"
+        "SQS:DeleteMessage"
       ],
       "Resource": "<ARN_CLOUTRAIL_SNS_SQS>"
     }
@@ -136,8 +135,7 @@ Following Step2. We will setup `SysdigComputeRole`, to be able to work with the 
             "Effect": "Allow",
             "Action": [
                 "SQS:ReceiveMessage",
-                "SQS:DeleteMessage",
-                "SQS:DeleteMessageBatch"                
+                "SQS:DeleteMessage"              
             ],
             "Resource": "<ARN_CLOUDTRAIL_SNS_SQS>"
         },
