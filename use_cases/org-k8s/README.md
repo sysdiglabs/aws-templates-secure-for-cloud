@@ -38,6 +38,9 @@ and using the values gathered in previous step.
 
 ### 2. Prepare **EKS SysdigComputeRole**
 
+First let's review permission schema.
+![permission schema](./diagram.png)
+
 In further steps, we will deploy Sysdig compute workload inside an EKS cluster.
 We are going to need a `SysdigComputeRole`, to configure some permissions to be able to fetch the required data.
 Have this role ARN at hand.
@@ -123,8 +126,6 @@ Now we will need to perform same **permissions setup on the S3 bucket**. Add fol
 
 ### 6. **Sysdig Compute** Workload deployment in **K8s**
 
-First let's review permission schema.
-![permission schema](./diagram.png)
 Following Step2. We will setup `SysdigComputeRole`, to be able to work with the SQS and S3 resources.
 
 ```text
