@@ -1,0 +1,1 @@
+Please refer to the general [use-cases](https://github.com/sysdiglabs/terraform-aws-secure-for-cloud/tree/master/use-cases)
