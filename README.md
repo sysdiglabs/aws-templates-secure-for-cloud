@@ -45,9 +45,10 @@ If needed, we also have an <a href="https://github.com/sysdiglabs/terraform-aws-
 
 ## Organizational
 
-No official templates available yet.
+No official cloudformation templates available yet.
 
-Find some [organizational use-case](./use_cases/org-k8s) as reference and contact us for support.
+If Terraform is not desired, you can approach the installation through the `manual` setup, following the so prefixed 
+extra [use-cases](https://github.com/sysdiglabs/terraform-aws-secure-for-cloud/tree/master/use-cases)
 
 ---
 ## Authors
