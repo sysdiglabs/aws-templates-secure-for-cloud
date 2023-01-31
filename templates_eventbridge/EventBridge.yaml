@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EventBridgeRole and EventBridgeRole for falco cloud
+Parameters:
+  SysdigName:
+    Type: String
+    Default: "sysdig"
+    Description: Unique name for role and policy
+  SysdigExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  SysdigEventBusARN:
+    Type: String
+    Description: Sysdig event bus ARN
+  DeadLetterQueueARN:
+    Type: String
+    Description: DeadLetterQueueARN ARN
+
+Conditions:
+  IsDeadLetterQueueARNEmpty: !Equals [ !Ref DeadLetterQueueARN, "-"]
+
+Resources:
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref SysdigName
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Ref SysdigName
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'events:PutEvents'
+                Resource: !Ref SysdigEventBusARN
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref SysdigName
+      Description: Capture all CloudTrail events
+      EventPattern:
+        detail-type:
+          - 'AWS API Call via CloudTrail'
+      Targets:
+        - Id: !Ref SysdigName
+          Arn: !Ref SysdigEventBusARN
+          RoleArn: !GetAtt
+            - EventBridgeRole
+            - Arn
+          DeadLetterConfig:
+            Arn: !If [IsDeadLetterQueueARNEmpty, !Ref AWS::NoValue, !Ref DeadLetterQueueARN]
