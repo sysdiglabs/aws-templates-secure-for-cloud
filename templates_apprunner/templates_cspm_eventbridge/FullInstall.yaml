@@ -1,7 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: EventBridgeRole and EventBridgeRole for falco cloud
+Description: IAM Role for Agentless
 Parameters:
-  SysdigName:
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+    Description: Unique role for monitoring AWS accounts
+  SysdigExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  SysdigTrustedIdentity:
+    Type: String
+    Description: Sysdig Trusted identity required for policy creation
+  SysdigEBName:
     Type: String
     Default: "sysdig"
     Description: Unique name for role and policy
@@ -20,10 +30,27 @@ Conditions:
     !Not [!Equals [ !Ref DeadLetterQueueARN, ""]]
 
 Resources:
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref SysdigRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS: !Ref SysdigTrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref SysdigExternalID
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Ref SysdigName
+      RoleName: !Ref SysdigEBName
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -31,7 +58,7 @@ Resources:
               Service: events.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Ref SysdigName
+        - PolicyName: !Ref SysdigEBName
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -41,13 +68,13 @@ Resources:
   EventBridgeRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Ref SysdigName
+      Name: !Ref SysdigEBName
       Description: Capture all CloudTrail events
       EventPattern:
         detail-type:
           - 'AWS API Call via CloudTrail'
       Targets:
-        - Id: !Ref SysdigName
+        - Id: !Ref SysdigEBName
           Arn: !Ref SysdigEventBusARN
           RoleArn: !GetAtt
             - EventBridgeRole
