@@ -55,6 +55,5 @@ Resources:
           DeadLetterConfig:
             !If
               - IsDeadLetterQueueARNNotEmpty
-              -
-                Arn: !Ref DeadLetterQueueARN
+              - Arn: !Ref DeadLetterQueueARN
               - !Ref "AWS::NoValue"

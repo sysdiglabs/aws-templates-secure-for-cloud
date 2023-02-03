@@ -20,8 +20,7 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: "Allow"
             Principal:
               AWS: !Ref SysdigTrustedIdentity
             Action: "sts:AssumeRole"
