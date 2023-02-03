@@ -3,7 +3,7 @@ Description: IAM Role for Agentless
 Parameters:
   SysdigRoleName:
     Type: String
-    Default: "SysdigAgentlessRole"
+    Default: "sfc-cspm-role"
     Description: Unique role for monitoring AWS accounts
   SysdigExternalID:
     Type: String
