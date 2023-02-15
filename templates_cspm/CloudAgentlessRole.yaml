@@ -1,16 +1,38 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: IAM Role for Agentless
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: ""
+        Parameters:
+          - SysdigRoleName
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - SysdigExternalID
+          - SysdigTrustedIdentity
+
+    ParameterLabels:
+      SysdigRoleName:
+        default: "Role Name"
+      SysdigExternalID:
+        default: "External ID (Sysdig use only)"
+      SysdigTrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+
 Parameters:
   SysdigRoleName:
     Type: String
-    Default: "sfc-cspm-role"
-    Description: Unique role for monitoring AWS accounts
+    Default: "sysdig-secure"
+    Description: The read-only IAM Role that Sysdig will create
   SysdigExternalID:
     Type: String
-    Description: Sysdig ExternalID required for the policy creation
+    Description: Sysdig generated token that proves you own this account
   SysdigTrustedIdentity:
     Type: String
-    Description: Sysdig Trusted identity required for policy creation
+    Description: The Role in Sysdig’s AWS Account with permissions to your account
 
 Resources:
   CloudAgentlessRole:

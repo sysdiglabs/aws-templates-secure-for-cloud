@@ -1,5 +1,33 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: EventBridgeRole and EventBridgeRule for falco cloud
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: ""
+        Parameters:
+          - SysdigEBName
+          - DeadLetterQueueARN    
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - SysdigExternalID
+          - SysdigTrustedIdentity
+          - SysdigEventBusARN
+
+    ParameterLabels:
+      SysdigExternalID:
+        default: "External ID (Sysdig use only)"
+      SysdigTrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+      SysdigEventBusARN:
+        default: "Target Event Bus (Sysdig use only)"
+      SysdigEBName:
+        default: "Unique name for Role and Policy created"
+      DeadLetterQueueARN:
+        default: "ARN of DeadLetterQueue"         
+
 Parameters:
   SysdigEBName:
     Type: String
@@ -8,9 +36,12 @@ Parameters:
   SysdigExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
+  SysdigTrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig’s AWS Account with permissions to your account    
   SysdigEventBusARN:
     Type: String
-    Description: Sysdig event bus ARN
+    Description: The destination in Sysdig’s AWS account where your events are sent
   DeadLetterQueueARN:
     Type: String
     Description: DeadLetterQueueARN ARN
