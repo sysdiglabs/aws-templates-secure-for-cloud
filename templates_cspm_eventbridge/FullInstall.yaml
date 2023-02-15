@@ -7,78 +7,68 @@ Metadata:
       - Label:
           default: ""
         Parameters:
-          - SysdigRoleName
-          - SysdigEBName
-          - DeadLetterQueueARN    
+          - RoleName
+          - EventBridgeRoleName
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
-          - SysdigExternalID
-          - SysdigTrustedIdentity
-          - SysdigEventBusARN
+          - ExternalID
+          - TrustedIdentity
+          - EventBusARN
 
     ParameterLabels:
-      SysdigRoleName:
+      RoleName:
         default: "Role Name"    
-      SysdigExternalID:
+      ExternalID:
         default: "External ID (Sysdig use only)"
-      SysdigTrustedIdentity:
+      TrustedIdentity:
         default: "Trusted Identity (Sysdig use only)"
-      SysdigEventBusARN:
+      EventBusARN:
         default: "Target Event Bus (Sysdig use only)"
-      SysdigEBName:
-        default: "Unique name for Role and Policy created"
-      DeadLetterQueueARN:
-        default: "ARN of DeadLetterQueue"        
+      EventBridgeRoleName:
+        default: "Unique name for Role and Policy created"       
 
 Parameters:
-  SysdigRoleName:
+  RoleName:
     Type: String
     Default: "sysdig-secure"
     Description: The read-only IAM Role that Sysdig will create
-  SysdigEBName:
+  EventBridgeRoleName:
     Type: String
     Default: "sysdig"
     Description: Unique name for role and policy
-  SysdigExternalID:
+  ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
-  SysdigTrustedIdentity:
+  TrustedIdentity:
     Type: String
     Description: The Role in Sysdig’s AWS Account with permissions to your account    
-  SysdigEventBusARN:
+  EventBusARN:
     Type: String
     Description: The destination in Sysdig’s AWS account where your events are sent
-  DeadLetterQueueARN:
-    Type: String
-    Description: DeadLetterQueueARN ARN
-
-Conditions:
-  IsDeadLetterQueueARNNotEmpty:
-    !Not [!Equals [ !Ref DeadLetterQueueARN, ""]]
 
 Resources:
   CloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Ref SysdigRoleName
+      RoleName: !Ref RoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
           -
             Effect: "Allow"
             Principal:
-              AWS: !Ref SysdigTrustedIdentity
+              AWS: !Ref TrustedIdentity
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Ref SysdigExternalID
+                sts:ExternalId: !Ref ExternalID
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Ref SysdigEBName
+      RoleName: !Ref EventBridgeRoleName
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -86,29 +76,25 @@ Resources:
               Service: events.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Ref SysdigEBName
+        - PolicyName: !Ref EventBridgeRoleName
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action: 'events:PutEvents'
-                Resource: !Ref SysdigEventBusARN
+                Resource: !Ref EventBusARN
   EventBridgeRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Ref SysdigEBName
+      Name: !Ref EventBridgeRoleName
       Description: Capture all CloudTrail events
       EventPattern:
         detail-type:
           - 'AWS API Call via CloudTrail'
       Targets:
-        - Id: !Ref SysdigEBName
-          Arn: !Ref SysdigEventBusARN
+        - Id: !Ref EventBridgeRoleName
+          Arn: !Ref EventBusARN
           RoleArn: !GetAtt
             - EventBridgeRole
             - Arn
-          DeadLetterConfig:
-            !If
-              - IsDeadLetterQueueARNNotEmpty
-              - Arn: !Ref DeadLetterQueueARN
-              - !Ref "AWS::NoValue"
+            
