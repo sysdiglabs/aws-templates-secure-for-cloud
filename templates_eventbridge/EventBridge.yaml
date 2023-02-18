@@ -51,6 +51,13 @@ Resources:
             Principal:
               Service: events.amazonaws.com
             Action: 'sts:AssumeRole'
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalID           
       Policies:
         - PolicyName: !Ref EventBridgeRoleName
           PolicyDocument:
