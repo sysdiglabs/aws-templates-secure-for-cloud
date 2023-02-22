@@ -58,7 +58,7 @@ Resources:
               - Arn: !Ref DeadLetterQueueARN
               - !Ref "AWS::NoValue"
 
-    StackSet:
+  EBStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
       Description: Create a Role in all regions
@@ -72,10 +72,9 @@ Resources:
             - eu-west-1
       StackSetName: AgentLessRole
       TemplateBody: |
-       {
-         AWSTemplateFormatVersion: "2010-09-09"
-         Description: IAM Role for Agentless
-         Resources: 
-          - !Ref EventBridgeRole
-          - !Ref EventBridgeRule
-       }                
+          {
+            "Resources": {
+              "EventBridgeRole": ${EventBridgeRole.Arn}
+              "EventBridgeRule": ${EventBridgeRule.Arn}
+            }
+          }                 
