@@ -1,11 +1,11 @@
 # requires AWS_PROFILE
 # bucket must exist, prefix will be created
-S3_BUCKET ?= "s4c-cft-sameer"
+S3_BUCKET ?= "s4c-cft-iru"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
-STACK_NAME = "SecureForCloudECSPMTest"
+STACK_NAME = "CSPMTest"
 
 .PHONY: packaged-template.yaml
 
@@ -31,8 +31,7 @@ test: packaged-template.yaml
 		--template-file packaged-template.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
-			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" \
-			"RoleName=Test-CSPM-Role" \
+			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
 
 ci: packaged-template.yaml
 	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/ecs/$(S3_PREFIX)/entry-point.yaml
