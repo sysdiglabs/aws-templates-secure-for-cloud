@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IAM Role for Agentless
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: ""
+        Parameters:
+          - RoleName
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - ExternalID
+          - TrustedIdentity
+
+    ParameterLabels:
+      RoleName:
+        default: "Role Name"
+      ExternalID:
+        default: "External ID (Sysdig use only)"
+      TrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+
+Parameters:
+  RoleName:
+    Type: String
+    Default: "sysdig-secure"
+    Description: The read-only IAM Role that Sysdig will create
+  ExternalID:
+    Type: String
+    Description: Sysdig generated token that proves you own this account
+  TrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig’s AWS Account with permissions to your account
+
+Resources:
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalID
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
