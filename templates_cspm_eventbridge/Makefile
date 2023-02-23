@@ -1,6 +1,6 @@
 # requires AWS_PROFILE
 # bucket must exist, prefix will be created
-S3_BUCKET ?= "s4c-cft-iru"
+S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1" # ireland
@@ -21,7 +21,7 @@ packaged-template.yaml:
 		--region $(S3_REGION) \
 		--template-file FullInstall.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix ecs/$(S3_PREFIX) \
+		--s3-prefix full-install/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template.yaml
 
@@ -34,7 +34,7 @@ test: packaged-template.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/ecs/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/full-install/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
