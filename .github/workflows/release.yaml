@@ -84,6 +84,13 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
 
+    - name: Build and Upload CSPM Latest
+      run: make ci
+      working-directory: ./templates_cspm
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest        
+
     - name: Build and Upload EventBridge Version
       run: make ci
       working-directory: ./templates_eventbridge
@@ -91,26 +98,19 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ steps.prep.outputs.VERSION }}
 
+    - name: Build and Upload EventBridge Latest
+      run: make ci
+      working-directory: ./templates_eventbridge
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: latest        
+
     - name: Build and Upload full install Version
       run: make ci
       working-directory: ./templates_cspm_eventbridge
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ steps.prep.outputs.VERSION }}         
-
-    - name: Build and Upload CSPM Latest
-      run: make ci
-      working-directory: ./templates_cspm
-      env:
-        S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: latest
-
-    - name: Build and Upload EventBridge Latest
-      run: make ci
-      working-directory: ./templates_eventbridge
-      env:
-        S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: latest
 
     - name: Build and Upload full install Latest
       run: make ci

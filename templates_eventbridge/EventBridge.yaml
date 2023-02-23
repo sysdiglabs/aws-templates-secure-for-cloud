@@ -28,7 +28,7 @@ Metadata:
 Parameters:
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig"
+    Default: "sysdig-threat-detection"
     Description: Unique name for role and policy
   ExternalID:
     Type: String

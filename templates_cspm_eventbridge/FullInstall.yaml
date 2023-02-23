@@ -8,13 +8,13 @@ Metadata:
           default: ""
         Parameters:
           - RoleName
-          - EventBridgeRoleName
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
           - ExternalID
           - TrustedIdentity
           - EventBusARN
+          - EventBridgeRoleName
 
     ParameterLabels:
       RoleName:
@@ -26,8 +26,9 @@ Metadata:
       EventBusARN:
         default: "Target Event Bus (Sysdig use only)"
       EventBridgeRoleName:
-        default: "Unique name for Role and Policy created"       
-
+        default: "Unique name for role and policy (Sysdig use only))"
+          
+       
 Parameters:
   RoleName:
     Type: String
@@ -35,7 +36,7 @@ Parameters:
     Description: The read-only IAM Role that Sysdig will create
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig"
+    Default: "sysdig-threat-detection"
     Description: Unique name for role and policy
   ExternalID:
     Type: String
