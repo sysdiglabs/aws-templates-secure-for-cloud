@@ -24,6 +24,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref SysdigEBName
+      Description: This is global resource. need to deploy only once
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -42,7 +43,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Ref SysdigEBName
-      Description: Capture all CloudTrail events
+      Description: This is regional resource. Remove from here and create a stackset to deploy in all regions/accounts
       EventPattern:
         detail-type:
           - 'AWS API Call via CloudTrail'
