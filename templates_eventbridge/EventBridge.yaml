@@ -79,4 +79,4 @@ Resources:
           Arn: !Ref EventBusARN
           RoleArn: !GetAtt
             - EventBridgeRole
-            - Arn
+            - Arn        

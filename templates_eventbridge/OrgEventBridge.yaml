@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EventBridgeRole and EventBridgeRule for falco cloud
+Parameters:
+  SysdigEBName:
+    Type: String
+    Default: "sysdig"
+    Description: Unique name for role and policy
+  SysdigExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  SysdigEventBusARN:
+    Type: String
+    Description: Sysdig event bus ARN
+  DeadLetterQueueARN:
+    Type: String
+    Description: DeadLetterQueueARN ARN
+
+Conditions:
+  IsDeadLetterQueueARNNotEmpty:
+    !Not [!Equals [ !Ref DeadLetterQueueARN, ""]]
+
+Resources:
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref SysdigEBName
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Ref SysdigEBName
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'events:PutEvents'
+                Resource: !Ref SysdigEventBusARN
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref SysdigEBName
+      Description: Capture all CloudTrail events
+      EventPattern:
+        detail-type:
+          - 'AWS API Call via CloudTrail'
+      Targets:
+        - Id: !Ref SysdigEBName
+          Arn: !Ref SysdigEventBusARN
+          RoleArn: !GetAtt
+            - EventBridgeRole
+            - Arn
+          DeadLetterConfig:
+            !If
+              - IsDeadLetterQueueARNNotEmpty
+              - Arn: !Ref DeadLetterQueueARN
+              - !Ref "AWS::NoValue"
+
+  EBStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      Description: Create a Role in all regions
+      PermissionModel: SELF_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts:
+              - !Ref "AWS::AccountId"
+          Regions:
+            - eu-west-2
+            - eu-west-1
+      StackSetName: AgentLessRole
+      TemplateBody: |
+          {
+            "Resources": {
+              "EventBridgeRole": ${EventBridgeRole.Arn}
+              "EventBridgeRule": ${EventBridgeRule.Arn}
+            }
+          }                 
