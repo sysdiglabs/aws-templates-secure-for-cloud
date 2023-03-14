@@ -14,6 +14,9 @@ Parameters:
   EventBusARN:
     Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
+  OrganizationUnitIDs:
+    Type: String
+    Description: Organization Unit IDs to deploy    
 
 Resources:
   EventBridgeRole:
@@ -54,11 +57,7 @@ Resources:
         Enabled: false
       Parameters:
         - ParameterKey: RoleName
-          ParameterValue: !Ref EventBridgeRoleName
-        - ParameterKey: TrustedIdentity
-          ParameterValue: !Ref SysdigTrustedIdentity
-        - ParameterKey: ExternalID
-          ParameterValue: !Ref SysdigExternalID        
+          ParameterValue: !Ref EventBridgeRoleName       
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
