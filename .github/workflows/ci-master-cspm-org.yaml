@@ -1,4 +1,4 @@
-name: CI - Master CSPM
+name: CI - Master CSPM Org
 
 on:
   push:
@@ -24,8 +24,8 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
-    - name: Build and Upload CSPM templates
-      run: make ci
+    - name: Build and Upload CSPM Org templates
+      run: make ci-org
       working-directory: ./templates_cspm
       env:
         S3_BUCKET: cf-templates-cloudvision-ci

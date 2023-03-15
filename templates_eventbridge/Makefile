@@ -6,22 +6,25 @@ S3_PREFIX ?= "test"
 S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
 STACK_NAME = "EventBridgeTest"
+STACK_NAME_ORG = "OrgEventBridgeTest"
 
 .PHONY: packaged-template.yaml
+.PHONY: packaged-template-org.yaml
 
 validate:
 	aws cloudformation validate-template --template-body file://./EventBridge.yaml
+	aws cloudformation validate-template --template-body file://./OrgEventBridge.yaml
 
 lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/ecs/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/event-bridge/single/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file EventBridge.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix event-bridge/$(S3_PREFIX) \
+		--s3-prefix event-bridge/single/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template.yaml
 
@@ -34,10 +37,34 @@ test: packaged-template.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/event-bridge/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/event-bridge/sinlge/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
+
+packaged-template-org.yaml:
+	aws s3 rm s3://$(S3_BUCKET)/event-bridge/org/$(S3_PREFIX) --recursive
+	aws cloudformation package \
+		--region $(S3_REGION) \
+		--template-file OrgEventBridge.yaml \
+		--s3-bucket $(S3_BUCKET) \
+		--s3-prefix event-bridge/org/$(S3_PREFIX) \
+		--force-upload \
+		--output-template-file packaged-template-org.yaml
+
+test: packaged-template-org.yaml
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME_ORG) \
+		--template-file packaged-template-org.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
+
+ci: packaged-template.yaml
+	aws s3 cp ./packaged-template-org.yaml s3://$(S3_BUCKET)/event-bridge/org/$(S3_PREFIX)/entry-point.yaml
+
+clean:
+	aws cloudformation delete-stack --stack-name $(STACK_NAME_ORG)	
 	
 #
 # local-test-manual:
