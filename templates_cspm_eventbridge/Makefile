@@ -6,6 +6,7 @@ S3_PREFIX ?= "test"
 S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
 STACK_NAME = "FullInstallTest"
+STACK_NAME_ORG = "OrgFullInstallTest"
 
 .PHONY: packaged-template.yaml
 .PHONY: packaged-template-org.yaml
@@ -59,10 +60,10 @@ test-org: packaged-template-org.yaml
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
 
-ci: packaged-template.yaml
+ci-org: packaged-template.yaml
 	aws s3 cp ./packaged-template-org.yaml s3://$(S3_BUCKET)/full-install/org/$(S3_PREFIX)/entry-point.yaml
 
-clean:
+clean-org:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME_ORG)	
 	
 #

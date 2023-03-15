@@ -52,7 +52,7 @@ packaged-template-org.yaml:
 		--force-upload \
 		--output-template-file packaged-template-org.yaml
 
-test: packaged-template-org.yaml
+test-org: packaged-template-org.yaml
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME_ORG) \
 		--template-file packaged-template-org.yaml \
@@ -60,10 +60,10 @@ test: packaged-template-org.yaml
 		--parameter-overrides \
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)" 
 
-ci: packaged-template.yaml
+ci-org: packaged-template.yaml
 	aws s3 cp ./packaged-template-org.yaml s3://$(S3_BUCKET)/event-bridge/org/$(S3_PREFIX)/entry-point.yaml
 
-clean:
+clean-org:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME_ORG)	
 	
 #

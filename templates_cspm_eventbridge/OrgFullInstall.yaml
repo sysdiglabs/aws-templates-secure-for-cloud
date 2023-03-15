@@ -1,31 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: IAM Role and EventBridge resources used by Sysdig Secure
-
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label:
-          default: "Sysdig Settings (Do not change)"
-        Parameters:
-          - RoleName
-          - ExternalID
-          - TrustedIdentity
-          - EventBusARN
-          - EventBridgeRoleName
-
-    ParameterLabels:
-      RoleName:
-        default: "Role Name (Sysdig use only)"
-      ExternalID:
-        default: "External ID (Sysdig use only)"
-      TrustedIdentity:
-        default: "Trusted Identity (Sysdig use only)"
-      EventBusARN:
-        default: "Target Event Bus (Sysdig use only)"
-      EventBridgeRoleName:
-        default: "Integration Name (Sysdig use only)"
-          
-       
+Description: IAM Role and EventBridge resources used by Sysdig Secure       
 Parameters:
   RoleName:
     Type: String
@@ -44,6 +18,9 @@ Parameters:
   EventBusARN:
     Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
+  OrganizationUnitIDs:
+    Type: String
+    Description: Organization Unit IDs to deploy    
 
 Resources:
   CloudAgentlessRole:
