@@ -19,7 +19,7 @@ lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/cspm/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/cspm/single/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudAgentlessRole.yaml \
@@ -43,7 +43,7 @@ clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
 
 packaged-template-org.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/cspm/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/cspm/org/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file OrgCloudAgentlessRole.yaml \
