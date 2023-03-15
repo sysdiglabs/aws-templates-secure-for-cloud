@@ -48,7 +48,7 @@ packaged-template-org.yaml:
 		--region $(S3_REGION) \
 		--template-file OrgEventBridge.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix event-bridge/org/$(S3_PREFIX) \
+		--s3-prefix event-bridge/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template-org.yaml
 

@@ -48,7 +48,7 @@ packaged-template-org.yaml:
 		--region $(S3_REGION) \
 		--template-file OrgFullInstall.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix full-install/org/$(S3_PREFIX) \
+		--s3-prefix full-install/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template-org.yaml
 
