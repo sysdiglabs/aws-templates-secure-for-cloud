@@ -16,7 +16,7 @@ lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/ecs/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/cspm/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudAgentlessRole.yaml \
