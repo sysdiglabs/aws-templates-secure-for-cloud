@@ -20,6 +20,7 @@ lint:
 
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/cspm/single/$(S3_PREFIX) --recursive
+
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file CloudAgentlessRole.yaml \
