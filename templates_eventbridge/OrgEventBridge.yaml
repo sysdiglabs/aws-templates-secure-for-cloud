@@ -19,45 +19,25 @@ Parameters:
     Description: Organization Unit IDs to deploy    
 
 Resources:
-  EventBridgeRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Ref EventBridgeRoleName
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action: 'sts:AssumeRole'
-          - Effect: "Allow"
-            Principal:
-              AWS: !Ref TrustedIdentity
-            Action: "sts:AssumeRole"
-            Condition:
-              StringEquals:
-                sts:ExternalId: !Ref ExternalID           
-      Policies:
-        - PolicyName: !Ref EventBridgeRoleName
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: 'events:PutEvents'
-                Resource: !Ref EventBusARN
-
   EBRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: EBRuleStackSet
-      Description: Create a Rule in all regions
+      Description: Create a Stackset for creation of resources needed for Threat Detection
       PermissionModel: SERVICE_MANAGED
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
         Enabled: false
       Parameters:
-        - ParameterKey: RoleName
-          ParameterValue: !Ref EventBridgeRoleName       
+        - ParameterKey: TrustedIdentity
+          ParameterValue: !Ref TrustedIdentity
+        - ParameterKey: ExternalID
+          ParameterValue: !Ref ExternalID
+        - ParameterKey: EventBridgeRoleName
+          ParameterValue: !Ref EventBridgeRoleName
+        - ParameterKey: EventBusARN
+          ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
@@ -66,28 +46,61 @@ Resources:
             - !Ref "AWS::Region"  
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Description: IAM Role for Agentless
+        Description: Stackset for Threat Detection
         Parameters:
-          RoleName:
+          TrustedIdentity:
             Type: String
-            Description: Role name
+            Description: Trusted identity
+          ExternalID:
+            Type: String
+            Description: External ID
+          EventBridgeRoleName:
+            Type: String
+            Description: EventBridge Role Name
+          EventBusARN:
+            Type: String
+            Description: EventBus ARN                        
 
         Resources:
+          EventBridgeRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Sub ${EventBridgeRoleName}
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      Service: events.amazonaws.com
+                    Action: 'sts:AssumeRole'
+                  - Effect: "Allow"
+                    Principal:
+                      AWS: !Sub ${TrustedIdentity}
+                    Action: "sts:AssumeRole"
+                    Condition:
+                      StringEquals:
+                        sts:ExternalId: !Sub ${ExternalID}          
+              Policies:
+                - PolicyName: !Sub ${EventBridgeRoleName}
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                      - Effect: Allow
+                        Action: 'events:PutEvents'
+                        Resource: !Sub ${EventBusARN}               
           EventBridgeRule:
             Type: "AWS::Events::Rule"
             Properties:
-              Name: !Ref EventBridgeRoleName
+              Name: !Sub ${EventBridgeRoleName}
               Description: Capture all CloudTrail events
               EventPattern:
                 detail-type:
                   - 'AWS API Call via CloudTrail'
               Targets:
-                - Id: !Ref EventBridgeRoleName
-                  Arn: !Ref EventBusARN
-                  RoleArn: !GetAtt
-                    - EventBridgeRole
-                    - Arn 
-
+                - Id: !Sub ${EventBridgeRoleName}
+                  Arn: !Sub ${EventBusARN}
+                  RoleArn: !GetAtt [EventBridgeRole, Arn]
+                    
         Outputs:
           RuleARN:
             Description: ARN of the rule created
