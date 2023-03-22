@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EventBridgeRole and EventBridgeRule for falco cloud
+Parameters:
+  EventBridgeRoleName:
+    Type: String
+    Default: "sysdig-secure-cloudtrail"
+    Description: A unique identifier used to create an IAM Role and EventBridge Rule
+  ExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  TrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig's AWS Account with permissions to your account
+  EventBusARN:
+    Type: String
+    Description: The destination in Sysdig's AWS account where your events are sent
+  OrganizationUnitIDs:
+    Type: String
+    Description: Organization Unit IDs to deploy    
+
+Resources:
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref EventBridgeRoleName
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sts:AssumeRole'
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalID           
+      Policies:
+        - PolicyName: !Ref EventBridgeRoleName
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'events:PutEvents'
+                Resource: !Ref EventBusARN
+
+  EBRuleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: EBRuleStackSet
+      Description: Create a Rule in all regions
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+        - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: false
+      Parameters:
+        - ParameterKey: RoleName
+          ParameterValue: !Ref EventBridgeRoleName       
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref OrganizationUnitIDs
+          Regions:
+            - !Ref "AWS::Region"  
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: IAM Role for Agentless
+        Parameters:
+          RoleName:
+            Type: String
+            Description: Role name
+
+        Resources:
+          EventBridgeRule:
+            Type: "AWS::Events::Rule"
+            Properties:
+              Name: !Ref EventBridgeRoleName
+              Description: Capture all CloudTrail events
+              EventPattern:
+                detail-type:
+                  - 'AWS API Call via CloudTrail'
+              Targets:
+                - Id: !Ref EventBridgeRoleName
+                  Arn: !Ref EventBusARN
+                  RoleArn: !GetAtt
+                    - EventBridgeRole
+                    - Arn 
+
+        Outputs:
+          RuleARN:
+            Description: ARN of the rule created
+            Value: !Sub ${EventBridgeRule.Arn}

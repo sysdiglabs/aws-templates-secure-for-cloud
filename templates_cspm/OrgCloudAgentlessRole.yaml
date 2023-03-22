@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IAM Role for Agentless
+Parameters:
+  SysdigRoleName:
+    Type: String
+    Default: "SysdigAgentlessRole"
+    Description: Unique role for monitoring AWS accounts
+  SysdigExternalID:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  SysdigTrustedIdentity:
+    Type: String
+    Description: Sysdig Trusted identity required for policy creation
+  OrganizationUnitIDs:
+    Type: String
+    Description: Organization Unit IDs to deploy
+
+Resources:
+  RoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: AgentLessRoleStackSet
+      Description: Create a Role in all regions
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+        - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: false
+      Parameters:
+        - ParameterKey: RoleName
+          ParameterValue: !Ref SysdigRoleName
+        - ParameterKey: TrustedIdentity
+          ParameterValue: !Ref SysdigTrustedIdentity
+        - ParameterKey: ExternalID
+          ParameterValue: !Ref SysdigExternalID        
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref OrganizationUnitIDs
+          Regions:
+            - !Ref "AWS::Region"  
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: IAM Role for Agentless
+        Parameters:
+          RoleName:
+            Type: String
+            Description: Role name
+          TrustedIdentity:
+            Type: String
+            Description: Trusted identity
+          ExternalID:
+            Type: String
+            Description: external ID
+
+        Resources:
+          CloudAgentlessRole:
+            Type: "AWS::IAM::Role"
+            Properties:
+              RoleName: !Sub ${RoleName}
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: "Allow"
+                    Principal:
+                      AWS: !Sub ${TrustedIdentity}
+                    Action: "sts:AssumeRole"
+                    Condition:
+                      StringEquals:
+                        sts:ExternalId: !Sub ${ExternalID}
+              ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/SecurityAudit
+
+        Outputs:
+          RoleARN:
+            Description: ARN of the role created
+            Value: !Sub ${CloudAgentlessRole.Arn}      
+        

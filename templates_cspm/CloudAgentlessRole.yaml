@@ -48,3 +48,8 @@ Resources:
                 sts:ExternalId: !Ref ExternalID
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
+
+Outputs:
+  RoleARN:
+    Description: ARN of the role created
+    Value: !Sub ${CloudAgentlessRole.Arn}
