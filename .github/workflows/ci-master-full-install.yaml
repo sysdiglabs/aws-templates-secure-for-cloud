@@ -30,3 +30,10 @@ jobs:
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: master
+
+    - name: Build and Upload Full install templates
+      run: make ci-org
+      working-directory: ./templates_cspm_eventbridge
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: master        
