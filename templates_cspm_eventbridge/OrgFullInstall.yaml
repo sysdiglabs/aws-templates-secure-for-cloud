@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: IAM Role and EventBridge resources used by Sysdig Secure       
+Description: CSPM and Threat detection resources used by Sysdig Secure       
 Parameters:
   RoleName:
     Type: String
@@ -84,7 +84,7 @@ Resources:
                     Action: "sts:AssumeRole"
                     Condition:
                       StringEquals:
-                        sts:ExternalId: !Sub ${TrustedIdentity}
+                        sts:ExternalId: !Sub ${ExternalID}
               ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/SecurityAudit
           EventBridgeRole:
