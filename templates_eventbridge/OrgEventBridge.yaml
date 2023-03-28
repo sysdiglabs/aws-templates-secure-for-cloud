@@ -40,8 +40,7 @@ Resources:
           ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds:
-              - !Ref OrganizationUnitIDs
+            OrganizationalUnitIds: !Split [ ',', !Ref OrganizationUnitIDs]
           Regions:
             - !Ref "AWS::Region"  
       TemplateBody: |
@@ -100,8 +99,3 @@ Resources:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
                   RoleArn: !GetAtt [EventBridgeRole, Arn]
-                    
-        Outputs:
-          RuleARN:
-            Description: ARN of the rule created
-            Value: !Sub ${EventBridgeRule.Arn}
