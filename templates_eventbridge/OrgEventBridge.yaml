@@ -10,6 +10,7 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - EventBusARN
+          - Regions
     ParameterLabels:
       ExternalID:
         default: "External ID (Sysdig use only)"
@@ -19,6 +20,10 @@ Metadata:
         default: "Target Event Bus (Sysdig use only)"
       EventBridgeRoleName:
         default: "Integration Name (Sysdig use only)"
+      Regions:
+        default: "EventBridge Regions (Sysdig use only)"
+      OrganizationUnitIDs:
+        default: "Organization Unit IDs (Sysdig use only)"
 Parameters:
   EventBridgeRoleName:
     Type: String
@@ -33,9 +38,12 @@ Parameters:
   EventBusARN:
     Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
+  Regions:
+    Type: String
+    Description: Comma separated list of regions to monitor with EventBridge
   OrganizationUnitIDs:
     Type: String
-    Description: Organization Unit IDs to deploy
+    Description: Comma separated list of Organization Unit IDs to deploy
 Resources:
   EBRoleStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -126,11 +134,8 @@ Resources:
           ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds:
-              - !Ref OrganizationUnitIDs
-          Regions:
-            - 'us-east-1'
-            - 'us-west-2'
+            OrganizationalUnitIds: !Split [ ",", !Ref Regions]
+          Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
