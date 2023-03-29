@@ -19,16 +19,18 @@ Parameters:
     Description: Organization Unit IDs to deploy    
 
 Resources:
-  EBRuleStackSet:
+  EBRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
-      StackSetName: EBRuleStackSet
+      StackSetName: EBRoleStackSet
       Description: Create a Stackset for creation of resources needed for Threat Detection
       PermissionModel: SERVICE_MANAGED
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
         Enabled: false
+      OperationPreferences:
+        MaxConcurrentCount: 5
       Parameters:
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
@@ -37,16 +39,16 @@ Resources:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN                      
+          ParameterValue: !Ref EventBusARN
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds:
               - !Ref OrganizationUnitIDs
           Regions:
-            - !Ref "AWS::Region"  
+            - !Ref "AWS::Region"
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Description: Stackset for Threat Detection
+        Description: Role for Threat Detection
         Parameters:
           TrustedIdentity:
             Type: String
@@ -60,7 +62,6 @@ Resources:
           EventBusARN:
             Type: String
             Description: EventBus ARN                        
-
         Resources:
           EventBridgeRole:
             Type: AWS::IAM::Role
@@ -87,7 +88,42 @@ Resources:
                     Statement:
                       - Effect: Allow
                         Action: 'events:PutEvents'
-                        Resource: !Sub ${EventBusARN}               
+                        Resource: !Sub ${EventBusARN}
+  EBRuleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: EBRuleStackSet
+      Description: Create a Stackset for creation of resources needed for Threat Detection
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+        - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: false
+      OperationPreferences:
+        MaxConcurrentCount: 5
+      Parameters:
+        - ParameterKey: EventBridgeRoleName
+          ParameterValue: !Ref EventBridgeRoleName
+        - ParameterKey: EventBusARN
+          ParameterValue: !Ref EventBusARN                      
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref OrganizationUnitIDs
+          Regions:
+            - 'us-east-1'
+            - 'us-west-2'
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: Stackset for Threat Detection
+        Parameters:
+          EventBridgeRoleName:
+            Type: String
+            Description: EventBridge Role Name
+          EventBusARN:
+            Type: String
+            Description: EventBus ARN                        
+        Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
             Properties:
@@ -101,9 +137,4 @@ Resources:
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
-                  RoleArn: !GetAtt [EventBridgeRole, Arn]
-                    
-        Outputs:
-          RuleARN:
-            Description: ARN of the rule created
-            Value: !Sub ${EventBridgeRule.Arn}
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"
