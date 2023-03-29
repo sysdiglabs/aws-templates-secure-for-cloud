@@ -96,6 +96,8 @@ Resources:
       EventPattern:
         detail-type:
           - 'AWS API Call via CloudTrail'
+          - 'AWS Console Sign In via CloudTrail'
+          - 'AWS Service Event via CloudTrail'
       Targets:
         - Id: !Ref EventBridgeRoleName
           Arn: !Ref EventBusARN
