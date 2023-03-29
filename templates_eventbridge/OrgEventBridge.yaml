@@ -1,5 +1,24 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: EventBridgeRole and EventBridgeRule for falco cloud
+Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - EventBridgeRoleName
+          - ExternalID
+          - TrustedIdentity
+          - EventBusARN
+    ParameterLabels:
+      ExternalID:
+        default: "External ID (Sysdig use only)"
+      TrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+      EventBusARN:
+        default: "Target Event Bus (Sysdig use only)"
+      EventBridgeRoleName:
+        default: "Integration Name (Sysdig use only)"
 Parameters:
   EventBridgeRoleName:
     Type: String
@@ -16,14 +35,13 @@ Parameters:
     Description: The destination in Sysdig's AWS account where your events are sent
   OrganizationUnitIDs:
     Type: String
-    Description: Organization Unit IDs to deploy    
-
+    Description: Organization Unit IDs to deploy
 Resources:
   EBRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: EBRoleStackSet
-      Description: Create a Stackset for creation of resources needed for Threat Detection
+      Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
       PermissionModel: SERVICE_MANAGED
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
@@ -48,20 +66,20 @@ Resources:
             - !Ref "AWS::Region"
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Description: Role for Threat Detection
+        Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
         Parameters:
           TrustedIdentity:
             Type: String
-            Description: Trusted identity
+            Description: The Role in Sysdig's AWS Account with permissions to your account
           ExternalID:
             Type: String
-            Description: External ID
+            Description: Sysdig ExternalID required for the policy creation
           EventBridgeRoleName:
             Type: String
-            Description: EventBridge Role Name
+            Description: A unique identifier used to create an IAM Role and EventBridge Rule
           EventBusARN:
             Type: String
-            Description: EventBus ARN                        
+            Description: The destination in Sysdig's AWS account where your events are sent                        
         Resources:
           EventBridgeRole:
             Type: AWS::IAM::Role
@@ -93,7 +111,7 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: EBRuleStackSet
-      Description: Create a Stackset for creation of resources needed for Threat Detection
+      Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SERVICE_MANAGED
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
@@ -115,14 +133,14 @@ Resources:
             - 'us-west-2'
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Description: Stackset for Threat Detection
+        Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
         Parameters:
           EventBridgeRoleName:
             Type: String
-            Description: EventBridge Role Name
+            Description: A unique identifier used to create an IAM Role and EventBridge Rule
           EventBusARN:
             Type: String
-            Description: EventBus ARN                        
+            Description: The destination in Sysdig's AWS account where your events are sent                        
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
