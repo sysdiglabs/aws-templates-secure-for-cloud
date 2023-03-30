@@ -49,8 +49,8 @@ Parameters:
     Description: Comma separated list of regions to monitor with EventBridge    
   OrganizationUnitIDs:
     Type: String
-    Description: Organization Unit IDs to deploy    
-
+    Description: Organization Unit IDs to deploy
+       
 Resources:
   RolesStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -78,8 +78,7 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
-          Regions:
-            - !Ref "AWS::Region"
+          Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
@@ -187,5 +186,4 @@ Resources:
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
-                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"                        
-            
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"
