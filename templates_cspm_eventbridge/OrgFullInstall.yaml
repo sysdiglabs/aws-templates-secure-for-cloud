@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: CSPM and EventBridge resources needed for Sysdig Secure
+Description: IAM Role and EventBridge resources used by Sysdig Secure
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
