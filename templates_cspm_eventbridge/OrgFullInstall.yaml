@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: IAM Role and EventBridge resources used by Sysdig Secure       
+Description: CSPM and Threat detection resources used by Sysdig Secure       
 Parameters:
   RoleName:
     Type: String
@@ -20,8 +20,8 @@ Parameters:
     Description: The destination in Sysdig's AWS account where your events are sent
   OrganizationUnitIDs:
     Type: String
-    Description: Organization Unit IDs to deploy    
-
+    Description: Organization Unit IDs to deploy
+       
 Resources:
   FullInstallStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -46,10 +46,9 @@ Resources:
           ParameterValue: !Ref EventBusARN                 
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds:
-              - !Ref OrganizationUnitIDs
+            OrganizationalUnitIds: !Split [ ',', !Ref OrganizationUnitIDs]
           Regions:
-            - !Ref "AWS::Region"  
+            - !Ref "AWS::Region" 
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: StackSet for CSPM and Threat Detection
@@ -84,7 +83,7 @@ Resources:
                     Action: "sts:AssumeRole"
                     Condition:
                       StringEquals:
-                        sts:ExternalId: !Sub ${TrustedIdentity}
+                        sts:ExternalId: !Sub ${ExternalID}
               ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/SecurityAudit
           EventBridgeRole:
@@ -125,10 +124,4 @@ Resources:
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
-                  RoleArn: !GetAtt [EventBridgeRole, Arn]
-
-        Outputs:
-          RuleARN:
-            Description: ARN of the rule created
-            Value: !Sub ${EventBridgeRule.Arn}
-            
+                  RoleArn: !GetAtt [EventBridgeRole, Arn]        

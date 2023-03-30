@@ -1,20 +1,20 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: IAM Role for Agentless
 Parameters:
-  SysdigRoleName:
+  RoleName:
     Type: String
-    Default: "SysdigAgentlessRole"
+    Default: "sysdig-secure"
     Description: Unique role for monitoring AWS accounts
-  SysdigExternalID:
+  ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
-  SysdigTrustedIdentity:
+  TrustedIdentity:
     Type: String
     Description: Sysdig Trusted identity required for policy creation
   OrganizationUnitIDs:
     Type: String
     Description: Organization Unit IDs to deploy
-
+    
 Resources:
   RoleStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -28,17 +28,16 @@ Resources:
         Enabled: false
       Parameters:
         - ParameterKey: RoleName
-          ParameterValue: !Ref SysdigRoleName
+          ParameterValue: !Ref RoleName
         - ParameterKey: TrustedIdentity
-          ParameterValue: !Ref SysdigTrustedIdentity
+          ParameterValue: !Ref TrustedIdentity
         - ParameterKey: ExternalID
-          ParameterValue: !Ref SysdigExternalID        
+          ParameterValue: !Ref ExternalID        
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds:
-              - !Ref OrganizationUnitIDs
+            OrganizationalUnitIds: !Split [ ',', !Ref OrganizationUnitIDs]
           Regions:
-            - !Ref "AWS::Region"  
+            - !Ref "AWS::Region"      
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role for Agentless
@@ -69,10 +68,5 @@ Resources:
                       StringEquals:
                         sts:ExternalId: !Sub ${ExternalID}
               ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/SecurityAudit
-
-        Outputs:
-          RoleARN:
-            Description: ARN of the role created
-            Value: !Sub ${CloudAgentlessRole.Arn}      
+                - arn:aws:iam::aws:policy/SecurityAudit      
         
