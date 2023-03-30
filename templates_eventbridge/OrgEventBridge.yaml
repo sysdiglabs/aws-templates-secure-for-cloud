@@ -11,6 +11,7 @@ Metadata:
           - TrustedIdentity
           - EventBusARN
           - Regions
+          - OrganizationUnitIDs
     ParameterLabels:
       ExternalID:
         default: "External ID (Sysdig use only)"
@@ -68,8 +69,7 @@ Resources:
           ParameterValue: !Ref EventBusARN
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds:
-              - !Ref OrganizationUnitIDs
+            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
           Regions:
             - !Ref "AWS::Region"
       TemplateBody: |
@@ -134,7 +134,7 @@ Resources:
           ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds: !Split [ ",", !Ref Regions]
+            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
           Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
