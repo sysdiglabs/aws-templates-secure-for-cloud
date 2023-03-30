@@ -14,14 +14,16 @@ Metadata:
           - Regions
           - OrganizationUnitIDs
     ParameterLabels:
+      CSPMRoleName:
+        default: "CSPM Role Name (Sysdig use only)"
+      EventBridgeRoleName:
+        default: "Integration Name (Sysdig use only)"        
       ExternalID:
         default: "External ID (Sysdig use only)"
       TrustedIdentity:
         default: "Trusted Identity (Sysdig use only)"
       EventBusARN:
         default: "Target Event Bus (Sysdig use only)"
-      EventBridgeRoleName:
-        default: "Integration Name (Sysdig use only)"
       Regions:
         default: "EventBridge Regions (Sysdig use only)"
       OrganizationUnitIDs:
