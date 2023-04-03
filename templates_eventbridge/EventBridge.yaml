@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: EventBridge resource that forward CloudTrail logs to Sysdig Secure
+Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure
 
 Metadata:
   AWS::CloudFormation::Interface:
