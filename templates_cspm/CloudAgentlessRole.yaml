@@ -22,7 +22,6 @@ Metadata:
 Parameters:
   RoleName:
     Type: String
-    Default: "sysdig-secure"
     Description: The read-only IAM Role that Sysdig will create
   ExternalID:
     Type: String

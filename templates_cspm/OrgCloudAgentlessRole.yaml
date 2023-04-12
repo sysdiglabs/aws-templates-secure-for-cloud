@@ -22,7 +22,6 @@ Metadata:
 Parameters:
   RoleName:
     Type: String
-    Default: "sysdig-secure"
     Description: Unique role for monitoring AWS accounts
   ExternalID:
     Type: String
@@ -34,6 +33,22 @@ Parameters:
     Type: String
     Description: Organization Unit IDs to deploy   
 Resources:
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub ${RoleName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub ${TrustedIdentity}
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Sub ${ExternalID}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
   RoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
