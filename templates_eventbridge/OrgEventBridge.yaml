@@ -64,7 +64,6 @@ Resources:
               Service: cloudformation.amazonaws.com
             Action:
               - sts:AssumeRole
-      Path: /
       Policies:
         - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole
           PolicyDocument:
@@ -88,9 +87,8 @@ Resources:
                 - !GetAtt AdministrationRole.RoleId
             Action:
               - sts:AssumeRole
-      Path: /
       ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess                  
+        - !Sub arn:aws:iam::aws:policy/AdministratorAccess
   MgmtAccCloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -138,7 +136,7 @@ Resources:
     DependsOn: ExecutionRole
     Properties:
       StackSetName: MgmtAccEBRuleStackSet
-      AdministrationRoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/AWSCloudFormationStackSetAdministrationRole
+      AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SELF_MANAGED
       Capabilities:
