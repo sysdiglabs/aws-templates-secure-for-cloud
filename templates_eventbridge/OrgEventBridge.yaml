@@ -76,8 +76,7 @@ Resources:
                 Resource:
                   - "arn:*:iam::*:role/AWSCloudFormationStackSetExecutionRole"
   ExecutionRole:
-    Type: AWS::IAM::Role
-    DependsOn: AdministrationRole    
+    Type: AWS::IAM::Role   
     Properties:
       RoleName: AWSCloudFormationStackSetExecutionRole
       AssumeRolePolicyDocument:
