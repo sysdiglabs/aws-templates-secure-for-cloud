@@ -31,24 +31,26 @@ Metadata:
 Parameters:
   CSPMRoleName:
     Type: String
+    Default: "sysdig-secure"    
     Description: The read-only IAM Role that Sysdig will create
   EventBridgeRoleName:
     Type: String
+    Default: "sysdig-secure-cloudtrail"    
     Description: A unique identifier used to create an IAM Role and EventBridge Rule
   ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
   TrustedIdentity:
-    Type: String   
+    Type: String
     Description: The Role in Sysdig's AWS Account with permissions to your account
   EventBusARN:
-    Type: String   
+    Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
   Regions:
-    Type: String 
+    Type: String
     Description: Comma separated list of regions to monitor with EventBridge    
   OrganizationUnitIDs:
-    Type: String  
+    Type: String
     Description: Organization Unit IDs to deploy
        
 Resources:
