@@ -87,7 +87,7 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - !Sub arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AdministratorAccess
   MgmtAccCloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
