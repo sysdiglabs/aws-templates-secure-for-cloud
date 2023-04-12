@@ -29,11 +29,9 @@ Metadata:
 Parameters:
   RoleName:
     Type: String
-    Default: "sysdig-secure"
     Description: The read-only IAM Role that Sysdig will create
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig-secure-cloudtrail"
     Description: A unique identifier used to create an IAM Role and EventBridge Rule
   ExternalID:
     Type: String

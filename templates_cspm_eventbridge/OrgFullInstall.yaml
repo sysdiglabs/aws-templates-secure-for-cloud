@@ -31,11 +31,9 @@ Metadata:
 Parameters:
   CSPMRoleName:
     Type: String
-    Default: "sysdig-secure"
     Description: The read-only IAM Role that Sysdig will create
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig-secure-cloudtrail"
     Description: A unique identifier used to create an IAM Role and EventBridge Rule
   ExternalID:
     Type: String
@@ -124,7 +122,7 @@ Resources:
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Sub ${ExternalID}          
+                sts:ExternalId: !Sub ${ExternalID}
       Policies:
         - PolicyName: !Sub ${EventBridgeRoleName}
           PolicyDocument:
@@ -132,7 +130,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: 'events:PutEvents'
-                Resource: !Sub ${EventBusARN}        
+                Resource: !Sub ${EventBusARN}
   RolesStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -147,7 +145,7 @@ Resources:
         MaxConcurrentCount: 5
       Parameters:
         - ParameterKey: CSPMRoleName
-          ParameterValue: !Ref CSPMRoleName      
+          ParameterValue: !Ref CSPMRoleName
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
         - ParameterKey: ExternalID
@@ -159,7 +157,7 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
-          Regions: !Split [ ",", !Ref Regions]
+          Regions: [!Ref "AWS::Region"]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
@@ -238,7 +236,7 @@ Resources:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN                      
+          ParameterValue: !Ref EventBusARN
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
@@ -277,18 +275,18 @@ Resources:
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SELF_MANAGED
       Capabilities:
-        - CAPABILITY_NAMED_IAM              
+        - CAPABILITY_NAMED_IAM
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN                      
+          ParameterValue: !Ref EventBusARN
       StackInstancesGroup:
         - DeploymentTargets:
-            Accounts: 
-              - !Ref AWS::AccountId             
+            Accounts:
+              - !Ref AWS::AccountId
           Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
@@ -314,4 +312,4 @@ Resources:
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
-                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"                 
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"
