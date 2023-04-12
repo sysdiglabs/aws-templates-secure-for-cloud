@@ -6,7 +6,7 @@ Metadata:
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
-          - RoleName        
+          - CSPMRoleName        
           - EventBridgeRoleName
           - ExternalID
           - TrustedIdentity
@@ -14,8 +14,8 @@ Metadata:
           - Regions
           - OrganizationUnitIDs
     ParameterLabels:
-      RoleName:
-        default: "Role Name (Sysdig use only)"    
+      CSPMRoleName:
+        default: "CSPM Role Name (Sysdig use only)"    
       EventBridgeRoleName:
         default: "Integration Name (Sysdig use only)"    
       ExternalID:
@@ -29,7 +29,7 @@ Metadata:
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
 Parameters:
-  RoleName:
+  CSPMRoleName:
     Type: String
     Description: Unique role for monitoring AWS accounts
   EventBridgeRoleName:
@@ -94,7 +94,7 @@ Resources:
   MgmtAccCloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub ${RoleName}
+      RoleName: !Sub ${CSPMRoleName}
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
