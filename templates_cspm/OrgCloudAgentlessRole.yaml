@@ -22,7 +22,6 @@ Metadata:
 Parameters:
   RoleName:
     Type: String
-    Default: "sysdig-secure"
     Description: Unique role for monitoring AWS accounts
   ExternalID:
     Type: String

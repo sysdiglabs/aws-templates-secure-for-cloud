@@ -34,7 +34,6 @@ Parameters:
     Description: Unique role for monitoring AWS accounts
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig-secure-cloudtrail"
     Description: A unique identifier used to create an IAM Role and EventBridge Rule
   ExternalID:
     Type: String
@@ -64,7 +63,6 @@ Resources:
               Service: cloudformation.amazonaws.com
             Action:
               - sts:AssumeRole
-      Path: /
       Policies:
         - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole
           PolicyDocument:
@@ -88,9 +86,8 @@ Resources:
                 - !GetAtt AdministrationRole.RoleId
             Action:
               - sts:AssumeRole
-      Path: /
       ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess                  
+        - !Sub arn:aws:iam::aws:policy/AdministratorAccess
   MgmtAccCloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -138,7 +135,7 @@ Resources:
     DependsOn: ExecutionRole
     Properties:
       StackSetName: MgmtAccEBRuleStackSet
-      AdministrationRoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/AWSCloudFormationStackSetAdministrationRole
+      AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SELF_MANAGED
       Capabilities:
@@ -204,7 +201,7 @@ Resources:
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
-          Regions: !Split [ ",", !Ref Regions]
+          Regions: [!Ref "AWS::Region"]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
