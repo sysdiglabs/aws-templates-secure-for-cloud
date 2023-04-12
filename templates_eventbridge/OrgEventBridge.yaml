@@ -268,7 +268,7 @@ Resources:
           ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]  
+            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
           Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
