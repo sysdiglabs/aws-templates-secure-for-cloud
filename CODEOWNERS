@@ -1,1 +1,7 @@
 * @sysdiglabs/cloud-native @sysdiglabs/team-secure-onboarding
+
+/templates_cspm* @sysdiglabs/team-secure-onboarding
+/templates_eventbridge @sysdiglabs/team-secure-onboarding
+
+/templates_apprunner @sysdiglabs/cloud-native
+/templates_ecs @sysdiglabs/cloud-native
