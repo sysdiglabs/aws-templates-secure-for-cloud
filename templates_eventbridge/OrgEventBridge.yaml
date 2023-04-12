@@ -6,6 +6,7 @@ Metadata:
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
+          - RoleName        
           - EventBridgeRoleName
           - ExternalID
           - TrustedIdentity
@@ -13,6 +14,8 @@ Metadata:
           - Regions
           - OrganizationUnitIDs
     ParameterLabels:
+      RoleName:
+        default: "Role Name (Sysdig use only)"    
       EventBridgeRoleName:
         default: "Integration Name (Sysdig use only)"    
       ExternalID:
@@ -26,9 +29,11 @@ Metadata:
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
 Parameters:
+  RoleName:
+    Type: String
+    Description: Unique role for monitoring AWS accounts
   EventBridgeRoleName:
     Type: String
-    Default: "sysdig-secure-cloudtrail"
     Description: A unique identifier used to create an IAM Role and EventBridge Rule
   ExternalID:
     Type: String
@@ -46,6 +51,135 @@ Parameters:
     Type: String
     Description: Comma separated list of Organization Unit IDs to deploy
 Resources:
+  AdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AWSCloudFormationStackSetAdministrationRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - "arn:*:iam::*:role/AWSCloudFormationStackSetExecutionRole"
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: AdministrationRole    
+    Properties:
+      RoleName: AWSCloudFormationStackSetExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt AdministrationRole.RoleId
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess                  
+  MgmtAccCloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub ${RoleName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub ${TrustedIdentity}
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Sub ${ExternalID}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
+  MgmtAccEventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EventBridgeRoleName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sts:AssumeRole'
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub ${TrustedIdentity}
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Sub ${ExternalID}          
+      Policies:
+        - PolicyName: !Sub ${EventBridgeRoleName}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'events:PutEvents'
+                Resource: !Sub ${EventBusARN}
+  MgmtAccEBRuleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: ExecutionRole
+    Properties:
+      StackSetName: MgmtAccEBRuleStackSet
+      AdministrationRoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/AWSCloudFormationStackSetAdministrationRole
+      Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+      PermissionModel: SELF_MANAGED
+      Capabilities:
+        - CAPABILITY_NAMED_IAM              
+      OperationPreferences:
+        MaxConcurrentCount: 5
+      Parameters:
+        - ParameterKey: EventBridgeRoleName
+          ParameterValue: !Ref EventBridgeRoleName
+        - ParameterKey: EventBusARN
+          ParameterValue: !Ref EventBusARN                      
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts: 
+              - !Ref AWS::AccountId             
+          Regions: !Split [ ",", !Ref Regions]
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+        Parameters:
+          EventBridgeRoleName:
+            Type: String
+            Description: A unique identifier used to create an IAM Role and EventBridge Rule
+          EventBusARN:
+            Type: String
+            Description: The destination in Sysdig's AWS account where your events are sent                        
+        Resources:           
+          EventBridgeRule:
+            Type: "AWS::Events::Rule"
+            Properties:
+              Name: !Sub ${EventBridgeRoleName}
+              Description: Capture all CloudTrail events
+              EventPattern:
+                detail-type:
+                  - 'AWS API Call via CloudTrail'
+                  - 'AWS Console Sign In via CloudTrail'
+                  - 'AWS Service Event via CloudTrail'
+              Targets:
+                - Id: !Sub ${EventBridgeRoleName}
+                  Arn: !Sub ${EventBusARN}
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"                       
   EBRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -133,7 +267,7 @@ Resources:
           ParameterValue: !Ref EventBusARN                      
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
+            OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]      
           Regions: !Split [ ",", !Ref Regions]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
