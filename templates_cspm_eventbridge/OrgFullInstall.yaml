@@ -268,7 +268,14 @@ Resources:
                   RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${EventBridgeRoleName}"
   MgmtAccEBRuleStackSet:
     Type: AWS::CloudFormation::StackSet
-    DependsOn: ExecutionRole
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W3005
+    DependsOn: 
+      - ExecutionRole
+      - AdministrationRole
     Properties:
       StackSetName: MgmtAccEBRuleStackSet
       AdministrationRoleARN: !GetAtt AdministrationRole.Arn
