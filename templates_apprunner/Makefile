@@ -15,7 +15,6 @@ validate:
 
 lint:
     # -i 3002 will not apply rule 3002 https://github.com/aws-cloudformation/cfn-lint/blob/main/docs/rules.md
-    # which is failing in ci/cd
     cfn-lint *.yaml -i W3002
 
 
