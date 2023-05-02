@@ -27,7 +27,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       OwnershipControls:
-        Rukes:
+        Rules:
           - ObjectOwnership: BucketOwnerEnforced
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
