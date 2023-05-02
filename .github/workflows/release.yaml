@@ -119,7 +119,7 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: latest   
 
-     - name: Build and Upload CSPM Org Version
+    - name: Build and Upload CSPM Org Version
       run: make ci-org
       working-directory: ./templates_cspm
       env:
