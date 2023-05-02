@@ -17,7 +17,6 @@ validate:
 lint:
     cfn-lint *.yaml -i W3002
 
-
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX) --recursive
 	aws cloudformation package \
