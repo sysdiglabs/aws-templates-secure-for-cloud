@@ -151,7 +151,9 @@ Resources:
   SysdigConfigLoggingBucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
