@@ -12,8 +12,8 @@ STACK_NAME = "SecureForCloudECSTest"
 validate:
 	aws cloudformation validate-template --template-body file://./CloudVision.yaml
 
+# -i 3002 will not apply rule 3002 https://github.com/aws-cloudformation/cfn-lint/blob/main/docs/rules.md
 lint:
-    # -i 3002 will not apply rule 3002 https://github.com/aws-cloudformation/cfn-lint/blob/main/docs/rules.md
 	cfn-lint *.yaml -i W3002
 
 packaged-template.yaml:
