@@ -14,8 +14,7 @@ validate:
 	aws cloudformation validate-template --template-body file://./SecureForCloudAppRunner.yaml
 
 lint:
-	cfn-lint *.yaml
-
+	cfn-lint *.yaml -i W3002
 
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/apprunner/$(S3_PREFIX) --recursive

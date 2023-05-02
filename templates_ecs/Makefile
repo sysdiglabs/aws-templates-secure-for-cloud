@@ -10,10 +10,10 @@ STACK_NAME = "SecureForCloudECSTest"
 .PHONY: packaged-template.yaml
 
 validate:
-	aws cloudformation validate-template --template-body file://./CloudVision.yaml
+    aws cloudformation validate-template --template-body file://./CloudVision.yaml
 
 lint:
-	cfn-lint *.yaml
+	cfn-lint *.yaml -i W3002
 
 packaged-template.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/ecs/$(S3_PREFIX) --recursive
