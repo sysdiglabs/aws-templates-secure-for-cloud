@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CloudFormation template for provisioning
+  the necessary resources for the `cloud-logs`
+  component.
+Resources:
+  CloudLogs:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "sts:ExternalId": !Ref ExternalId
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CloudlogsS3Access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "CloudlogsS3Access"
+            Effect: "Allow"
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - !Sub '${BucketARN}'
+              - !Sub '${BucketARN}/*'
+      Roles:
+        - Ref: "CloudLogs"
+Parameters:
+  BucketARN:
+    Type: String
+    Description: (Required) The ARN of your s3 bucket associated with your Cloudtrail trail.
+  ExternalId:
+    Type: String
+    Description: (Required) Random string generated unique to a customer.
+  TrustedIdentity:
+    Type: String
+    Description: (Required) The name of Sysdig trusted identity.
+  RoleName:
+    Type: String
+    Description: (Required) The name of the IAM Role that will enable access to the Cloudtrail logs.
