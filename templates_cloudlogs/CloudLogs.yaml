@@ -3,6 +3,42 @@ Description: >
   CloudFormation template for provisioning
   the necessary resources for the `cloud-logs`
   component.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - RoleName
+          - ExternalID
+          - TrustedIdentity
+          - BucketARN
+
+    ParameterLabels:
+      RoleName:
+        default: "Role Name (Sysdig use only)"
+      ExternalID:
+        default: "External ID (Sysdig use only)"
+      TrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+      BucketARN:
+        default: "Bucket ARN"
+
+Parameters:
+  RoleName:
+    Type: String
+    Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
+  ExternalId:
+    Type: String
+    Description: Random string generated unique to a customer.
+  TrustedIdentity:
+    Type: String
+    Description: The name of Sysdig trusted identity.
+  BucketARN:
+    Type: String
+    Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
+
 Resources:
   CloudLogs:
     Type: "AWS::IAM::Role"
@@ -36,16 +72,3 @@ Resources:
               - !Sub '${BucketARN}/*'
       Roles:
         - Ref: "CloudLogs"
-Parameters:
-  BucketARN:
-    Type: String
-    Description: (Required) The ARN of your s3 bucket associated with your Cloudtrail trail.
-  ExternalId:
-    Type: String
-    Description: (Required) Random string generated unique to a customer.
-  TrustedIdentity:
-    Type: String
-    Description: (Required) The name of Sysdig trusted identity.
-  RoleName:
-    Type: String
-    Description: (Required) The name of the IAM Role that will enable access to the Cloudtrail logs.
