@@ -40,7 +40,7 @@ Parameters:
     Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
 
 Resources:
-  CloudLogs:
+  CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:
       RoleName: !Ref RoleName
@@ -55,7 +55,7 @@ Resources:
             Condition:
               StringEquals:
                 "sts:ExternalId": !Ref ExternalId
-  RolePolicies:
+  CloudLogsRolePolicies:
     Type: "AWS::IAM::Policy"
     Properties:
       PolicyName: "CloudlogsS3Access"
