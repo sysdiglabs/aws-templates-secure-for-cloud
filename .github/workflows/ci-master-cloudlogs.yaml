@@ -1,4 +1,4 @@
-name: CI - Master CSPM
+name: CI - Master CloudLogs
 
 on:
   push:
