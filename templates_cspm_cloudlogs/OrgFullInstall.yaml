@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: IAM Role and EventBridge resources used by Sysdig Secure
+Description: IAM Role and Cloudlogs resources used by Sysdig Secure
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -8,10 +8,9 @@ Metadata:
           default: "Sysdig Settings (Do not change)"
         Parameters:
           - CSPMRoleName
-          - ExternalID
+          - ExternalId
           - TrustedIdentity
           - BucketARN
-          - Regions
           - OrganizationUnitIDs
 
     ParameterLabels:
@@ -19,7 +18,7 @@ Metadata:
         default: "CSPM Role Name (Sysdig use only)"
       CloudLogsRoleName:
         default: "CloudLogs Role Name (Sysdig use only)"
-      ExternalID:
+      ExternalId:
         default: "External ID (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
@@ -35,7 +34,7 @@ Parameters:
   CloudLogsRoleName:
     Type: String
     Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
-  ExternalID:
+  ExternalId:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
   BucketARN:
@@ -62,7 +61,7 @@ Resources:
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Sub ${ExternalID}
+                sts:ExternalId: !Sub ${ExternalId}
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
   CloudLogsRole:
@@ -96,7 +95,7 @@ Resources:
               - !Sub '${BucketARN}'
               - !Sub '${BucketARN}/*'
       Roles:
-        - Ref: "CloudLogs"
+        - Ref: "CloudLogsRole"
   RolesStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -116,8 +115,8 @@ Resources:
           ParameterValue: !Ref CloudLogsRoleName
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
-        - ParameterKey: ExternalID
-          ParameterValue: !Ref ExternalID
+        - ParameterKey: ExternalId
+          ParameterValue: !Ref ExternalId
         - ParameterKey: BucketARN
           ParameterValue: !Ref BucketARN
       StackInstancesGroup:
@@ -130,7 +129,7 @@ Resources:
         Parameters:
           CSPMRoleName:
             Type: String
-            Description: A unique identifier used to create an IAM Role and EventBridge Rule
+            Description: A unique identifier used to create an IAM Role
           CloudLogsRoleName:
             Type: String
             Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
@@ -140,7 +139,7 @@ Resources:
           BucketARN:
             Type: String
             Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
-          ExternalID:
+          ExternalId:
             Type: String
             Description: Sysdig ExternalID required for the policy creation
         Resources:
@@ -157,7 +156,7 @@ Resources:
                     Action: "sts:AssumeRole"
                     Condition:
                       StringEquals:
-                        sts:ExternalId: !Sub ${ExternalID}
+                        sts:ExternalId: !Sub ${ExternalId}
               ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/SecurityAudit
           CloudLogsRole:
@@ -191,4 +190,4 @@ Resources:
                       - !Sub '${BucketARN}'
                       - !Sub '${BucketARN}/*'
               Roles:
-                - Ref: "CloudLogs"
+                - Ref: "CloudLogsRole"
