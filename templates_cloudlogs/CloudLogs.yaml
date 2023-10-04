@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CloudFormation template for provisioning
+  the necessary resources for the `cloud-logs`
+  component.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - RoleName
+          - ExternalId
+          - TrustedIdentity
+          - BucketARN
+
+    ParameterLabels:
+      RoleName:
+        default: "Role Name (Sysdig use only)"
+      ExternalId:
+        default: "External ID (Sysdig use only)"
+      TrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+      BucketARN:
+        default: "Bucket ARN"
+
+Parameters:
+  RoleName:
+    Type: String
+    Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
+  ExternalId:
+    Type: String
+    Description: Random string generated unique to a customer.
+  TrustedIdentity:
+    Type: String
+    Description: The name of Sysdig trusted identity.
+  BucketARN:
+    Type: String
+    Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
+
+Resources:
+  CloudLogsRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "sts:ExternalId": !Ref ExternalId
+  CloudLogsRolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CloudlogsS3Access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "CloudlogsS3Access"
+            Effect: "Allow"
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - !Sub '${BucketARN}'
+              - !Sub '${BucketARN}/*'
+      Roles:
+        - Ref: "CloudLogsRole"

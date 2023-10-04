@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IAM Roles for CSPM and Cloudlogs used by Sysdig Secure
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - CSPMRoleName
+          - CloudLogsRoleName
+          - ExternalId
+          - TrustedIdentity
+          - BucketARN
+
+    ParameterLabels:
+      CSPMRoleName:
+        default: "CSPM Role Name (Sysdig use only)"
+      CloudLogsRoleName:
+        default: "CloudLogs Role Name (Sysdig use only)"
+      ExternalId:
+        default: "External ID (Sysdig use only)"
+      TrustedIdentity:
+        default: "Trusted Identity (Sysdig use only)"
+      BucketARN:
+        default: "Bucket ARN"
+
+Parameters:
+  CSPMRoleName:
+    Type: String
+    Description: The read-only IAM Role that Sysdig will create
+  CloudLogsRoleName:
+    Type: String
+    Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
+  ExternalId:
+    Type: String
+    Description: Sysdig ExternalID required for the policy creation
+  TrustedIdentity:
+    Type: String
+    Description: The name of Sysdig trusted identity.
+  BucketARN:
+    Type: String
+    Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
+
+Resources:
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref CSPMRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
+  CloudLogsRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref CloudLogsRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "sts:ExternalId": !Ref ExternalId
+  CloudLogsRolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CloudlogsS3Access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "CloudlogsS3Access"
+            Effect: "Allow"
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - !Sub '${BucketARN}'
+              - !Sub '${BucketARN}/*'
+      Roles:
+        - Ref: "CloudLogsRole"
