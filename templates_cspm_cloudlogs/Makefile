@@ -37,7 +37,7 @@ test: packaged-template.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)"
 
 ci: packaged-template.yaml
-	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/full-install/single/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template.yaml s3://$(S3_BUCKET)/cspm-cloudlogs/single/$(S3_PREFIX)/entry-point.yaml
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
@@ -61,7 +61,8 @@ test-org: packaged-template-org.yaml
 			"SysdigSecureAPIToken=$(SECURE_API_TOKEN)"
 
 ci-org: packaged-template-org.yaml
-	aws s3 cp ./packaged-template-org.yaml s3://$(S3_BUCKET)/full-install/org/$(S3_PREFIX)/entry-point.yaml
+	aws s3 cp ./packaged-template-org.yaml s3://$(S3_BUCKET)/cspm-cloudlogs/org/$(S3_PREFIX)/entry-point.yaml
 
 clean-org:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME_ORG)
+#
