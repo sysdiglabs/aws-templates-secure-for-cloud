@@ -8,6 +8,7 @@ Metadata:
           default: "Sysdig Settings (Do not change)"
         Parameters:
           - CSPMRoleName
+          - CloudLogsRoleName
           - ExternalId
           - TrustedIdentity
           - BucketARN
