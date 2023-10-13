@@ -9,7 +9,7 @@ Metadata:
         Parameters:
           - CSPMRoleName
           - CloudLogsRoleName
-          - ExternalId
+          - ExternalID
           - TrustedIdentity
           - BucketARN
           - OrganizationUnitIDs
@@ -19,7 +19,7 @@ Metadata:
         default: "CSPM Role Name (Sysdig use only)"
       CloudLogsRoleName:
         default: "CloudLogs Role Name (Sysdig use only)"
-      ExternalId:
+      ExternalID:
         default: "External ID (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
@@ -35,7 +35,7 @@ Parameters:
   CloudLogsRoleName:
     Type: String
     Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
-  ExternalId:
+  ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
   BucketARN:
@@ -62,7 +62,7 @@ Resources:
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Sub ${ExternalId}
+                sts:ExternalId: !Sub ${ExternalID}
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
   CloudLogsRole:
@@ -79,7 +79,7 @@ Resources:
               - "sts:AssumeRole"
             Condition:
               StringEquals:
-                "sts:ExternalId": !Ref ExternalId
+                "sts:ExternalId": !Ref ExternalID
   CloudLogsRolePolicies:
     Type: "AWS::IAM::Policy"
     Properties:
@@ -116,8 +116,8 @@ Resources:
           ParameterValue: !Ref CloudLogsRoleName
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
-        - ParameterKey: ExternalId
-          ParameterValue: !Ref ExternalId
+        - ParameterKey: ExternalID
+          ParameterValue: !Ref ExternalID
         - ParameterKey: BucketARN
           ParameterValue: !Ref BucketARN
       StackInstancesGroup:
@@ -140,7 +140,7 @@ Resources:
           BucketARN:
             Type: String
             Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
-          ExternalId:
+          ExternalID:
             Type: String
             Description: Sysdig ExternalID required for the policy creation
         Resources:
@@ -157,7 +157,7 @@ Resources:
                     Action: "sts:AssumeRole"
                     Condition:
                       StringEquals:
-                        sts:ExternalId: !Sub ${ExternalId}
+                        sts:ExternalId: !Sub ${ExternalID}
               ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/SecurityAudit
           CloudLogsRole:
@@ -174,7 +174,7 @@ Resources:
                       - "sts:AssumeRole"
                     Condition:
                       StringEquals:
-                        "sts:ExternalId": !Ref ExternalId
+                        "sts:ExternalId": !Ref ExternalID
           CloudLogsRolePolicies:
             Type: "AWS::IAM::Policy"
             Properties:

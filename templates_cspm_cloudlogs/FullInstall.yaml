@@ -9,7 +9,7 @@ Metadata:
         Parameters:
           - CSPMRoleName
           - CloudLogsRoleName
-          - ExternalId
+          - ExternalID
           - TrustedIdentity
           - BucketARN
 
@@ -18,7 +18,7 @@ Metadata:
         default: "CSPM Role Name (Sysdig use only)"
       CloudLogsRoleName:
         default: "CloudLogs Role Name (Sysdig use only)"
-      ExternalId:
+      ExternalID:
         default: "External ID (Sysdig use only)"
       TrustedIdentity:
         default: "Trusted Identity (Sysdig use only)"
@@ -32,7 +32,7 @@ Parameters:
   CloudLogsRoleName:
     Type: String
     Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
-  ExternalId:
+  ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
   TrustedIdentity:
@@ -57,7 +57,7 @@ Resources:
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Ref ExternalId
+                sts:ExternalId: !Ref ExternalID
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
   CloudLogsRole:
@@ -74,7 +74,7 @@ Resources:
               - "sts:AssumeRole"
             Condition:
               StringEquals:
-                "sts:ExternalId": !Ref ExternalId
+                "sts:ExternalId": !Ref ExternalID
   CloudLogsRolePolicies:
     Type: "AWS::IAM::Policy"
     Properties:
