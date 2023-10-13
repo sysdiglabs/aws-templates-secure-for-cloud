@@ -19,7 +19,7 @@ lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/full-install/single/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/cspm-cloudlogs/single/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file FullInstall.yaml \
@@ -43,7 +43,7 @@ clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
 
 packaged-template-org.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/full-install/org/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/cspm-cloudlogs/org/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file OrgFullInstall.yaml \
