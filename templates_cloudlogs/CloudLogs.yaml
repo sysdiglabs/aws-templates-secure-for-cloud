@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  CloudFormation template for provisioning
+  CloudFormation single template for provisioning
   the necessary resources for the `cloud-logs`
   component.
 
