@@ -1,8 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  CloudFormation single template for provisioning
+  CloudFormation organizational template for provisioning
   the necessary resources for the `cloud-logs`
-  component.
+  component and the read-only role required to itneract with
+  the target organizational environment.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -10,14 +11,17 @@ Metadata:
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
+          - CSPMRoleName
           - CloudLogsRoleName
           - ExternalID
           - TrustedIdentity
           - BucketARN
 
     ParameterLabels:
+      CSPMRoleName:
+        default: "CSPM Role Name (Sysdig use only)"
       CloudLogsRoleName:
-        default: "Role Name (Sysdig use only)"
+        default: "CloudLogs Role Name (Sysdig use only)"
       ExternalID:
         default: "External ID (Sysdig use only)"
       TrustedIdentity:
@@ -26,6 +30,9 @@ Metadata:
         default: "Bucket ARN"
 
 Parameters:
+  CSPMRoleName:
+    Type: String
+    Description: The name of the read-only IAM Role that Sysdig will use to interact with the target environment
   CloudLogsRoleName:
     Type: String
     Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
@@ -72,3 +79,19 @@ Resources:
               - !Sub '${BucketARN}/*'
       Roles:
         - Ref: "CloudLogsRole"
+  CloudAgentlessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref CSPMRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalID
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
