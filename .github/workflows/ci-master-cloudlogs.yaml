@@ -31,3 +31,9 @@ jobs:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: master
 
+    - name: Build and Upload Cloudlogs Org templates
+      run: make ci-org
+      working-directory: ./templates_cloudlogs
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
+        S3_PREFIX: master
