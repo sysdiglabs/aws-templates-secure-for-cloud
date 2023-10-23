@@ -14,6 +14,7 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - BucketARN
+          - AccountID
 
     ParameterLabels:
       CloudLogsRoleName:
@@ -24,6 +25,8 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
+      AccountID:
+        default: "Account ID"
 
 Parameters:
   CloudLogsRoleName:
@@ -38,6 +41,9 @@ Parameters:
   BucketARN:
     Type: String
     Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
+  AccountID:
+    Type: String
+    Description: The Identifier of your AWS account.
 
 Resources:
   CloudLogsRole:
@@ -62,13 +68,19 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: "CloudlogsS3Access"
+          - Sid: "CloudlogsS3AccessGet"
             Effect: "Allow"
             Action:
               - "s3:Get*"
-              - "s3:List*"
             Resource:
               - !Sub '${BucketARN}'
               - !Sub '${BucketARN}/*'
+          - Sid: "CloudlogsS3AccessList"
+            Effect: "Allow"
+            Action:
+              - "s3:List*"
+            Resource:
+              - !Sub '${BucketARN}/AWSLogs/${AccountID}'
+              - !Sub '${BucketARN}/AWSLogs/${AccountID}/*'
       Roles:
         - Ref: "CloudLogsRole"

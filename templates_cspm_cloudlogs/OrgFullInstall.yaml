@@ -13,6 +13,7 @@ Metadata:
           - TrustedIdentity
           - BucketARN
           - OrganizationUnitIDs
+          - AccountID
 
     ParameterLabels:
       CSPMRoleName:
@@ -27,6 +28,8 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
+      AccountID:
+        default: "Account ID"
 
 Parameters:
   CSPMRoleName:
@@ -47,6 +50,9 @@ Parameters:
   OrganizationUnitIDs:
     Type: String
     Description: Organization Unit IDs to deploy
+  AccountID:
+    Type: String
+    Description: The Identifier of your AWS account.
 
 Resources:
   CloudAgentlessRole:
@@ -87,14 +93,20 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: "CloudlogsS3Access"
+          - Sid: "CloudlogsS3AccessGet"
             Effect: "Allow"
             Action:
               - "s3:Get*"
-              - "s3:List*"
             Resource:
               - !Sub '${BucketARN}'
               - !Sub '${BucketARN}/*'
+          - Sid: "CloudlogsS3AccessList"
+            Effect: "Allow"
+            Action:
+              - "s3:List*"
+            Resource:
+              - !Sub '${BucketARN}/AWSLogs/${AccountID}'
+              - !Sub '${BucketARN}/AWSLogs/${AccountID}/*'
       Roles:
         - Ref: "CloudLogsRole"
   RolesStackSet:
