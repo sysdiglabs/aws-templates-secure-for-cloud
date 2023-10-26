@@ -47,7 +47,7 @@ packaged-template-org.yaml:
 	aws s3 rm s3://$(S3_BUCKET)/cloudlogs/org/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
-		--template-file OrgCloudlogs.yaml \
+		--template-file OrgCloudLogs.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--s3-prefix cspm/$(S3_PREFIX) \
 		--force-upload \
