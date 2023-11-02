@@ -16,7 +16,6 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - BucketARN
-          - AccountID
 
     ParameterLabels:
       CSPMRoleName:
@@ -29,8 +28,6 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
-      AccountID:
-        default: "Account ID"
 
 Parameters:
   CSPMRoleName:
@@ -48,9 +45,6 @@ Parameters:
   BucketARN:
     Type: String
     Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
-  AccountID:
-    Type: String
-    Description: The Identifier of your AWS account.
 
 Resources:
   CloudLogsRole:
@@ -87,8 +81,8 @@ Resources:
             Action:
               - "s3:List*"
             Resource:
-              - !Sub '${BucketARN}/AWSLogs/${AccountID}'
-              - !Sub '${BucketARN}/AWSLogs/${AccountID}/*'
+              - !Sub '${BucketARN}'
+              - !Sub '${BucketARN}/*'
       Roles:
         - Ref: "CloudLogsRole"
   CloudAgentlessRole:
