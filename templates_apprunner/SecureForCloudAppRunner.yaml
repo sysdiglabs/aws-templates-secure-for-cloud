@@ -116,14 +116,14 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Sysdig Secure API Token"
-      Type: SecureString
+      Type: String
       Value: !Ref SysdigSecureAPIToken
 
   SysdigSecureEndpointParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Description: "Sysdig Secure Endpoint URL"
-      Type: SecureString
+      Type: String
       Value: !Ref SysdigSecureEndpoint
 
   CloudTrailStack:
