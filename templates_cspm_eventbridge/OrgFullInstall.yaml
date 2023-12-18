@@ -262,6 +262,7 @@ Resources:
                   - 'AWS API Call via CloudTrail'
                   - 'AWS Console Sign In via CloudTrail'
                   - 'AWS Service Event via CloudTrail'
+              State: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
@@ -316,6 +317,7 @@ Resources:
                   - 'AWS API Call via CloudTrail'
                   - 'AWS Console Sign In via CloudTrail'
                   - 'AWS Service Event via CloudTrail'
+              State: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
