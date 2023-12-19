@@ -13,6 +13,7 @@ Metadata:
           - EventBusARN
           - Regions
           - OrganizationUnitIDs
+          - EventBridgeState
     ParameterLabels:
       CSPMRoleName:
         default: "CSPM Role Name (Sysdig use only)"    
@@ -28,6 +29,8 @@ Metadata:
         default: "EventBridge Regions (Sysdig use only)"
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
+      EventBridgeState:
+        default: "State of the EventBridge Rule (Sysdig use only)"
 Parameters:
   CSPMRoleName:
     Type: String
@@ -50,6 +53,15 @@ Parameters:
   OrganizationUnitIDs:
     Type: String
     Description: Comma separated list of Organization Unit IDs to deploy
+  EventBridgeState:
+    Type: String
+    Description: The state of the EventBridge Rule
+    Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+    AllowedValues:
+      - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+      - ENABLED
+      - DISABLED
+
 Resources:
   AdministrationRole:
     Type: AWS::IAM::Role
@@ -153,7 +165,9 @@ Resources:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN                      
+          ParameterValue: !Ref EventBusARN
+        - ParameterKey: EventBridgeState
+          ParameterValue: !Ref EventBridgeState                     
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts: 
@@ -168,7 +182,15 @@ Resources:
             Description: A unique identifier used to create an IAM Role and EventBridge Rule
           EventBusARN:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent                        
+            Description: The destination in Sysdig's AWS account where your events are sent
+          EventBridgeState:
+            Type: String
+            Description: The state of the EventBridge Rule
+            Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+            AllowedValues:
+              - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              - ENABLED
+              - DISABLED                         
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
@@ -180,7 +202,7 @@ Resources:
                   - 'AWS API Call via CloudTrail'
                   - 'AWS Console Sign In via CloudTrail'
                   - 'AWS Service Event via CloudTrail'
-              State: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
@@ -269,7 +291,9 @@ Resources:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN                      
+          ParameterValue: !Ref EventBusARN
+        - ParameterKey: EventBridgeState
+          ParameterValue: !Ref EventBridgeState                    
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
@@ -283,7 +307,15 @@ Resources:
             Description: A unique identifier used to create an IAM Role and EventBridge Rule
           EventBusARN:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent                        
+            Description: The destination in Sysdig's AWS account where your events are sent
+          EventBridgeState:
+            Type: String
+            Description: The state of the EventBridge Rule
+            Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+            AllowedValues:
+              - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              - ENABLED
+              - DISABLED                 
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
@@ -295,7 +327,7 @@ Resources:
                   - 'AWS API Call via CloudTrail'
                   - 'AWS Console Sign In via CloudTrail'
                   - 'AWS Service Event via CloudTrail'
-              State: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
                   Arn: !Sub ${EventBusARN}
