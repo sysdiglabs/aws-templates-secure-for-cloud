@@ -21,6 +21,8 @@ Metadata:
         default: "Target Event Bus (Sysdig use only)"
       EventBridgeRoleName:
         default: "Integration Name (Sysdig use only)"
+      EventBridgeState:
+        default: "State of the EventBridge Rule (Sysdig use only)"
 
 Parameters:
   EventBridgeRoleName:
@@ -35,6 +37,14 @@ Parameters:
   EventBusARN:
     Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
+  EventBridgeState:
+    Type: String
+    Description: The state of the EventBridge Rule
+    Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+    AllowedValues:
+      - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+      - ENABLED
+      - DISABLED
 
 Resources:
   EventBridgeRole:
@@ -72,6 +82,7 @@ Resources:
           - 'AWS API Call via CloudTrail'
           - 'AWS Console Sign In via CloudTrail'
           - 'AWS Service Event via CloudTrail'
+      State: !Ref EventBridgeState
       Targets:
         - Id: !Ref EventBridgeRoleName
           Arn: !Ref EventBusARN
