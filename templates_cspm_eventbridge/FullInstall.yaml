@@ -97,6 +97,12 @@ Resources:
               - Effect: Allow
                 Action: 'events:PutEvents'
                 Resource: !Ref EventBusARN
+              - Effect: Allow
+                Action:
+                  - "events:DescribeRule"
+                  - "events:ListTargetsByRule"
+                Resource:
+                  - !Sub arn:aws:events:*:*:rule/${EventBridgeRoleName}
   EventBridgeRule:
     Type: AWS::Events::Rule
     Properties:
