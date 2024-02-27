@@ -116,6 +116,24 @@ Resources:
                 sts:ExternalId: !Sub ${ExternalID}
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
+      Policies:
+        - PolicyName: !Sub ${CSPMRoleName}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "elasticfilesystem:DescribeAccessPoints"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "waf-regional:ListRules"
+                  - "waf-regional:ListRuleGroups"
+                Resource:
+                  - "arn:aws:waf-regional:*:*:rule/*"
+                  - "arn:aws:waf-regional:*:*:rulegroup/*"
+              - Effect: "Allow"
+                Action: "account:GetContactInformation"
+                Resource: "*"
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -210,7 +228,25 @@ Resources:
                       StringEquals:
                         sts:ExternalId: !Sub ${ExternalID}
               ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/SecurityAudit        
+                - arn:aws:iam::aws:policy/SecurityAudit
+              Policies:
+                - PolicyName: !Sub ${CSPMRoleName}
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                      - Effect: "Allow"
+                        Action: "elasticfilesystem:DescribeAccessPoints"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action:
+                          - "waf-regional:ListRules"
+                          - "waf-regional:ListRuleGroups"
+                        Resource:
+                          - "arn:aws:waf-regional:*:*:rule/*"
+                          - "arn:aws:waf-regional:*:*:rulegroup/*"
+                      - Effect: "Allow"
+                        Action: "account:GetContactInformation"
+                        Resource: "*"
           EventBridgeRole:
             Type: AWS::IAM::Role
             Properties:
