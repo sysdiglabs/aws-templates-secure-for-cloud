@@ -64,9 +64,6 @@ Resources:
                 Resource:
                   - "arn:aws:waf-regional:*:*:rule/*"
                   - "arn:aws:waf-regional:*:*:rulegroup/*"
-              - Effect: "Allow"
-                Action: "account:GetContactInformation"
-                Resource: "*"
   RoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -135,6 +132,3 @@ Resources:
                         Resource:
                           - "arn:aws:waf-regional:*:*:rule/*"
                           - "arn:aws:waf-regional:*:*:rulegroup/*"
-                      - Effect: "Allow"
-                        Action: "account:GetContactInformation"
-                        Resource: "*"

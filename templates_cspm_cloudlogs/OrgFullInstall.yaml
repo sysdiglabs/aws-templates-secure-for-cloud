@@ -80,9 +80,6 @@ Resources:
                 Resource:
                   - "arn:aws:waf-regional:*:*:rule/*"
                   - "arn:aws:waf-regional:*:*:rulegroup/*"
-              - Effect: "Allow"
-                Action: "account:GetContactInformation"
-                Resource: "*"
   CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -189,6 +186,3 @@ Resources:
                         Resource:
                           - "arn:aws:waf-regional:*:*:rule/*"
                           - "arn:aws:waf-regional:*:*:rulegroup/*"
-                      - Effect: "Allow"
-                        Action: "account:GetContactInformation"
-                        Resource: "*"
