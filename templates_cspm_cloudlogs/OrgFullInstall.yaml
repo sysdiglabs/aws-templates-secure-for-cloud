@@ -80,6 +80,9 @@ Resources:
                 Resource:
                   - "arn:aws:waf-regional:*:*:rule/*"
                   - "arn:aws:waf-regional:*:*:rulegroup/*"
+              - Effect: "Allow"
+                Action: "macie2:ListClassificationJobs"
+                Resource: "*"
   CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -186,3 +189,6 @@ Resources:
                         Resource:
                           - "arn:aws:waf-regional:*:*:rule/*"
                           - "arn:aws:waf-regional:*:*:rulegroup/*"
+                      - Effect: "Allow"
+                        Action: "macie2:ListClassificationJobs"
+                        Resource: "*"
