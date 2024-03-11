@@ -76,7 +76,7 @@ Resources:
                   - "arn:aws:waf-regional:*:*:rule/*"
                   - "arn:aws:waf-regional:*:*:rulegroup/*"
               - Effect: "Allow"
-                Action: "account:GetContactInformation"
+                Action: "macie2:ListClassificationJobs"
                 Resource: "*"
   CloudLogsRole:
     Type: "AWS::IAM::Role"
