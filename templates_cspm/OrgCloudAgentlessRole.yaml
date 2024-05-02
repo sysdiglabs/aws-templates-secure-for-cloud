@@ -67,6 +67,9 @@ Resources:
               - Effect: "Allow"
                 Action: "macie2:ListClassificationJobs"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "lambda:GetRuntimeManagementConfig"
+                Resource: "*"
   RoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -137,4 +140,7 @@ Resources:
                           - "arn:aws:waf-regional:*:*:rulegroup/*"
                       - Effect: "Allow"
                         Action: "macie2:ListClassificationJobs"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "lambda:GetRuntimeManagementConfig"
                         Resource: "*"
