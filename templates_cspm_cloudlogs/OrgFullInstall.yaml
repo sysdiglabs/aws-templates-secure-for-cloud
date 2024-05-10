@@ -84,7 +84,9 @@ Resources:
                 Action: "macie2:ListClassificationJobs"
                 Resource: "*"
               - Effect: "Allow"
-                Action: "lambda:GetRuntimeManagementConfig"
+                Action:
+                  - "lambda:GetRuntimeManagementConfig"
+                  - "lambda:GetFunction"
                 Resource: "*"
   CloudLogsRole:
     Type: "AWS::IAM::Role"
@@ -196,8 +198,7 @@ Resources:
                         Action: "macie2:ListClassificationJobs"
                         Resource: "*"
                       - Effect: "Allow"
-                        Action: "lambda:GetRuntimeManagementConfig"
-                        Resource: "*"
-                      - Effect: "Allow"
-                        Action: "lambda:GetFunction"
+                        Action:
+                          - "lambda:GetRuntimeManagementConfig"
+                          - "lambda:GetFunction"
                         Resource: "*"
