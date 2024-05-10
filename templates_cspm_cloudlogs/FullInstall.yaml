@@ -81,6 +81,9 @@ Resources:
               - Effect: "Allow"
                 Action: "lambda:GetRuntimeManagementConfig"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "lambda:GetFunction"
+                Resource: "*"
   CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:

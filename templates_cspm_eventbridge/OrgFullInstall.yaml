@@ -137,6 +137,9 @@ Resources:
               - Effect: "Allow"
                 Action: "lambda:GetRuntimeManagementConfig"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "lambda:GetFunction"
+                Resource: "*"
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -252,6 +255,9 @@ Resources:
                         Resource: "*"
                       - Effect: "Allow"
                         Action: "lambda:GetRuntimeManagementConfig"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "lambda:GetFunction"
                         Resource: "*"
           EventBridgeRole:
             Type: AWS::IAM::Role

@@ -198,3 +198,6 @@ Resources:
                       - Effect: "Allow"
                         Action: "lambda:GetRuntimeManagementConfig"
                         Resource: "*"
+                      - Effect: "Allow"
+                        Action: "lambda:GetFunction"
+                        Resource: "*"
