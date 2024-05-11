@@ -66,7 +66,9 @@ Resources:
                 Action: "macie2:ListClassificationJobs"
                 Resource: "*"
               - Effect: "Allow"
-                Action: "lambda:GetRuntimeManagementConfig"
+                Action:
+                  - "lambda:GetRuntimeManagementConfig"
+                  - "lambda:GetFunction"
                 Resource: "*"
 
 Outputs:
