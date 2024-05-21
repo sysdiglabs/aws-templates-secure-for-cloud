@@ -13,6 +13,7 @@ Metadata:
           - EventBusARN
           - EventBridgeRoleName
           - EventBridgeState
+          - IncludeGuardDutyFindings
 
     ParameterLabels:
       RoleName:
@@ -27,7 +28,8 @@ Metadata:
         default: "Integration Name (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"
-          
+      IncludeGuardDutyFindings:
+        default: "Include GuardDuty Findings"
        
 Parameters:
   RoleName:
@@ -53,6 +55,16 @@ Parameters:
       - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
+  IncludeGuardDutyFindings:
+    Type: String
+    Description: Whether to include GuardDuty findings in the EventBridge Rule
+    Default: 'DISABLED'
+    AllowedValues:
+      - 'ENABLED'
+      - 'DISABLED'
+
+Conditions:
+  IncludeGuardDuty: !Equals [ !Ref IncludeGuardDutyFindings, 'ENABLED' ]
 
 Resources:
   CloudAgentlessRole:
@@ -133,19 +145,37 @@ Resources:
       Description: Capture all CloudTrail events
       EventPattern:
         detail-type:
-          - 'AWS API Call via CloudTrail'
-          - 'AWS Console Sign In via CloudTrail'
-          - 'AWS Service Event via CloudTrail'
-          - 'Object Access Tier Changed'
-          - 'Object ACL Updated'
-          - 'Object Created'
-          - 'Object Deleted'
-          - 'Object Restore Completed'
-          - 'Object Restore Expired'
-          - 'Object Restore Initiated'
-          - 'Object Storage Class Changed'
-          - 'Object Tags Added'
-          - 'Object Tags Deleted'
+          !If 
+            - IncludeGuardDuty
+            - 
+              - 'AWS API Call via CloudTrail'
+              - 'AWS Console Sign In via CloudTrail'
+              - 'AWS Service Event via CloudTrail'
+              - 'Object Access Tier Changed'
+              - 'Object ACL Updated'
+              - 'Object Created'
+              - 'Object Deleted'
+              - 'Object Restore Completed'
+              - 'Object Restore Expired'
+              - 'Object Restore Initiated'
+              - 'Object Storage Class Changed'
+              - 'Object Tags Added'
+              - 'Object Tags Deleted'
+              - 'GuardDuty Finding'
+            - 
+              - 'AWS API Call via CloudTrail'
+              - 'AWS Console Sign In via CloudTrail'
+              - 'AWS Service Event via CloudTrail'
+              - 'Object Access Tier Changed'
+              - 'Object ACL Updated'
+              - 'Object Created'
+              - 'Object Deleted'
+              - 'Object Restore Completed'
+              - 'Object Restore Expired'
+              - 'Object Restore Initiated'
+              - 'Object Storage Class Changed'
+              - 'Object Tags Added'
+              - 'Object Tags Deleted'
       State: !Ref EventBridgeState
       Targets:
         - Id: !Ref EventBridgeRoleName
