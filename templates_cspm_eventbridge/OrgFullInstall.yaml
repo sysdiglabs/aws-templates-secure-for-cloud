@@ -13,7 +13,7 @@ Metadata:
           - EventBusARN
           - Regions
           - OrganizationUnitIDs
-          - EventBridgeState\
+          - EventBridgeState
           - IncludeGuardDutyFindings
     ParameterLabels:
       CSPMRoleName:
