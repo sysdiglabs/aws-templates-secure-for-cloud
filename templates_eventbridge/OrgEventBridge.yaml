@@ -14,6 +14,7 @@ Metadata:
           - Regions
           - OrganizationUnitIDs
           - EventBridgeState
+          - IncludeGuardDutyFindings
     ParameterLabels:
       CSPMRoleName:
         default: "CSPM Role Name (Sysdig use only)"    
@@ -31,6 +32,8 @@ Metadata:
         default: "Organization Unit IDs (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"
+      IncludeGuardDutyFindings:
+        default: "Include GuardDuty Findings"
 Parameters:
   CSPMRoleName:
     Type: String
@@ -61,6 +64,13 @@ Parameters:
       - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
+  IncludeGuardDutyFindings:
+    Type: String
+    Description: Whether to include GuardDuty findings in the EventBridge Rule
+    Default: 'DISABLED'
+    AllowedValues:
+      - 'ENABLED'
+      - 'DISABLED'
 
 Resources:
   AdministrationRole:
@@ -173,7 +183,9 @@ Resources:
         - ParameterKey: EventBusARN
           ParameterValue: !Ref EventBusARN
         - ParameterKey: EventBridgeState
-          ParameterValue: !Ref EventBridgeState                     
+          ParameterValue: !Ref EventBridgeState
+        - ParameterKey: IncludeGuardDutyFindings
+          ParameterValue: !Ref IncludeGuardDutyFindings             
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts: 

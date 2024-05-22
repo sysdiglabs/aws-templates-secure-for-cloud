@@ -13,7 +13,8 @@ Metadata:
           - EventBusARN
           - Regions
           - OrganizationUnitIDs
-          - EventBridgeState
+          - EventBridgeState\
+          - IncludeGuardDutyFindings
     ParameterLabels:
       CSPMRoleName:
         default: "CSPM Role Name (Sysdig use only)"
@@ -31,6 +32,8 @@ Metadata:
         default: "Organization Unit IDs (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"  
+      IncludeGuardDutyFindings:
+        default: "Include GuardDuty Findings"
 Parameters:
   CSPMRoleName:
     Type: String
@@ -61,7 +64,14 @@ Parameters:
       - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
-       
+  IncludeGuardDutyFindings:
+    Type: String
+    Description: Whether to include GuardDuty findings in the EventBridge Rule
+    Default: 'DISABLED'
+    AllowedValues:
+      - 'ENABLED'
+      - 'DISABLED'
+
 Resources:
   AdministrationRole:
     Type: AWS::IAM::Role
@@ -194,6 +204,8 @@ Resources:
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
           ParameterValue: !Ref EventBusARN
+        - ParameterKey: IncludeGuardDutyFindings
+          ParameterValue: !Ref IncludeGuardDutyFindings
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
@@ -409,6 +421,8 @@ Resources:
           ParameterValue: !Ref EventBusARN
         - ParameterKey: EventBridgeState
           ParameterValue: !Ref EventBridgeState
+        - ParameterKey: IncludeGuardDutyFindings
+          ParameterValue: !Ref IncludeGuardDutyFindings
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts:

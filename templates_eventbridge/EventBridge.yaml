@@ -11,6 +11,8 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - EventBusARN
+          - EventBridgeState
+          - IncludeGuardDutyFindings
 
     ParameterLabels:
       ExternalID:
@@ -23,6 +25,8 @@ Metadata:
         default: "Integration Name (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"
+      IncludeGuardDutyFindings:
+        default: "Include GuardDuty Findings"
 
 Parameters:
   EventBridgeRoleName:
