@@ -72,6 +72,9 @@ Resources:
                   - "lambda:GetRuntimeManagementConfig"
                   - "lambda:GetFunction"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "account:GetContactInformation"
+                Resource: "*"
   RoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
@@ -147,4 +150,7 @@ Resources:
                         Action:
                           - "lambda:GetRuntimeManagementConfig"
                           - "lambda:GetFunction"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "account:GetContactInformation"
                         Resource: "*"

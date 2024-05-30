@@ -139,6 +139,9 @@ Resources:
                   - "lambda:GetRuntimeManagementConfig"
                   - "lambda:GetFunction"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "account:GetContactInformation"
+                Resource: "*"
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -256,6 +259,9 @@ Resources:
                         Action:
                           - "lambda:GetRuntimeManagementConfig"
                           - "lambda:GetFunction"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "account:GetContactInformation"
                         Resource: "*"
           EventBridgeRole:
             Type: AWS::IAM::Role
