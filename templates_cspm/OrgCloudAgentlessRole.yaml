@@ -81,7 +81,7 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
       Parameters:
         - ParameterKey: RoleName
           ParameterValue: !Ref RoleName
