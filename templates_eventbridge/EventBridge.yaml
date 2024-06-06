@@ -98,6 +98,7 @@ Resources:
           - 'Object Storage Class Changed'
           - 'Object Tags Added'
           - 'Object Tags Deleted'
+          - 'GuardDuty Finding'
       State: !Ref EventBridgeState
       Targets:
         - Id: !Ref EventBridgeRoleName

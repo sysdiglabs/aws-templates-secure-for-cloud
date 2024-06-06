@@ -351,6 +351,7 @@ Resources:
                   - 'Object Storage Class Changed'
                   - 'Object Tags Added'
                   - 'Object Tags Deleted'
+                  - 'GuardDuty Finding'
               State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
@@ -426,6 +427,7 @@ Resources:
                   - 'Object Storage Class Changed'
                   - 'Object Tags Added'
                   - 'Object Tags Deleted'
+                  - 'GuardDuty Finding'
               State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
