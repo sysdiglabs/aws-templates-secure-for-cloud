@@ -232,7 +232,7 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
@@ -306,7 +306,7 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
