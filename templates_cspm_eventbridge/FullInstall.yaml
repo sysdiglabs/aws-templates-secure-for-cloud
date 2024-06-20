@@ -13,6 +13,7 @@ Metadata:
           - EventBusARN
           - EventBridgeRoleName
           - EventBridgeState
+          - EventBridgeEventPattern
 
     ParameterLabels:
       RoleName:
@@ -27,8 +28,9 @@ Metadata:
         default: "Integration Name (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"
-          
-       
+      EventBridgeEventPattern:
+        default: "Event Pattern (Sysdig use only)"
+
 Parameters:
   RoleName:
     Type: String
@@ -53,6 +55,28 @@ Parameters:
       - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
+  EventBridgeEventPattern:
+    Type: String
+    Description: JSON pattern for the EventBridge rule's event pattern
+    Default: |
+      {
+        "detail-type": [
+          "AWS API Call via CloudTrail",
+          "AWS Console Sign In via CloudTrail",
+          "AWS Service Event via CloudTrail",
+          "Object Access Tier Changed",
+          "Object ACL Updated",
+          "Object Created",
+          "Object Deleted",
+          "Object Restore Completed",
+          "Object Restore Expired",
+          "Object Restore Initiated",
+          "Object Storage Class Changed",
+          "Object Tags Added",
+          "Object Tags Deleted",
+          "GuardDuty Finding"
+        ]
+      }
 
 Resources:
   CloudAgentlessRole:
@@ -130,23 +154,8 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Ref EventBridgeRoleName
-      Description: Capture all CloudTrail events
-      EventPattern:
-        detail-type:
-          - 'AWS API Call via CloudTrail'
-          - 'AWS Console Sign In via CloudTrail'
-          - 'AWS Service Event via CloudTrail'
-          - 'Object Access Tier Changed'
-          - 'Object ACL Updated'
-          - 'Object Created'
-          - 'Object Deleted'
-          - 'Object Restore Completed'
-          - 'Object Restore Expired'
-          - 'Object Restore Initiated'
-          - 'Object Storage Class Changed'
-          - 'Object Tags Added'
-          - 'Object Tags Deleted'
-          - 'GuardDuty Finding'
+      Description: Capture events based on the provided event pattern
+      EventPattern: !Ref EventBridgeEventPattern
       State: !Ref EventBridgeState
       Targets:
         - Id: !Ref EventBridgeRoleName
@@ -154,4 +163,3 @@ Resources:
           RoleArn: !GetAtt
             - EventBridgeRole
             - Arn
-            
