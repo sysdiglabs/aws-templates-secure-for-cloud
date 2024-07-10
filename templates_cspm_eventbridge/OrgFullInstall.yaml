@@ -181,6 +181,9 @@ Resources:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
         Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
@@ -299,6 +302,9 @@ Resources:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
         Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
@@ -371,6 +377,8 @@ Resources:
       AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SELF_MANAGED
+      ManagedExecution:
+        Active: true      
       Capabilities:
         - CAPABILITY_NAMED_IAM
       OperationPreferences:
