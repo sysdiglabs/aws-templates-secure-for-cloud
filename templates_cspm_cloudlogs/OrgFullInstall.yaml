@@ -138,7 +138,10 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
+        RetainStacksOnAccountRemoval: false        
+      ManagedExecution:
+        Active: true
       OperationPreferences:
         MaxConcurrentCount: 5
       Parameters:
