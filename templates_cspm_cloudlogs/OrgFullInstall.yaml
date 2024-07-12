@@ -143,7 +143,8 @@ Resources:
       ManagedExecution:
         Active: true
       OperationPreferences:
-        MaxConcurrentCount: 5
+        MaxConcurrentCount: 10
+        RegionConcurrencyType: PARALLEL
       Parameters:
         - ParameterKey: CSPMRoleName
           ParameterValue: !Ref CSPMRoleName
