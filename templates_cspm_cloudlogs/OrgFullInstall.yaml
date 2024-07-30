@@ -143,7 +143,8 @@ Resources:
       ManagedExecution:
         Active: true
       OperationPreferences:
-        MaxConcurrentCount: 10
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
         RegionConcurrencyType: PARALLEL
       Parameters:
         - ParameterKey: CSPMRoleName
