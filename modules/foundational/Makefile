@@ -12,14 +12,14 @@ STACK_NAME_ORG = "ModularFoundationalOrgTest"
 .PHONY: packaged-template-org.yaml
 
 validate:
-	aws cloudformation validate-template --template-body file://./CloudAgentlessRole.yaml
-	aws cloudformation validate-template --template-body file://./OrgCloudAgentlessRole.yaml
+	aws cloudformation validate-template --template-body file://./single.yaml
+	aws cloudformation validate-template --template-body file://./org.yaml
 
 lint:
 	cfn-lint *.yaml
 
 packaged-template.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/cspm/single/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/modules/foundational/$(S3_PREFIX) --recursive
 
 	aws cloudformation package \
 		--region $(S3_REGION) \
@@ -44,7 +44,7 @@ clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)
 
 packaged-template-org.yaml:
-	aws s3 rm s3://$(S3_BUCKET)/cspm/org/$(S3_PREFIX) --recursive
+	aws s3 rm s3://$(S3_BUCKET)/modules/foundational/$(S3_PREFIX) --recursive
 	aws cloudformation package \
 		--region $(S3_REGION) \
 		--template-file org.yaml \

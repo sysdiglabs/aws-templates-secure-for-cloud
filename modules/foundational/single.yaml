@@ -7,22 +7,24 @@ Metadata:
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
-          - RoleName
+          - NameSuffix
           - ExternalID
           - TrustedIdentity
-
     ParameterLabels:
-      RoleName:
-        default: "Role Name (Sysdig use only)"
+      NameSuffix:
+        default: "Name Suffix (do not edit)"
       ExternalID:
-        default: "External ID (Sysdig use only)"
+        default: "External ID (do not edit)"
       TrustedIdentity:
-        default: "Trusted Identity (Sysdig use only)"
+        default: "Trusted Identity (do not edit)"
 
 Parameters:
-  RoleName:
+  NameSuffix:
     Type: String
-    Description: The read-only IAM Role that Sysdig will create
+    Description: Suffix to append to the resource name identifiers
+    AllowedPattern: "[0-9a-f]+"
+    MaxLength: 8
+    MinLength: 4
   ExternalID:
     Type: String
     Description: Sysdig generated token that proves you own this account
@@ -31,10 +33,14 @@ Parameters:
     Description: The Role in Sysdig's AWS Account with permissions to your account
 
 Resources:
-  CloudAgentlessRole:
+  ConfigPostureRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Ref RoleName
+      RoleName:
+        !Join
+          - "-"
+          - - sysdig-secure
+            - !Ref NameSuffix
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -48,7 +54,11 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
       Policies:
-        - PolicyName: !Ref RoleName
+        - PolicyName:
+            !Join
+              - "-"
+              - - sysdig-secure
+                - !Ref NameSuffix
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -74,7 +84,29 @@ Resources:
                 Action: "account:GetContactInformation"
                 Resource: "*"
 
+  OnboardingRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName:
+        !Join
+          - "-"
+          - - sysdig-secure
+            - onboarding
+            - !Ref NameSuffix
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action: "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalID
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSAccountManagementReadOnlyAccess
+
 Outputs:
   RoleARN:
     Description: ARN of the role created
-    Value: !Sub ${CloudAgentlessRole.Arn}
+    Value: !Sub ${ConfigPostureRole.Arn}
