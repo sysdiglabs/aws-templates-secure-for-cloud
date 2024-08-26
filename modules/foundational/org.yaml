@@ -6,24 +6,27 @@ Metadata:
       - Label:
           default: "Sysdig Settings (Do not change)"
         Parameters:
-          - RoleName
+          - NameSuffix
           - ExternalID
           - TrustedIdentity
           - OrganizationUnitIDs
     ParameterLabels:
-      RoleName:
-        default: "Role Name (Sysdig use only)"    
+      NameSuffix:
+        default: "Name Suffix (do not edit)"    
       ExternalID:
-        default: "External ID (Sysdig use only)"
+        default: "External ID (do not edit)"
       TrustedIdentity:
-        default: "Trusted Identity (Sysdig use only)"
+        default: "Trusted Identity (do not edit)"
       OrganizationUnitIDs:
-        default: "Organization Unit IDs (Sysdig use only)"
+        default: "Organization Unit IDs (do not edit)"
 
 Parameters:
-  RoleName:
+  NameSuffix:
     Type: String
-    Description: Unique role for monitoring AWS accounts
+    Description: Suffix to append to the resource name identifiers
+    AllowedPattern: "[0-9a-f]+"
+    MaxLength: 8
+    MinLength: 4
   ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
@@ -35,10 +38,14 @@ Parameters:
     Description: Organization Unit IDs to deploy   
 
 Resources:
-  CloudAgentlessRole:
+  ConfigPostureRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub ${RoleName}
+      RoleName:
+        !Join
+          - "-"
+          - - sysdig-secure
+            - !Ref NameSuffix
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -52,7 +59,11 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
       Policies:
-        - PolicyName: !Sub ${RoleName}
+        - PolicyName:
+            !Join
+              - "-"
+              - - sysdig-secure
+                - !Ref NameSuffix
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -91,8 +102,8 @@ Resources:
       ManagedExecution:
         Active: true
       Parameters:
-        - ParameterKey: RoleName
-          ParameterValue: !Ref RoleName
+        - ParameterKey: NameSuffix
+          ParameterValue: !Ref NameSuffix
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
         - ParameterKey: ExternalID
@@ -106,9 +117,12 @@ Resources:
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role for Agentless
         Parameters:
-          RoleName:
+          NameSuffix:
             Type: String
-            Description: Role name
+            Description: Suffix to append to the resource name identifiers
+            AllowedPattern: "[0-9a-f]+"
+            MaxLength: 8
+            MinLength: 4
           TrustedIdentity:
             Type: String
             Description: Trusted identity
@@ -117,10 +131,14 @@ Resources:
             Description: external ID
 
         Resources:
-          CloudAgentlessRole:
+          ConfigPostureRole:
             Type: "AWS::IAM::Role"
             Properties:
-              RoleName: !Sub ${RoleName}
+              RoleName:
+                !Join
+                  - "-"
+                  - - sysdig-secure
+                    - !Ref NameSuffix
               AssumeRolePolicyDocument:
                 Version: "2012-10-17"
                 Statement:
@@ -134,7 +152,11 @@ Resources:
               ManagedPolicyArns:
                 - arn:aws:iam::aws:policy/SecurityAudit
               Policies:
-                - PolicyName: !Sub ${RoleName}
+                - PolicyName:
+                    !Join
+                      - "-"
+                      - - sysdig-secure
+                        - !Ref NameSuffix
                   PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
