@@ -25,7 +25,7 @@ packaged-template.yaml:
 		--region $(S3_REGION) \
 		--template-file single.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix cspm/$(S3_PREFIX) \
+		--s3-prefix modules/foundational/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template.yaml
 
@@ -49,7 +49,7 @@ packaged-template-org.yaml:
 		--region $(S3_REGION) \
 		--template-file org.yaml \
 		--s3-bucket $(S3_BUCKET) \
-		--s3-prefix cspm/$(S3_PREFIX) \
+		--s3-prefix modules/foundational/$(S3_PREFIX) \
 		--force-upload \
 		--output-template-file packaged-template-org.yaml
 

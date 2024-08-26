@@ -36,11 +36,7 @@ Resources:
   ConfigPostureRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName:
-        !Join
-          - "-"
-          - - sysdig-secure
-            - !Ref NameSuffix
+      RoleName: !Join ["-", ["sysdig-secure", !Ref NameSuffix]]
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -54,11 +50,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/SecurityAudit
       Policies:
-        - PolicyName:
-            !Join
-              - "-"
-              - - sysdig-secure
-                - !Ref NameSuffix
+        - PolicyName: !Join ["-", ["sysdig-secure", !Ref NameSuffix]]
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -87,12 +79,7 @@ Resources:
   OnboardingRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName:
-        !Join
-          - "-"
-          - - sysdig-secure
-            - onboarding
-            - !Ref NameSuffix
+      RoleName: !Join ["-", ["sysdig-secure", onboarding, !Ref NameSuffix]]
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
