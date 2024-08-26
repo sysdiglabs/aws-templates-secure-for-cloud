@@ -40,16 +40,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-1
 
-    - name: Build and Upload CSPM Templates
-      run: make ci
+    - name: Publish Templates
+      run: make publish
       working-directory: modules/foundational
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: pr/${{ github.event.pull_request.number }}
-
-    - name: Build and Upload CSPM Org Templates
-      run: make ci-org
-      working-directory: modules/foundational
-      env:
-        S3_BUCKET: cf-templates-cloudvision-ci
-        S3_PREFIX: pr/${{ github.event.pull_request.number }}       
