@@ -1,0 +1,394 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: "Sysdig Settings (Do not change)"
+      Parameters:
+      - NameSuffix
+      - ExternalID
+      - TrustedIdentity
+      - TargetEventBusARN
+      - Regions
+      - RuleState
+      - RuleEventPattern
+      - IsOrganizational
+      - OrganizationalUnitIDs
+    ParameterLabels:  
+      NameSuffix:
+        default: Name Suffix
+      ExternalID:
+        default: "External ID"
+      TrustedIdentity:
+        default: "Trusted Identity"
+      TargetEventBusARN:
+        default: "Target Event Bus"
+      Regions:
+        default: "EventBridge Regions"
+      RuleState:
+        default: "EventBridge Rule state"
+      RuleEventPattern:
+        default: "EventBridge Rule event eattern"
+      IsOrganizational:
+        default: Is Organizational
+      OrganizationalUnitIDs:
+        default: "Organizational Unit IDs"
+Parameters:
+  NameSuffix:
+    Type: String
+    Description: Suffix to append to the resource name identifiers
+    AllowedPattern: '[0-9a-z]+'
+    MaxLength: 8
+    MinLength: 4
+  ExternalID:
+    Type: String
+    Description: Sysdig assigned token that proves you own this account
+  TrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig's AWS Account with permissions to your account
+  TargetEventBusARN:
+    Type: String
+    Description: The destination in Sysdig's AWS account where your events are sent
+  Regions:
+    Type: CommaDelimitedList
+    Description: Comma separated list of regions to monitor with EventBridge
+  OrganizationalUnitIDs:
+    Type: CommaDelimitedList
+    Description: Comma separated list of organizational unit IDs to deploy
+  RuleState:
+    Type: String
+    Description: The state of the EventBridge Rule
+    Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+    AllowedValues:
+      - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+      - ENABLED
+      - DISABLED
+  RuleEventPattern:
+    Type: String
+    Description: JSON pattern for the EventBridge rule's event pattern
+    Default: |
+      {
+        "detail-type": [
+          "AWS API Call via CloudTrail",
+          "AWS Console Sign In via CloudTrail",
+          "AWS Service Event via CloudTrail",
+          "Object Access Tier Changed",
+          "Object ACL Updated",
+          "Object Created",
+          "Object Deleted",
+          "Object Restore Completed",
+          "Object Restore Expired",
+          "Object Restore Initiated",
+          "Object Storage Class Changed",
+          "Object Tags Added",
+          "Object Tags Deleted",
+          "GuardDuty Finding"
+        ]
+      }
+  IsOrganizational:
+    Type: String
+    Description: Install into an organization
+    Default: 'false'
+    AllowedValues:
+    - 'true'
+    - 'false'
+Conditions:
+  IsOrganizational:
+    Fn::Equals:
+    - Ref: IsOrganizational
+    - 'true'
+Resources:
+  AdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-events-stackset-administration-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Sub sysdig-secure-events-stackset-execution-${NameSuffix}
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - sts:AssumeRole
+            Resource:
+            - !Sub arn:aws:iam:::role/sysdig-secure-events-stackset-execution-${NameSuffix}
+  ExecutionRole:
+    Type: AWS::IAM::Role   
+    Properties:
+      RoleName: !Sub sysdig-secure-events-stackset-execution-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+            - !GetAtt AdministrationRole.RoleId
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-events-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: 'sts:AssumeRole'
+        - Effect: "Allow"
+          Principal:
+            AWS: !Ref TrustedIdentity
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              sts:ExternalId: !Sub ${ExternalID}          
+      Policies:
+      - PolicyName: !Sub sysdig-secure-events-${NameSuffix}
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: 'events:PutEvents'
+            Resource: !Ref TargetEventBusARN
+          - Effect: Allow
+            Action:
+            - "events:DescribeRule"
+            - "events:ListTargetsByRule"
+            Resource:
+            - !Sub arn:aws:events:*:*:rule/sysdig-secure-events-${NameSuffix}
+  EventBridgeRuleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W3005
+    DependsOn: 
+    - ExecutionRole
+    - AdministrationRole
+    - EventBridgeRole
+    Properties:
+      StackSetName: !Sub sysdig-secure-events-rules-${NameSuffix}
+      AdministrationRoleARN: !GetAtt AdministrationRole.Arn
+      ExecutionRoleName: !Ref ExecutionRole
+      Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+      PermissionModel: SELF_MANAGED
+      ManagedExecution:
+        Active: true      
+      Capabilities:
+        - CAPABILITY_NAMED_IAM              
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+        - ParameterKey: Name
+          ParameterValue: !Sub sysdig-secure-events-${NameSuffix}
+        - ParameterKey: TargetEventBusARN
+          ParameterValue: !Ref TargetEventBusARN
+        - ParameterKey: RuleState
+          ParameterValue: !Ref RuleState
+        - ParameterKey: RuleEventPattern
+          ParameterValue: !Ref RuleEventPattern                     
+      StackInstancesGroup:
+        - DeploymentTargets:
+            Accounts: 
+              - !Ref AWS::AccountId             
+          Regions: !Ref Regions
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+        Parameters:
+          Name:
+            Type: String
+            Description: resource name identifier
+          TargetEventBusARN:
+            Type: String
+            Description: The destination in Sysdig's AWS account where your events are sent
+          RuleState:
+            Type: String
+            Description: The state of the EventBridge Rule
+            Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+            AllowedValues:
+              - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              - ENABLED
+              - DISABLED
+          RuleEventPattern:
+            Type: String
+            Description: JSON pattern for the EventBridge rule's event pattern
+        Resources:           
+          EventBridgeRule:
+            Type: "AWS::Events::Rule"
+            Properties:
+              Name: !Ref Name
+              Description: Capture all CloudTrail events
+              EventPattern: !Ref RuleEventPattern
+              State: !Sub ${RuleState}
+              Targets:
+                - Id: !Ref Name
+                  Arn: !Sub ${TargetEventBusARN}
+                  RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${Name}
+  OrganizationRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsOrganizational
+    Properties:
+      StackSetName: !Sub sysdig-secure-events-organization-roles-${NameSuffix}
+      Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+      - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+      Parameters:
+      - ParameterKey: Name
+        ParameterValue: !Sub sysdig-secure-events-${NameSuffix}
+      - ParameterKey: TrustedIdentity
+        ParameterValue: !Ref TrustedIdentity
+      - ParameterKey: ExternalID
+        ParameterValue: !Ref ExternalID
+      - ParameterKey: TargetEventBusARN
+        ParameterValue: !Ref TargetEventBusARN
+      StackInstancesGroup:
+      - DeploymentTargets:
+          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+        Regions: [!Ref "AWS::Region"]
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
+        Parameters:
+          TrustedIdentity:
+            Type: String
+            Description: The Role in Sysdig's AWS Account with permissions to your account
+          ExternalID:
+            Type: String
+            Description: Sysdig ExternalID required for the policy creation
+          Name:
+            Type: String
+            Description: A unique identifier used to create and reference resources
+          TargetEventBusARN:
+            Type: String
+            Description: The destination in Sysdig's AWS account where your events are sent                        
+        Resources:
+          EventBridgeRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Sub ${Name}
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                - Effect: Allow
+                  Principal:
+                    Service: events.amazonaws.com
+                  Action: 'sts:AssumeRole'
+                - Effect: "Allow"
+                  Principal:
+                    AWS: !Sub ${TrustedIdentity}
+                  Action: "sts:AssumeRole"
+                  Condition:
+                    StringEquals:
+                      sts:ExternalId: !Sub ${ExternalID}          
+              Policies:
+              - PolicyName: !Sub ${Name}
+                PolicyDocument:
+                  Version: "2012-10-17"
+                  Statement:
+                  - Effect: Allow
+                    Action: 'events:PutEvents'
+                    Resource: !Sub ${TargetEventBusARN}
+                  - Effect: Allow
+                    Action:
+                    - "events:DescribeRule"
+                    - "events:ListTargetsByRule"
+                    Resource:
+                    - !Sub arn:aws:events:*:*:rule/${Name}
+  OrganizationRuleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsOrganizational
+    DependsOn:
+    - OrganizationRoleStackSet
+    Properties:
+      StackSetName: !Sub sysdig-secure-events-organization-rules-${NameSuffix}
+      Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+      - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+      - ParameterKey: Name
+        ParameterValue: !Sub sysdig-secure-events-${NameSuffix}
+      - ParameterKey: TargetEventBusARN
+        ParameterValue: !Ref TargetEventBusARN
+      - ParameterKey: RuleState
+        ParameterValue: !Ref RuleState
+      - ParameterKey: RuleEventPattern
+        ParameterValue: !Ref RuleEventPattern
+      StackInstancesGroup:
+      - DeploymentTargets:
+          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+        Regions: !Ref Regions
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
+        Parameters:
+          Name:
+            Type: String
+            Description: A unique identifier used to create and reference resources
+          TargetEventBusARN:
+            Type: String
+            Description: The destination in Sysdig's AWS account where your events are sent
+          RuleState:
+            Type: String
+            Description: The state of the EventBridge Rule
+            Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+            AllowedValues:
+              - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+              - ENABLED
+              - DISABLED
+          RuleEventPattern:
+            Type: String
+            Description: JSON pattern for the EventBridge rule's event pattern
+        Resources:           
+          EventBridgeRule:
+            Type: "AWS::Events::Rule"
+            Properties:
+              Name: !Ref Name
+              Description: Capture all CloudTrail events
+              EventPattern: !Ref RuleEventPattern
+              State: !Ref RuleState
+              Targets:
+                - Id: !Ref Name
+                  Arn: !Ref TargetEventBusARN
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
+Outputs:
+  EventBridgeRoleARN:
+    Description: Sysdig Secure EventBridge Role ARN
+    Value:
+      Fn::Sub: ${EventBridgeRole.Arn}

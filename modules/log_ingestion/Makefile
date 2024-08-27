@@ -5,24 +5,24 @@ S3_PREFIX ?= "test"
 # We need the REGION or the TemplateURLs might be created for a different region, resulting in a deployment error
 S3_REGION ?= "eu-west-1" # ireland
 SECURE_API_TOKEN ?= ""
-STACK_NAME = "Sysdig-Secure-$(PARAM_NAME_SUFFIX)"
+STACK_NAME = "Sysdig-Secure-Log-Ingestion-$(PARAM_NAME_SUFFIX)"
 PARAM_NAME_SUFFIX ?= "test"
 PARAM_IS_ORGANIZATIONAL ?= "false"
 
 .PHONY: validate lint deploy test clean
 validate:
-	aws cloudformation validate-template --template-body file://./template.yaml
+	aws cloudformation validate-template --template-body file://./events.yaml
 
 lint:
 	cfn-lint *.yaml
 
 publish:
-	aws s3 cp ./template.yaml s3://$(S3_BUCKET)/modules/foundational/$(S3_PREFIX)/template.yaml
+	aws s3 cp ./events.yaml s3://$(S3_BUCKET)/modules/log_ingestion/$(S3_PREFIX)/events.yaml
 
 deploy:
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME) \
-		--template-file template.yaml \
+		--template-file events.yaml \
 		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
 		--parameter-overrides \
 			"NameSuffix=$(PARAM_NAME_SUFFIX)" \

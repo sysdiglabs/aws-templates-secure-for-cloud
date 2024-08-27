@@ -1,0 +1,13 @@
+{
+  "type": "COMPONENT_EVENT_BRIDGE",
+  "instance": "secure-runtime",
+  "eventBridgeMetadata": {
+    "aws": {
+        "roleName": "sysdig-secure-events-{{NameSuffix}}",
+        "ruleName": "sysdig-secure-events-{{NameSuffix}}",
+        "regions": [
+          "{{regions}}"
+        ]
+    }
+  }
+}

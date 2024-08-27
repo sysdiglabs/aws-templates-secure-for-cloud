@@ -31,7 +31,7 @@ Parameters:
     MinLength: 4
   ExternalID:
     Type: String
-    Description: Sysdig generated token that proves you own this account
+    Description: Sysdig assigned token that proves you own this account
   TrustedIdentity:
     Type: String
     Description: The Role in Sysdig's AWS Account with permissions to your account
