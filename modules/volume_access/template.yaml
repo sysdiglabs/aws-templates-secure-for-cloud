@@ -1,0 +1,472 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Sysdig Agentless Scanning integration resources
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: "Sysdig Settings (Do not change)"
+      Parameters:
+      - NameSuffix
+      - ExternalID
+      - TrustedIdentity
+      - ScanningAccountID
+      - Regions
+      - IsOrganizational
+      - OrganizationalUnitIDs
+    ParameterLabels:  
+      NameSuffix:
+        default: Name Suffix
+      ExternalID:
+        default: "External ID"
+      TrustedIdentity:
+        default: "Trusted Identity"
+      ScanningAccountID:
+        default: "Sysdig Scanning Account ID"
+      Regions:
+        default: "EventBridge Regions"
+      IsOrganizational:
+        default: Is Organizational
+      OrganizationalUnitIDs:
+        default: "Organizational Unit IDs"
+
+Parameters:
+  NameSuffix:
+    Type: String
+    Description: Suffix to append to the resource name identifiers
+    AllowedPattern: '[0-9a-z]+'
+    MaxLength: 8
+    MinLength: 4
+  ExternalID:
+    Type: String
+    Description: Sysdig assigned token that proves you own this account
+  TrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig's AWS Account with permissions to your account
+  ScanningAccountID:
+    Type: String
+    Description: The AWS Account ID of the Sysdig Scanning Account
+  Regions:
+    Type: CommaDelimitedList
+    Description: Comma separated list of instrumented regions
+  IsOrganizational:
+    Type: String
+    Description: Install into an organization
+    Default: 'false'
+    AllowedValues:
+    - 'true'
+    - 'false'
+  OrganizationalUnitIDs:
+    Type: CommaDelimitedList
+    Description: Comma separated list of organizational unit IDs to deploy
+
+Conditions:
+  IsOrganizational:
+    Fn::Equals:
+    - Ref: IsOrganizational
+    - 'true'
+
+Resources:
+  ScanningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-scanning-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            AWS: !Ref TrustedIdentity
+          Action: "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              sts:ExternalId: !Ref ExternalID
+      Policies:
+      - PolicyName: !Sub sysdig-secure-scanning-${NameSuffix}
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Sid: "Read"
+            Effect: "Allow"
+            Action: 
+            - "ec2:Describe*"
+            Resource: "*"
+          - Sid: "AllowKMSKeysListing"
+            Effect: "Allow"
+            Action:
+            - "kms:ListKeys"
+            - "kms:ListAliases"
+            - "kms:ListResourceTags"
+            Resource: "*"
+          - Sid: "AllowKMSEncryptDecrypt"
+            Effect: "Allow"
+            Action:
+            - "kms:DescribeKey"
+            - "kms:Encrypt"
+            - "kms:Decrypt"
+            - "kms:ReEncrypt*"
+            - "kms:GenerateDataKey*"
+            - "kms:CreateGrant"
+            Resource: "*"
+            Condition:
+              StringLike:
+                "kms:ViaService": "ec2.*.amazonaws.com"
+          - Sid: "CreateTaggedSnapshotFromVolume"
+            Effect: "Allow"
+            Action:
+            - "ec2:CreateSnapshot"
+            Resource: "*"
+          - Sid: "CopySnapshots"
+            Effect: "Allow"
+            Action:
+            - "ec2:CopySnapshot"
+            Resource: "*"
+          - Sid: "SnapshotTags"
+            Effect: "Allow"
+            Action:
+            - "ec2:CreateTags"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "ec2:CreateAction": ["CreateSnapshot", "CopySnapshot"]
+                "aws:RequestTag/CreatedBy": "Sysdig"
+          - Sid: "ec2SnapshotShare"
+            Effect: "Allow"
+            Action:
+            - "ec2:ModifySnapshotAttribute"
+            Resource: "*"
+            Condition:
+              StringEqualsIgnoreCase:
+                "aws:ResourceTag/CreatedBy": "Sysdig"
+              StringEquals:
+                "ec2:Add/userId": !Ref ScanningAccountID
+          - Sid: "ec2SnapshotDelete"
+            Effect: "Allow"
+            Action:
+            - "ec2:DeleteSnapshot"
+            Resource: "*"
+            Condition:
+              StringEqualsIgnoreCase:
+                "aws:ResourceTag/CreatedBy": "Sysdig"    
+  AdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-scanning-stackset-administration-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: !Sub sysdig-secure-scanning-stackset-execution-${NameSuffix}
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - sts:AssumeRole
+            Resource:
+            - !Sub arn:aws:iam:::role/sysdig-secure-scanning-stackset-execution-${NameSuffix}
+  ExecutionRole:
+    Type: AWS::IAM::Role   
+    Properties:
+      RoleName: !Sub sysdig-secure-scanning-stackset-execution-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+            - !GetAtt AdministrationRole.RoleId
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+  ScanningKmsKeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: !Sub sysdig-secure-scanning-kms-${NameSuffix}
+      Description: "A CloudFormation template that creates a KMS key in the account where it is launched, and grants permissions to the specified IAM role"
+      AdministrationRoleARN: !GetAtt AdministrationRole.Arn
+      ExecutionRoleName: !Ref ExecutionRole
+      PermissionModel: SELF_MANAGED
+      ManagedExecution:
+        Active: true      
+      Capabilities:
+        - CAPABILITY_NAMED_IAM 
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+      - ParameterKey: NameSuffix
+        ParameterValue: !Ref NameSuffix
+      - ParameterKey: ScanningAccountID
+        ParameterValue: !Ref ScanningAccountID
+      StackInstancesGroup:
+      - DeploymentTargets:
+          Accounts: 
+          - !Ref AWS::AccountId
+        Regions: !Ref Regions
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: "Template to create KMS Key and Alias for Sysdig Agentless Scanning"
+        Parameters: 
+          NameSuffix:
+            Type: String
+            Description: Suffix to append to the resource name identifiers
+            AllowedPattern: '[0-9a-z]+'
+            MaxLength: 8
+            MinLength: 4
+          ScanningAccountID:
+            Type: String
+            Description: The AWS Account ID of the Sysdig Scanning Account  
+        Resources:
+          ScanningKmsKey:
+            Type: 'AWS::KMS::Key'
+            Properties:
+              Description: "Sysdig Agentless Scanning encryption key"
+              PendingWindowInDays: 7
+              KeyUsage: ENCRYPT_DECRYPT
+              KeyPolicy:
+                Version: '2012-10-17'
+                Statement:
+                - Sid: "SysdigAllowKms"
+                  Effect: "Allow"
+                  Principal:
+                    AWS:
+                    - !Sub arn:aws:iam::${ScanningAccountID}:root
+                    - !Sub arn:aws:iam::${AWS::AccountId}:role/sysdig-secure-scanning-${NameSuffix}
+                  Action:
+                  - "kms:Encrypt"
+                  - "kms:Decrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:GenerateDataKey*"
+                  - "kms:DescribeKey"
+                  - "kms:CreateGrant"
+                  - "kms:ListGrants"
+                  Resource: "*"
+                - Sid: "AllowCustomerManagement"
+                  Effect: "Allow"
+                  Principal:
+                    AWS:
+                    - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                  Action: "kms:*"
+                  Resource: "*"
+          ScanningKmsAlias:
+            Type: 'AWS::KMS::Alias'
+            Properties:
+              AliasName: !Sub alias/sysdig-secure-scanning-${NameSuffix}
+              TargetKeyId: !Ref ScanningKmsKey
+  OrganizationRoleStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsOrganizational
+    Properties:
+      StackSetName: !Sub sysdig-secure-scanning-organization-roles-${NameSuffix}
+      Description: IAM Role used to create IAM roles scan organization accounts/regions
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+      - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+      Parameters:
+      - ParameterKey: NameSuffix
+        ParameterValue: !Ref NameSuffix
+      - ParameterKey: ScanningAccountID
+        ParameterValue: !Ref ScanningAccountID
+      - ParameterKey: TrustedIdentity
+        ParameterValue: !Ref TrustedIdentity
+      - ParameterKey: ExternalID
+        ParameterValue: !Ref ExternalID
+      StackInstancesGroup:
+      - DeploymentTargets:
+          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+        Regions: [!Ref "AWS::Region"]
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: IAM Role used by Sysdig Secure Vulnerability Scanning
+        Parameters:
+          NameSuffix:
+            Type: String
+            Description: Suffix to append to the resource name identifiers
+            AllowedPattern: '[0-9a-z]+'
+            MaxLength: 8
+            MinLength: 4
+          ExternalID:
+            Type: String
+            Description: Sysdig assigned token that proves you own this account
+          TrustedIdentity:
+            Type: String
+            Description: The Role in Sysdig's AWS Account with permissions to your account
+          ScanningAccountID:
+            Type: String
+            Description: The AWS Account ID of the Sysdig Scanning Account
+        Resources:
+          ScanningRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Sub sysdig-secure-scanning-${NameSuffix}
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                - Effect: "Allow"
+                  Principal:
+                    AWS: !Ref TrustedIdentity
+                  Action: "sts:AssumeRole"
+                  Condition:
+                    StringEquals:
+                      sts:ExternalId: !Ref ExternalID
+              Policies:
+              - PolicyName: !Sub sysdig-secure-scanning-${NameSuffix}
+                PolicyDocument:
+                  Version: "2012-10-17"
+                  Statement:
+                  - Sid: "Read"
+                    Effect: "Allow"
+                    Action: 
+                    - "ec2:Describe*"
+                    Resource: "*"
+                  - Sid: "AllowKMSKeysListing"
+                    Effect: "Allow"
+                    Action:
+                    - "kms:ListKeys"
+                    - "kms:ListAliases"
+                    - "kms:ListResourceTags"
+                    Resource: "*"
+                  - Sid: "AllowKMSEncryptDecrypt"
+                    Effect: "Allow"
+                    Action:
+                    - "kms:DescribeKey"
+                    - "kms:Encrypt"
+                    - "kms:Decrypt"
+                    - "kms:ReEncrypt*"
+                    - "kms:GenerateDataKey*"
+                    - "kms:CreateGrant"
+                    Resource: "*"
+                    Condition:
+                      StringLike:
+                        "kms:ViaService": "ec2.*.amazonaws.com"
+                  - Sid: "CreateTaggedSnapshotFromVolume"
+                    Effect: "Allow"
+                    Action:
+                    - "ec2:CreateSnapshot"
+                    Resource: "*"
+                  - Sid: "CopySnapshots"
+                    Effect: "Allow"
+                    Action:
+                    - "ec2:CopySnapshot"
+                    Resource: "*"
+                  - Sid: "SnapshotTags"
+                    Effect: "Allow"
+                    Action:
+                    - "ec2:CreateTags"
+                    Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "ec2:CreateAction": ["CreateSnapshot", "CopySnapshot"]
+                        "aws:RequestTag/CreatedBy": "Sysdig"
+                  - Sid: "ec2SnapshotShare"
+                    Effect: "Allow"
+                    Action:
+                    - "ec2:ModifySnapshotAttribute"
+                    Resource: "*"
+                    Condition:
+                      StringEqualsIgnoreCase:
+                        "aws:ResourceTag/CreatedBy": "Sysdig"
+                      StringEquals:
+                        "ec2:Add/userId": !Ref ScanningAccountID
+                  - Sid: "ec2SnapshotDelete"
+                    Effect: "Allow"
+                    Action:
+                    - "ec2:DeleteSnapshot"
+                    Resource: "*"
+                    Condition:
+                      StringEqualsIgnoreCase:
+                        "aws:ResourceTag/CreatedBy": "Sysdig" 
+  OrganizationKMSKeyStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsOrganizational
+    Properties:
+      StackSetName: !Sub sysdig-secure-scanning-organization-kmskey-${NameSuffix}
+      Description: IAM Role used to create KMS Keys to scan organization accounts/regions
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+      - "CAPABILITY_NAMED_IAM"
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+      - ParameterKey: NameSuffix
+        ParameterValue: !Ref NameSuffix
+      - ParameterKey: ScanningAccountID
+        ParameterValue: !Ref ScanningAccountID
+      StackInstancesGroup:
+      - DeploymentTargets:
+          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+        Regions: !Ref Regions
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: "Template to create KMS Key and Alias for Sysdig Agentless Scanning"
+        Parameters: 
+          NameSuffix:
+            Type: String
+            Description: Suffix to append to the resource name identifiers
+            AllowedPattern: '[0-9a-z]+'
+            MaxLength: 8
+            MinLength: 4
+          ScanningAccountID:
+            Type: String
+            Description: The AWS Account ID of the Sysdig Scanning Account  
+        Resources:
+          ScanningKmsKey:
+            Type: 'AWS::KMS::Key'
+            Properties:
+              Description: "Sysdig Agentless Scanning encryption key"
+              PendingWindowInDays: 7
+              KeyUsage: ENCRYPT_DECRYPT
+              KeyPolicy:
+                Version: '2012-10-17'
+                Statement:
+                - Sid: "SysdigAllowKms"
+                  Effect: "Allow"
+                  Principal:
+                    AWS:
+                    - !Sub arn:aws:iam::${ScanningAccountID}:root
+                    - !Sub arn:aws:iam::${AWS::AccountId}:role/sysdig-secure-scanning-${NameSuffix}
+                  Action:
+                  - "kms:Encrypt"
+                  - "kms:Decrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:GenerateDataKey*"
+                  - "kms:DescribeKey"
+                  - "kms:CreateGrant"
+                  - "kms:ListGrants"
+                  Resource: "*"
+                - Sid: "AllowCustomerManagement"
+                  Effect: "Allow"
+                  Principal:
+                    AWS:
+                    - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                  Action: "kms:*"
+                  Resource: "*"
+          ScanningKmsAlias:
+            Type: 'AWS::KMS::Alias'
+            Properties:
+              AliasName: !Sub alias/sysdig-secure-scanning-${NameSuffix}
+              TargetKeyId: !Ref ScanningKmsKey

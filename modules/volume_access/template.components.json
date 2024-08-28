@@ -1,0 +1,25 @@
+[
+  {
+    "type": "COMPONENT_TRUSTED_ROLE",
+    "instance": "secure-scanning",
+    "trustedRoleMetadata": {
+        "aws": {
+            "roleName": "sysdig-secure-scanning-{{NameSuffix}}"
+        }
+    }
+  },
+  {
+    "type": "COMPONENT_CRYPTO_KEY",
+    "instance": "secure-scanning",
+    "cryptoKeyMetadata": {
+        "aws": {
+            "kms": {
+                "alias": "alias/sysdig-secure-scanning-{{NameSuffix}}",
+                "regions": [
+                  "{{regions}}"
+                ]
+            }
+        }
+    }
+}
+]
