@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  CloudFormation organizational template for provisioning
+  the necessary resources for the `cloud-logs`
+  component and the read-only role required to itneract with
+  the target organizational environment.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Sysdig Settings (Do not change)"
+        Parameters:
+          - NameSuffix
+          - ExternalID
+          - TrustedIdentity
+          - BucketARN
+
+    ParameterLabels:
+      NameSuffix:
+        default: Name Suffix
+      ExternalID:
+        default: "External ID"
+      TrustedIdentity:
+        default: "Trusted Identity"
+      BucketARN:
+        default: "Bucket ARN"
+
+Parameters:
+  NameSuffix:
+    Type: String
+    Description: Suffix to append to the resource name identifiers
+    AllowedPattern: '[0-9a-z]+'
+    MaxLength: 8
+    MinLength: 4
+  ExternalID:
+    Type: String
+    Description: Sysdig assigned token that proves you own this account
+  TrustedIdentity:
+    Type: String
+    Description: The Role in Sysdig's AWS Account with permissions to your account
+  BucketARN:
+    Type: String
+    Description: The ARN of your s3 bucket associated with your Cloudtrail trail logs.
+
+Resources:
+  CloudLogsRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub sysdig-secure-cloudlogs-${NameSuffix}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            AWS: !Ref TrustedIdentity
+          Action:
+          - "sts:AssumeRole"
+          Condition:
+            StringEquals:
+              "sts:ExternalId": !Ref ExternalID
+      Policies:
+      - PolicyName: !Sub sysdig-secure-cloudlogs-${NameSuffix}
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Sid: "CloudlogsS3AccessGet"
+            Effect: "Allow"
+            Action:
+            - "s3:Get*"
+            Resource:
+            - !Sub '${BucketARN}'
+            - !Sub '${BucketARN}/*'
+          - Sid: "CloudlogsS3AccessList"
+            Effect: "Allow"
+            Action:
+            - "s3:List*"
+            Resource:
+            - !Sub '${BucketARN}'
+            - !Sub '${BucketARN}/*'

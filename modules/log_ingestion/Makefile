@@ -12,12 +12,14 @@ PARAM_IS_ORGANIZATIONAL ?= "false"
 .PHONY: validate lint deploy test clean
 validate:
 	aws cloudformation validate-template --template-body file://./events.yaml
+	aws cloudformation validate-template --template-body file://./s3.yaml
 
 lint:
 	cfn-lint *.yaml
 
 publish:
 	aws s3 cp ./events.yaml s3://$(S3_BUCKET)/modules/log_ingestion/$(S3_PREFIX)/events.yaml
+	aws s3 cp ./events.yaml s3://$(S3_BUCKET)/modules/log_ingestion/$(S3_PREFIX)/s3.yaml
 
 deploy:
 	aws cloudformation deploy \
