@@ -45,6 +45,7 @@ Parameters:
   ScanningAccountID:
     Type: String
     Description: The AWS Account ID of the Sysdig Scanning Account
+    Default: '878070807337'
   Regions:
     Type: CommaDelimitedList
     Description: Comma separated list of instrumented regions
