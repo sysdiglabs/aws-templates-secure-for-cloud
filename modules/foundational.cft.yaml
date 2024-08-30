@@ -54,7 +54,7 @@ Resources:
   ConfigPostureRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-${NameSuffix}
+      RoleName: !Sub sysdig-secure-posture-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -70,7 +70,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/SecurityAudit
       Policies:
-      - PolicyName: !Sub sysdig-secure-${NameSuffix}
+      - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -121,7 +121,7 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
-      StackSetName: !Sub sysdig-secure-${NameSuffix}
+      StackSetName: !Sub sysdig-secure-organization-${NameSuffix}
       Description: Creates IAM roles within an AWS organization
       PermissionModel: SERVICE_MANAGED
       Capabilities:
@@ -167,7 +167,7 @@ Resources:
           ConfigPostureRole:
             Type: "AWS::IAM::Role"
             Properties:
-              RoleName: !Sub sysdig-secure-${NameSuffix}
+              RoleName: !Sub sysdig-secure-posture-${NameSuffix}
               AssumeRolePolicyDocument:
                 Version: "2012-10-17"
                 Statement:
@@ -181,7 +181,7 @@ Resources:
               ManagedPolicyArns:
               - arn:aws:iam::aws:policy/SecurityAudit
               Policies:
-              - PolicyName: !Sub sysdig-secure-${NameSuffix}
+              - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
                 PolicyDocument:
                   Version: "2012-10-17"
                   Statement:
