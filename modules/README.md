@@ -12,4 +12,4 @@ Modular templates support cross sections of Sysdig Secure feature sets. Each tem
 
 Organizations are supported by setting the following template parameters
 * `IsOrganizational=true`
-* `OrganizationalUnitsIDs=ou-...`
+* `OrganizationalUnitIDs=ou-...`
