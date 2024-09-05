@@ -136,6 +136,7 @@ Resources:
           - sts:AssumeRole
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
+      - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
