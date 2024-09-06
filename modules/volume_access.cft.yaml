@@ -185,6 +185,7 @@ Resources:
           - sts:AssumeRole
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser
+      - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
   ScanningKmsKeyStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
