@@ -29,7 +29,7 @@ Metadata:
       RuleState:
         default: "EventBridge Rule state"
       RuleEventPattern:
-        default: "EventBridge Rule event eattern"
+        default: "EventBridge Rule event pattern"
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
