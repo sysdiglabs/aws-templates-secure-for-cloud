@@ -255,7 +255,8 @@ Resources:
                   Effect: "Allow"
                   Principal:
                     AWS:
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                    - !Sub arn:aws:iam::${AWS::AccountId}:root
+                    - !Sub arn:aws:iam::${AWS::AccountId}:role/sysdig-secure-scanning-stackset-execution-${NameSuffix}
                   Action: "kms:*"
                   Resource: "*"
           ScanningKmsAlias:
@@ -397,6 +398,8 @@ Resources:
   OrganizationKMSKeyStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
+    DependsOn: 
+    - OrganizationRoleStackSet
     Properties:
       StackSetName: !Sub sysdig-secure-scanning-organization-kmskey-${NameSuffix}
       Description: IAM Role used to create KMS Keys to scan organization accounts/regions
@@ -464,7 +467,8 @@ Resources:
                   Effect: "Allow"
                   Principal:
                     AWS:
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                    - !Sub arn:aws:iam::${AWS::AccountId}:root
+                    - !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/member.org.stacksets.cloudformation.amazonaws.com/AWSServiceRoleForCloudFormationStackSetsOrgMember
                   Action: "kms:*"
                   Resource: "*"
           ScanningKmsAlias:
