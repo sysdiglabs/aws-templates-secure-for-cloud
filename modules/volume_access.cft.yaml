@@ -23,7 +23,7 @@ Metadata:
       ScanningAccountID:
         default: "Sysdig Scanning Account ID"
       Regions:
-        default: "EventBridge Regions"
+        default: "Instrumented Regions"
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
@@ -48,7 +48,7 @@ Parameters:
     Default: '878070807337'
   Regions:
     Type: CommaDelimitedList
-    Description: Comma separated list of instrumented regions
+    Description: Comma separated list of regions enabled for Sysdig Scanning
   IsOrganizational:
     Type: String
     Description: Install into an organization
