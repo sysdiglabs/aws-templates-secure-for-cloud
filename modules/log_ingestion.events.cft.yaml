@@ -25,7 +25,7 @@ Metadata:
       TargetEventBusARN:
         default: "Target Event Bus"
       Regions:
-        default: "EventBridge Regions"
+        default: "Instrumented Regions"
       RuleState:
         default: "EventBridge Rule state"
       RuleEventPattern:
