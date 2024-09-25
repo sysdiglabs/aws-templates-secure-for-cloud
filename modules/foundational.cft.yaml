@@ -131,6 +131,9 @@ Resources:
         RetainStacksOnAccountRemoval: false
       ManagedExecution:
         Active: true
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
       Parameters:
       - ParameterKey: NameSuffix
         ParameterValue:
