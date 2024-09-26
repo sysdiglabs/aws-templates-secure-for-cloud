@@ -280,6 +280,7 @@ Resources:
         Active: true        
       OperationPreferences:
         MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
         ConcurrencyMode: SOFT_FAILURE_TOLERANCE
       Parameters:
       - ParameterKey: NameSuffix
