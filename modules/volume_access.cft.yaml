@@ -233,6 +233,7 @@ Resources:
               Description: "Sysdig Agentless Scanning encryption key"
               PendingWindowInDays: 7
               KeyUsage: ENCRYPT_DECRYPT
+              EnableKeyRotation: true   # Enables automatic yearly rotation
               KeyPolicy:
                 Version: '2012-10-17'
                 Statement:
@@ -446,6 +447,7 @@ Resources:
               Description: "Sysdig Agentless Scanning encryption key"
               PendingWindowInDays: 7
               KeyUsage: ENCRYPT_DECRYPT
+              EnableKeyRotation: true   # Enables automatic yearly rotation
               KeyPolicy:
                 Version: '2012-10-17'
                 Statement:
