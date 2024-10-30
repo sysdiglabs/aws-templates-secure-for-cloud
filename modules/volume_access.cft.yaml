@@ -208,6 +208,8 @@ Resources:
         ParameterValue: !Ref NameSuffix
       - ParameterKey: ScanningAccountID
         ParameterValue: !Ref ScanningAccountID
+      - ParameterKey: ScanningRoleArn
+        ParameterValue: !GetAtt ScanningRole.Arn
       StackInstancesGroup:
       - DeploymentTargets:
           Accounts: 
@@ -226,6 +228,9 @@ Resources:
           ScanningAccountID:
             Type: String
             Description: The AWS Account ID of the Sysdig Scanning Account  
+          ScanningRoleArn:
+            Type: String
+            Description: The ARN of the install scanning role
         Resources:
           ScanningKmsKey:
             Type: 'AWS::KMS::Key'
@@ -242,7 +247,7 @@ Resources:
                   Principal:
                     AWS:
                     - !Sub arn:aws:iam::${ScanningAccountID}:root
-                    - !Sub arn:aws:iam::${AWS::AccountId}:role/sysdig-secure-scanning-${NameSuffix}
+                    - !Ref ScanningRoleArn
                   Action:
                   - "kms:Encrypt"
                   - "kms:Decrypt"
@@ -265,12 +270,12 @@ Resources:
             Properties:
               AliasName: !Sub alias/sysdig-secure-scanning-${NameSuffix}
               TargetKeyId: !Ref ScanningKmsKey
-  OrganizationRoleStackSet:
+  OrganizationKMSKeyStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
-      StackSetName: !Sub sysdig-secure-scanning-organization-roles-${NameSuffix}
-      Description: IAM Role used to create IAM roles scan organization accounts/regions
+      StackSetName: !Sub sysdig-secure-scanning-organization-kmskey-${NameSuffix}
+      Description: Create one role, and a kms key in each instrumented region, within accounts under instumented organizational units
       PermissionModel: SERVICE_MANAGED
       Capabilities:
       - "CAPABILITY_NAMED_IAM"
@@ -283,6 +288,8 @@ Resources:
         MaxConcurrentPercentage: 100
         FailureTolerancePercentage: 90
         ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: SEQUENTIAL
+        RegionOrder: !Ref Regions
       Parameters:
       - ParameterKey: NameSuffix
         ParameterValue: !Ref NameSuffix
@@ -292,32 +299,43 @@ Resources:
         ParameterValue: !Ref TrustedIdentity
       - ParameterKey: ExternalID
         ParameterValue: !Ref ExternalID
+      - ParameterKey: Regions
+        ParameterValue: !Join [ ',', !Ref Regions ]
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
-        Regions: [!Ref "AWS::Region"]
+        Regions: !Ref Regions
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Description: IAM Role used by Sysdig Secure Vulnerability Scanning
-        Parameters:
+        Description: "Template to create KMS Key and Alias for Sysdig Agentless Scanning"
+        Parameters: 
           NameSuffix:
             Type: String
             Description: Suffix to append to the resource name identifiers
             AllowedPattern: '[0-9a-z]+'
             MaxLength: 8
             MinLength: 4
+          ScanningAccountID:
+            Type: String
+            Description: The AWS Account ID of the Sysdig Scanning Account
           ExternalID:
             Type: String
             Description: Sysdig assigned token that proves you own this account
           TrustedIdentity:
             Type: String
             Description: The Role in Sysdig's AWS Account with permissions to your account
-          ScanningAccountID:
-            Type: String
-            Description: The AWS Account ID of the Sysdig Scanning Account
+          Regions:
+            Type: CommaDelimitedList
+            Description: Comma separated list of regions enabled for Sysdig Scanning
+        Conditions:
+          GlobalRegion:
+            Fn::Equals:
+            - !Ref "AWS::Region"
+            - !Select [ "0", !Ref Regions ]
         Resources:
           ScanningRole:
             Type: AWS::IAM::Role
+            Condition: GlobalRegion
             Properties:
               RoleName: !Sub sysdig-secure-scanning-${NameSuffix}
               AssumeRolePolicyDocument:
@@ -397,52 +415,22 @@ Resources:
                     Condition:
                       StringEqualsIgnoreCase:
                         "aws:ResourceTag/CreatedBy": "Sysdig" 
-  OrganizationKMSKeyStackSet:
-    Type: AWS::CloudFormation::StackSet
-    Condition: IsOrganizational
-    DependsOn: 
-    - OrganizationRoleStackSet
-    Properties:
-      StackSetName: !Sub sysdig-secure-scanning-organization-kmskey-${NameSuffix}
-      Description: IAM Role used to create KMS Keys to scan organization accounts/regions
-      PermissionModel: SERVICE_MANAGED
-      Capabilities:
-      - "CAPABILITY_NAMED_IAM"
-      AutoDeployment:
-        Enabled: true
-        RetainStacksOnAccountRemoval: false         
-      ManagedExecution:
-        Active: true        
-      OperationPreferences:
-        MaxConcurrentPercentage: 100
-        FailureTolerancePercentage: 90
-        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
-        RegionConcurrencyType: PARALLEL
-      Parameters:
-      - ParameterKey: NameSuffix
-        ParameterValue: !Ref NameSuffix
-      - ParameterKey: ScanningAccountID
-        ParameterValue: !Ref ScanningAccountID
-      StackInstancesGroup:
-      - DeploymentTargets:
-          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
-        Regions: !Ref Regions
-      TemplateBody: |
-        AWSTemplateFormatVersion: "2010-09-09"
-        Description: "Template to create KMS Key and Alias for Sysdig Agentless Scanning"
-        Parameters: 
-          NameSuffix:
-            Type: String
-            Description: Suffix to append to the resource name identifiers
-            AllowedPattern: '[0-9a-z]+'
-            MaxLength: 8
-            MinLength: 4
-          ScanningAccountID:
-            Type: String
-            Description: The AWS Account ID of the Sysdig Scanning Account  
-        Resources:
+
+          GlobalRegionWaitHandle:
+            Condition: GlobalRegion
+            DependsOn: ScanningRole
+            Type: AWS::CloudFormation::WaitConditionHandle
+          RegionWaitHandle:
+            Type: AWS::CloudFormation::WaitConditionHandle
+          RegionalWaitCondition:
+            Type: AWS::CloudFormation::WaitCondition
+            Properties:
+              Handle: !If [ GlobalRegion, !Ref GlobalRegionWaitHandle, !Ref RegionWaitHandle ]
+              Timeout: 1
+              Count: 0
           ScanningKmsKey:
             Type: 'AWS::KMS::Key'
+            DependsOn: RegionalWaitCondition
             Properties:
               Description: "Sysdig Agentless Scanning encryption key"
               PendingWindowInDays: 7
