@@ -181,6 +181,9 @@ Resources:
                     Action: 
                     - "ec2:Describe*"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "AllowKMSKeysListing"
                     Effect: "Allow"
                     Action:
@@ -188,6 +191,9 @@ Resources:
                     - "kms:ListAliases"
                     - "kms:ListResourceTags"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "AllowKMSEncryptDecrypt"
                     Effect: "Allow"
                     Action:
@@ -201,16 +207,24 @@ Resources:
                     Condition:
                       StringLike:
                         "kms:ViaService": "ec2.*.amazonaws.com"
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "CreateTaggedSnapshotFromVolume"
                     Effect: "Allow"
                     Action:
                     - "ec2:CreateSnapshot"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "CopySnapshots"
                     Effect: "Allow"
                     Action:
                     - "ec2:CopySnapshot"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "SnapshotTags"
                     Effect: "Allow"
                     Action:
@@ -220,6 +234,7 @@ Resources:
                       StringEquals:
                         "ec2:CreateAction": ["CreateSnapshot", "CopySnapshot"]
                         "aws:RequestTag/CreatedBy": "Sysdig"
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "ec2SnapshotShare"
                     Effect: "Allow"
                     Action:
@@ -230,6 +245,7 @@ Resources:
                         "aws:ResourceTag/CreatedBy": "Sysdig"
                       StringEquals:
                         "ec2:Add/userId": !Ref ScanningAccountID
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "ec2SnapshotDelete"
                     Effect: "Allow"
                     Action:
@@ -238,6 +254,8 @@ Resources:
                     Condition:
                       StringEqualsIgnoreCase:
                         "aws:ResourceTag/CreatedBy": "Sysdig"
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
           ScanningKmsKey:
             Type: 'AWS::KMS::Key'
             Properties:
@@ -352,6 +370,9 @@ Resources:
                     Action: 
                     - "ec2:Describe*"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "AllowKMSKeysListing"
                     Effect: "Allow"
                     Action:
@@ -359,6 +380,9 @@ Resources:
                     - "kms:ListAliases"
                     - "kms:ListResourceTags"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "AllowKMSEncryptDecrypt"
                     Effect: "Allow"
                     Action:
@@ -372,16 +396,24 @@ Resources:
                     Condition:
                       StringLike:
                         "kms:ViaService": "ec2.*.amazonaws.com"
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "CreateTaggedSnapshotFromVolume"
                     Effect: "Allow"
                     Action:
                     - "ec2:CreateSnapshot"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "CopySnapshots"
                     Effect: "Allow"
                     Action:
                     - "ec2:CopySnapshot"
                     Resource: "*"
+                    Condition:
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "SnapshotTags"
                     Effect: "Allow"
                     Action:
@@ -391,6 +423,7 @@ Resources:
                       StringEquals:
                         "ec2:CreateAction": ["CreateSnapshot", "CopySnapshot"]
                         "aws:RequestTag/CreatedBy": "Sysdig"
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "ec2SnapshotShare"
                     Effect: "Allow"
                     Action:
@@ -401,6 +434,7 @@ Resources:
                         "aws:ResourceTag/CreatedBy": "Sysdig"
                       StringEquals:
                         "ec2:Add/userId": !Ref ScanningAccountID
+                        "aws:RequestedRegion": !Ref AWS::Region
                   - Sid: "ec2SnapshotDelete"
                     Effect: "Allow"
                     Action:
@@ -409,6 +443,8 @@ Resources:
                     Condition:
                       StringEqualsIgnoreCase:
                         "aws:ResourceTag/CreatedBy": "Sysdig" 
+                      StringEquals:
+                        "aws:RequestedRegion": !Ref AWS::Region
           ScanningKmsKey:
             Type: 'AWS::KMS::Key'
             Properties:
