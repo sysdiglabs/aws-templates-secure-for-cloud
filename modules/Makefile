@@ -27,7 +27,6 @@ lint:
 	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationRuleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.ScanningKmsKeyStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
-	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationKMSKeyStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
 
 publish:
