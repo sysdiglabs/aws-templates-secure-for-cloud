@@ -110,7 +110,7 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Properties:
       StackSetName: !Sub sysdig-secure-scanning-account-${NameSuffix}
-      Description: "A CloudFormation template that creates a KMS key in the account where it is launched, and grants permissions to the specified IAM role"
+      Description: "Creates a KMS key with an associated IAM role, unique per region within the target account"
       AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       ExecutionRoleName: !Ref ExecutionRole
       PermissionModel: SELF_MANAGED
