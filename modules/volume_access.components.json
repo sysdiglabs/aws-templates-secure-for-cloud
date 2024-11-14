@@ -6,7 +6,8 @@
         "aws": {
             "roleName": "sysdig-secure-scanning-{{NameSuffix}}"
         }
-    }
+    },
+    "version": "v0.2.0"
   },
   {
     "type": "COMPONENT_CRYPTO_KEY",

@@ -26,9 +26,8 @@ lint:
 	yq '.Resources.EventBridgeRuleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationRuleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
-	yq '.Resources.ScanningKmsKeyStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
-	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
-	yq '.Resources.OrganizationKMSKeyStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
+	yq '.Resources.AccountStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
+	yq '.Resources.OrganizationStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
 
 publish:
 	aws s3 cp foundational.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational.cft.yaml
