@@ -11,6 +11,7 @@ Metadata:
       - TrustedIdentity
       - IsOrganizational
       - OrganizationalUnitIDs
+      - ArnPrefix
     ParameterLabels:
       NameSuffix:
         default: Name Suffix
@@ -22,6 +23,8 @@ Metadata:
         default: Is Organizational
       OrganizationalUnitIDs:
         default: Organizational Unit IDs
+      ArnPrefix:
+        default: Arn Prefix
 Parameters:
   NameSuffix:
     Type: String
@@ -45,6 +48,10 @@ Parameters:
   OrganizationalUnitIDs:
     Type: CommaDelimitedList
     Description: Comma separated list of organizational unit IDs to deploy
+  ArnPrefix:
+    Type: String
+    Description: ARN prefix for the resources based on your account or organization partition
+    Default: 'arn:aws'
 Conditions:
   IsOrganizational:
     Fn::Equals:
@@ -68,7 +75,7 @@ Resources:
               sts:ExternalId:
                 Ref: ExternalID
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/SecurityAudit
+      - !Sub ${ArnPrefix}:iam::aws:policy/SecurityAudit
       Policies:
       - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
         PolicyDocument:
@@ -82,8 +89,8 @@ Resources:
             - waf-regional:ListRules
             - waf-regional:ListRuleGroups
             Resource:
-            - arn:aws:waf-regional:*:*:rule/*
-            - arn:aws:waf-regional:*:*:rulegroup/*
+            - !Sub ${ArnPrefix}:waf-regional:*:*:rule/*
+            - !Sub ${ArnPrefix}:waf-regional:*:*:rulegroup/*
           - Effect: Allow
             Action: macie2:ListClassificationJobs
             Resource: '*'
@@ -114,9 +121,18 @@ Resources:
       ManagedPolicyArns:
         Fn::If:
         - IsOrganizational
-        - - arn:aws:iam::aws:policy/AWSAccountManagementReadOnlyAccess
-          - arn:aws:iam::aws:policy/AWSOrganizationsReadOnlyAccess
-        - - arn:aws:iam::aws:policy/AWSAccountManagementReadOnlyAccess
+        - - !Sub ${ArnPrefix}:iam::aws:policy/AWSOrganizationsReadOnlyAccess
+        - - !Ref AWS::NoValue
+      Policies:
+      - PolicyName: !Sub sysdig-secure-onboarding-${NameSuffix}
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - account:Get*
+            - account:List*
+            Resource: '*'
   OrganizationStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -145,6 +161,9 @@ Resources:
       - ParameterKey: ExternalID
         ParameterValue:
           Ref: ExternalID
+      - ParameterKey: ArnPrefix
+        ParameterValue:
+          Ref: ArnPrefix
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -166,6 +185,9 @@ Resources:
           ExternalID:
             Type: String
             Description: external ID
+          ArnPrefix:
+            Type: String
+            Description: ARN prefix for the resources based on your account or organization partition
 
         Resources:
           ConfigPostureRole:
@@ -183,7 +205,7 @@ Resources:
                     StringEquals:
                       sts:ExternalId: !Ref ExternalID
               ManagedPolicyArns:
-              - arn:aws:iam::aws:policy/SecurityAudit
+              - !Sub ${ArnPrefix}:iam::aws:policy/SecurityAudit
               Policies:
               - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
                 PolicyDocument:
@@ -197,8 +219,8 @@ Resources:
                     - "waf-regional:ListRules"
                     - "waf-regional:ListRuleGroups"
                     Resource:
-                    - "arn:aws:waf-regional:*:*:rule/*"
-                    - "arn:aws:waf-regional:*:*:rulegroup/*"
+                    - !Sub ${ArnPrefix}:waf-regional:*:*:rule/*
+                    - !Sub ${ArnPrefix}:waf-regional:*:*:rulegroup/*
                   - Effect: "Allow"
                     Action: "macie2:ListClassificationJobs"
                     Resource: "*"
@@ -224,8 +246,16 @@ Resources:
                   Condition:
                     StringEquals:
                       sts:ExternalId: !Ref ExternalID
-              ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/AWSAccountManagementReadOnlyAccess
+              Policies:
+              - PolicyName: !Sub sysdig-secure-onboarding-${NameSuffix}
+                PolicyDocument:
+                  Version: '2012-10-17'
+                  Statement:
+                  - Effect: Allow
+                    Action:
+                    - account:Get*
+                    - account:List*
+                    Resource: '*'
 
 Outputs:
   ConfigPostureRoleARN:
