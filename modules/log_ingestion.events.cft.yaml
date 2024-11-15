@@ -15,7 +15,7 @@ Metadata:
       - RuleEventPattern
       - IsOrganizational
       - OrganizationalUnitIDs
-      - ArnPrefix
+      - ARNPrefix
     ParameterLabels:  
       NameSuffix:
         default: Name Suffix
@@ -35,8 +35,8 @@ Metadata:
         default: Is Organizational
       OrganizationalUnitIDs:
         default: Organizational Unit IDs
-      ArnPrefix:
-        default: Arn Prefix
+      ARNPrefix:
+        default: ARN Prefix
 Parameters:
   NameSuffix:
     Type: String
@@ -96,7 +96,7 @@ Parameters:
     AllowedValues:
     - 'true'
     - 'false'
-  ArnPrefix:
+  ARNPrefix:
     Type: String
     Description: ARN prefix for the resources based on your account or organization partition
     Default: 'arn:aws'
@@ -127,7 +127,7 @@ Resources:
             Action:
             - sts:AssumeRole
             Resource:
-            - !Sub ${ArnPrefix}:iam:::role/sysdig-secure-events-stackset-execution-${NameSuffix}
+            - !Sub ${ARNPrefix}:iam:::role/sysdig-secure-events-stackset-execution-${NameSuffix}
   ExecutionRole:
     Type: AWS::IAM::Role   
     Properties:
@@ -142,8 +142,8 @@ Resources:
           Action:
           - sts:AssumeRole
       ManagedPolicyArns:
-      - !Sub ${ArnPrefix}:iam::aws:policy/AmazonEventBridgeFullAccess
-      - !Sub ${ArnPrefix}:iam::aws:policy/AWSCloudFormationFullAccess
+      - !Sub ${ARNPrefix}:iam::aws:policy/AmazonEventBridgeFullAccess
+      - !Sub ${ARNPrefix}:iam::aws:policy/AWSCloudFormationFullAccess
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -175,7 +175,7 @@ Resources:
             - "events:DescribeRule"
             - "events:ListTargetsByRule"
             Resource:
-            - !Sub ${ArnPrefix}:events:*:*:rule/sysdig-secure-events-${NameSuffix}
+            - !Sub ${ARNPrefix}:events:*:*:rule/sysdig-secure-events-${NameSuffix}
   EventBridgeRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Metadata:
@@ -211,8 +211,8 @@ Resources:
           ParameterValue: !Ref RuleState
         - ParameterKey: RuleEventPattern
           ParameterValue: !Ref RuleEventPattern
-        - ParameterKey: ArnPrefix
-          ParameterValue: !Ref ArnPrefix
+        - ParameterKey: ARNPrefix
+          ParameterValue: !Ref ARNPrefix
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts: 
@@ -239,7 +239,7 @@ Resources:
           RuleEventPattern:
             Type: String
             Description: JSON pattern for the EventBridge rule's event pattern
-          ArnPrefix:
+          ARNPrefix:
             Type: String
             Description: ARN prefix for the resources based on your account or organization partition
         Resources:           
@@ -253,7 +253,7 @@ Resources:
               Targets:
                 - Id: !Ref Name
                   Arn: !Sub ${TargetEventBusARN}
-                  RoleArn: !Sub ${ArnPrefix}:iam::${AWS::AccountId}:role/${Name}
+                  RoleArn: !Sub ${ARNPrefix}:iam::${AWS::AccountId}:role/${Name}
   OrganizationRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -281,8 +281,8 @@ Resources:
         ParameterValue: !Ref ExternalID
       - ParameterKey: TargetEventBusARN
         ParameterValue: !Ref TargetEventBusARN
-      - ParameterKey: ArnPrefix
-        ParameterValue: !Ref ArnPrefix
+      - ParameterKey: ARNPrefix
+        ParameterValue: !Ref ARNPrefix
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -303,7 +303,7 @@ Resources:
           TargetEventBusARN:
             Type: String
             Description: The destination in Sysdig's AWS account where your events are sent
-          ArnPrefix:
+          ARNPrefix:
             Type: String
             Description: ARN prefix for the resources based on your account or organization partition
         Resources:
@@ -338,7 +338,7 @@ Resources:
                     - "events:DescribeRule"
                     - "events:ListTargetsByRule"
                     Resource:
-                    - !Sub ${ArnPrefix}:events:*:*:rule/${Name}
+                    - !Sub ${ARNPrefix}:events:*:*:rule/${Name}
   OrganizationRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -369,8 +369,8 @@ Resources:
         ParameterValue: !Ref RuleState
       - ParameterKey: RuleEventPattern
         ParameterValue: !Ref RuleEventPattern
-      - ParameterKey: ArnPrefix
-        ParameterValue: !Ref ArnPrefix
+      - ParameterKey: ARNPrefix
+        ParameterValue: !Ref ARNPrefix
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -396,7 +396,7 @@ Resources:
           RuleEventPattern:
             Type: String
             Description: JSON pattern for the EventBridge rule's event pattern
-          ArnPrefix:
+          ARNPrefix:
             Type: String
             Description: ARN prefix for the resources based on your account or organization partition
         Resources:           
@@ -410,7 +410,7 @@ Resources:
               Targets:
                 - Id: !Ref Name
                   Arn: !Ref TargetEventBusARN
-                  RoleArn: !Sub "${ArnPrefix}:iam::${AWS::AccountId}:role/${Name}"
+                  RoleArn: !Sub "${ARNPrefix}:iam::${AWS::AccountId}:role/${Name}"
 Outputs:
   EventBridgeRoleARN:
     Description: Sysdig Secure EventBridge Role ARN

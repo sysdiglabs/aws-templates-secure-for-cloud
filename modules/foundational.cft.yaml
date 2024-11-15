@@ -11,7 +11,7 @@ Metadata:
       - TrustedIdentity
       - IsOrganizational
       - OrganizationalUnitIDs
-      - ArnPrefix
+      - ARNPrefix
     ParameterLabels:
       NameSuffix:
         default: Name Suffix
@@ -23,8 +23,8 @@ Metadata:
         default: Is Organizational
       OrganizationalUnitIDs:
         default: Organizational Unit IDs
-      ArnPrefix:
-        default: Arn Prefix
+      ARNPrefix:
+        default: ARN Prefix
 Parameters:
   NameSuffix:
     Type: String
@@ -48,7 +48,7 @@ Parameters:
   OrganizationalUnitIDs:
     Type: CommaDelimitedList
     Description: Comma separated list of organizational unit IDs to deploy
-  ArnPrefix:
+  ARNPrefix:
     Type: String
     Description: ARN prefix for the resources based on your account or organization partition
     Default: 'arn:aws'
@@ -75,7 +75,7 @@ Resources:
               sts:ExternalId:
                 Ref: ExternalID
       ManagedPolicyArns:
-      - !Sub ${ArnPrefix}:iam::aws:policy/SecurityAudit
+      - !Sub ${ARNPrefix}:iam::aws:policy/SecurityAudit
       Policies:
       - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
         PolicyDocument:
@@ -89,8 +89,8 @@ Resources:
             - waf-regional:ListRules
             - waf-regional:ListRuleGroups
             Resource:
-            - !Sub ${ArnPrefix}:waf-regional:*:*:rule/*
-            - !Sub ${ArnPrefix}:waf-regional:*:*:rulegroup/*
+            - !Sub ${ARNPrefix}:waf-regional:*:*:rule/*
+            - !Sub ${ARNPrefix}:waf-regional:*:*:rulegroup/*
           - Effect: Allow
             Action: macie2:ListClassificationJobs
             Resource: '*'
@@ -121,7 +121,7 @@ Resources:
       ManagedPolicyArns:
         Fn::If:
         - IsOrganizational
-        - - !Sub ${ArnPrefix}:iam::aws:policy/AWSOrganizationsReadOnlyAccess
+        - - !Sub ${ARNPrefix}:iam::aws:policy/AWSOrganizationsReadOnlyAccess
         - - !Ref AWS::NoValue
       Policies:
       - PolicyName: !Sub sysdig-secure-onboarding-${NameSuffix}
@@ -161,9 +161,9 @@ Resources:
       - ParameterKey: ExternalID
         ParameterValue:
           Ref: ExternalID
-      - ParameterKey: ArnPrefix
+      - ParameterKey: ARNPrefix
         ParameterValue:
-          Ref: ArnPrefix
+          Ref: ARNPrefix
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -185,7 +185,7 @@ Resources:
           ExternalID:
             Type: String
             Description: external ID
-          ArnPrefix:
+          ARNPrefix:
             Type: String
             Description: ARN prefix for the resources based on your account or organization partition
 
@@ -205,7 +205,7 @@ Resources:
                     StringEquals:
                       sts:ExternalId: !Ref ExternalID
               ManagedPolicyArns:
-              - !Sub ${ArnPrefix}:iam::aws:policy/SecurityAudit
+              - !Sub ${ARNPrefix}:iam::aws:policy/SecurityAudit
               Policies:
               - PolicyName: !Sub sysdig-secure-posture-${NameSuffix}
                 PolicyDocument:
@@ -219,8 +219,8 @@ Resources:
                     - "waf-regional:ListRules"
                     - "waf-regional:ListRuleGroups"
                     Resource:
-                    - !Sub ${ArnPrefix}:waf-regional:*:*:rule/*
-                    - !Sub ${ArnPrefix}:waf-regional:*:*:rulegroup/*
+                    - !Sub ${ARNPrefix}:waf-regional:*:*:rule/*
+                    - !Sub ${ARNPrefix}:waf-regional:*:*:rulegroup/*
                   - Effect: "Allow"
                     Action: "macie2:ListClassificationJobs"
                     Resource: "*"
