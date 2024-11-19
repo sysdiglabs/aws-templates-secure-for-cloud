@@ -46,7 +46,7 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"ARNPrefix=${PARAM_ARN_PREFIX}"
+			"Partition=${PARAM_PARTITION}"
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-LogIngestion-EventBridge-$(PARAM_NAME_SUFFIX) \
 		--template-file log_ingestion.events.cft.yaml \
@@ -59,7 +59,7 @@ deploy:
 			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"ARNPrefix=${PARAM_ARN_PREFIX}"
+			"Partition=${PARAM_PARTITION}"
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-LogIngestion-S3-$(PARAM_NAME_SUFFIX) \
 		--template-file log_ingestion.s3.cft.yaml \
