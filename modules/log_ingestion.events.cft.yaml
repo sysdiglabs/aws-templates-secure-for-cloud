@@ -15,25 +15,28 @@ Metadata:
       - RuleEventPattern
       - IsOrganizational
       - OrganizationalUnitIDs
+      - Partition
     ParameterLabels:  
       NameSuffix:
         default: Name Suffix
       ExternalID:
-        default: "External ID"
+        default: External ID
       TrustedIdentity:
-        default: "Trusted Identity"
+        default: Trusted Identity
       TargetEventBusARN:
-        default: "Target Event Bus"
+        default: Target Event Bus
       Regions:
-        default: "Instrumented Regions"
+        default: Instrumented Regions
       RuleState:
-        default: "EventBridge Rule state"
+        default: EventBridge Rule state
       RuleEventPattern:
-        default: "EventBridge Rule event pattern"
+        default: EventBridge Rule event pattern
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
-        default: "Organizational Unit IDs"
+        default: Organizational Unit IDs
+      Partition:
+        default: AWS Partition
 Parameters:
   NameSuffix:
     Type: String
@@ -93,6 +96,10 @@ Parameters:
     AllowedValues:
     - 'true'
     - 'false'
+  Partition:
+    Type: String
+    Description: AWS Partition of your account or organization to create resources in
+    Default: 'aws'
 Conditions:
   IsOrganizational:
     Fn::Equals:
@@ -120,7 +127,7 @@ Resources:
             Action:
             - sts:AssumeRole
             Resource:
-            - !Sub arn:aws:iam:::role/sysdig-secure-events-stackset-execution-${NameSuffix}
+            - !Sub arn:${Partition}:iam:::role/sysdig-secure-events-stackset-execution-${NameSuffix}
   ExecutionRole:
     Type: AWS::IAM::Role   
     Properties:
@@ -135,8 +142,8 @@ Resources:
           Action:
           - sts:AssumeRole
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess
-      - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+      - !Sub arn:${Partition}:iam::aws:policy/AmazonEventBridgeFullAccess
+      - !Sub arn:${Partition}:iam::aws:policy/AWSCloudFormationFullAccess
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -168,7 +175,7 @@ Resources:
             - "events:DescribeRule"
             - "events:ListTargetsByRule"
             Resource:
-            - !Sub arn:aws:events:*:*:rule/sysdig-secure-events-${NameSuffix}
+            - !Sub arn:${Partition}:events:*:*:rule/sysdig-secure-events-${NameSuffix}
   EventBridgeRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Metadata:
@@ -203,7 +210,9 @@ Resources:
         - ParameterKey: RuleState
           ParameterValue: !Ref RuleState
         - ParameterKey: RuleEventPattern
-          ParameterValue: !Ref RuleEventPattern                     
+          ParameterValue: !Ref RuleEventPattern
+        - ParameterKey: Partition
+          ParameterValue: !Ref Partition
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts: 
@@ -230,6 +239,9 @@ Resources:
           RuleEventPattern:
             Type: String
             Description: JSON pattern for the EventBridge rule's event pattern
+          Partition:
+            Type: String
+            Description: AWS Partition of your account or organization to create resources in
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
@@ -241,7 +253,7 @@ Resources:
               Targets:
                 - Id: !Ref Name
                   Arn: !Sub ${TargetEventBusARN}
-                  RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${Name}
+                  RoleArn: !Sub arn:${Partition}:iam::${AWS::AccountId}:role/${Name}
   OrganizationRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -269,6 +281,8 @@ Resources:
         ParameterValue: !Ref ExternalID
       - ParameterKey: TargetEventBusARN
         ParameterValue: !Ref TargetEventBusARN
+      - ParameterKey: Partition
+        ParameterValue: !Ref Partition
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -288,7 +302,10 @@ Resources:
             Description: A unique identifier used to create and reference resources
           TargetEventBusARN:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent                        
+            Description: The destination in Sysdig's AWS account where your events are sent
+          Partition:
+            Type: String
+            Description: AWS Partition of your account or organization to create resources in
         Resources:
           EventBridgeRole:
             Type: AWS::IAM::Role
@@ -321,7 +338,7 @@ Resources:
                     - "events:DescribeRule"
                     - "events:ListTargetsByRule"
                     Resource:
-                    - !Sub arn:aws:events:*:*:rule/${Name}
+                    - !Sub arn:${Partition}:events:*:*:rule/${Name}
   OrganizationRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -352,6 +369,8 @@ Resources:
         ParameterValue: !Ref RuleState
       - ParameterKey: RuleEventPattern
         ParameterValue: !Ref RuleEventPattern
+      - ParameterKey: Partition
+        ParameterValue: !Ref Partition
       StackInstancesGroup:
       - DeploymentTargets:
           OrganizationalUnitIds: !Ref OrganizationalUnitIDs
@@ -377,6 +396,9 @@ Resources:
           RuleEventPattern:
             Type: String
             Description: JSON pattern for the EventBridge rule's event pattern
+          Partition:
+            Type: String
+            Description: AWS Partition of your account or organization to create resources in
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
@@ -388,7 +410,7 @@ Resources:
               Targets:
                 - Id: !Ref Name
                   Arn: !Ref TargetEventBusARN
-                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
+                  RoleArn: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/${Name}"
 Outputs:
   EventBridgeRoleARN:
     Description: Sysdig Secure EventBridge Role ARN

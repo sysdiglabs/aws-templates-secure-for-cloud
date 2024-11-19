@@ -20,11 +20,11 @@ Metadata:
       NameSuffix:
         default: Name Suffix
       ExternalID:
-        default: "External ID"
+        default: External ID
       TrustedIdentity:
-        default: "Trusted Identity"
+        default: Trusted Identity
       BucketARN:
-        default: "Bucket ARN"
+        default: Bucket ARN
 
 Parameters:
   NameSuffix:
