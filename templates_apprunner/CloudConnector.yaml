@@ -48,12 +48,20 @@ Parameters:
       - "No"
     Default: "Yes"
     Description: Whether to deploy ECS Image Scanning or not
+  UseScanningV2:
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
+    Description: Whether to deploy Image Scanner V2
 
 Conditions:
   VerifySSL: !Equals [ !Ref VerifySSL, "Yes" ]
   DeployCloudScanning: !Equals [ !Ref DeployCloudScanning, "Yes"]
   ECRImageScanningDeploy: !Equals [ !Ref ECRImageScanningDeploy, "Yes"]
   ECSImageScanningDeploy: !Equals [ !Ref ECSImageScanningDeploy, "Yes"]
+  UseScanningV2: !Equals [ !Ref UseScanningV2, "Yes"]
 
 Resources:
 
@@ -125,26 +133,29 @@ Resources:
                           - DeployCloudScanning
                           - !Sub
                             - |
-
                               ${ECRCode}
                               ${ECSCode}
                             - ECRCode:
                                 'Fn::If':
                                   - ECRImageScanningDeploy
-                                  - !Sub |
-
-                                    - aws-ecr:
-                                          codeBuildProject: ${BuildProject}
-                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - !If
+                                    - UseScanningV2 
+                                    - "- aws-ecr-inline: {}"
+                                    - !Sub |
+                                      - aws-ecr:
+                                            codeBuildProject: ${BuildProject}
+                                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
                                   - ""
                               ECSCode:
                                 'Fn::If':
                                   - ECSImageScanningDeploy
-                                  - !Sub |
-
-                                    - aws-ecs:
-                                          codeBuildProject: ${BuildProject}
-                                          secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
+                                  - !If
+                                    - UseScanningV2
+                                    - "- aws-ecs-inline: {}"
+                                    - !Sub |
+                                      - aws-ecs:
+                                            codeBuildProject: ${BuildProject}
+                                            secureAPITokenSecretName: ${SysdigSecureAPITokenSsm}
                                   - ""
                           - "[]"
 
