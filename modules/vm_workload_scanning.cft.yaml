@@ -65,14 +65,6 @@ Conditions:
     Fn::Equals:
       - Ref: IsOrganizational
       - 'false'
-  IsOrganizationalAndLambdaEnabled:
-    Fn::And:
-      - Fn::Equals:
-        - Ref: IsOrganizational
-        - 'true'
-      - Fn::Equals:
-        - Ref: LambdaScanningEnabled
-        - 'true'
   IsNotOrganizationalAndLambdaEnabled:
     Fn::And:
       - Fn::Equals:
@@ -198,7 +190,11 @@ Resources:
             Type: String
             Description: Enable Lambda function scanning
             Default: 'false'
-
+        Conditions:
+          IsLambdaEnabled:
+            Fn::Equals:
+              - Ref: LambdaScanningEnabled
+              - 'true'
         Resources:
           ScanningRole:
             Type: AWS::IAM::Role
@@ -216,7 +212,6 @@ Resources:
                       sts:ExternalId: !Ref ExternalID
             ECRPolicy:
               Type: AWS::IAM::Policy
-              Condition: IsOrganizational
               Properties:
                 PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
                 Roles:
@@ -254,6 +249,7 @@ Resources:
                         - lambda:ListLayers
                         - lambda:ListLayerVersions
                       Resource: '*'
+                
 
 
 Outputs:
