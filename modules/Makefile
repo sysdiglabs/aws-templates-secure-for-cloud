@@ -4,10 +4,10 @@ S3_BUCKET ?= "s4c-cft"
 S3_PREFIX ?= "test"
 S3_REGION ?= eu-west-1
 STACK_NAME = Sysdig-Secure
-PARAM_NAME_SUFFIX ?= abc1240
+PARAM_NAME_SUFFIX ?= test
 PARAM_IS_ORGANIZATIONAL ?= false
 PARAM_EXTERNAL_ID ?= test
-PARAM_TRUSTED_IDENTITY ?= arn:aws:iam::064689838359:role/us-east-1-integration01-secure-assume-role
+PARAM_TRUSTED_IDENTITY ?= arn:aws:iam:::role/$(PARAM_NAME_SUFFIX)
 PARAM_TARGET_EVENT_BUS_ARN ?= arn:aws:events:us-east-1::event-bus/default
 PARAM_BUCKET_ARN ?= arn:aws:s3:::cloudtrail-$(PARAM_NAME_SUFFIX)
 PARAM_REGIONS ?= us-east-1
@@ -40,7 +40,52 @@ publish:
 	aws s3 cp vm_workload_scanning.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/vm_workload_scanning.cft.yaml
 
 deploy:
-
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-Foundational-$(PARAM_NAME_SUFFIX) \
+		--template-file foundational.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"Partition=${PARAM_PARTITION}"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-LogIngestion-EventBridge-$(PARAM_NAME_SUFFIX) \
+		--template-file log_ingestion.events.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"Regions=$(PARAM_REGIONS)" \
+			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"Partition=${PARAM_PARTITION}"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-LogIngestion-S3-$(PARAM_NAME_SUFFIX) \
+		--template-file log_ingestion.s3.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"BucketARN=$(PARAM_BUCKET_ARN)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-VolumeAccess-$(PARAM_NAME_SUFFIX) \
+		--template-file volume_access.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"Regions=$(PARAM_REGIONS)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)"
 
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-VMWorkloadScanning-$(PARAM_NAME_SUFFIX) \
