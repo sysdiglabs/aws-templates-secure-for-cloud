@@ -210,45 +210,45 @@ Resources:
                   Condition:
                     StringEquals:
                       sts:ExternalId: !Ref ExternalID
-            ECRPolicy:
-              Type: AWS::IAM::Policy
-              Properties:
-                PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
-                Roles:
-                  - !Ref ScanningRole
-                PolicyDocument:
-                  Version: '2012-10-17'
-                  Statement:
-                    - Effect: Allow
-                      Action:
-                        - ecr:GetDownloadUrlForLayer
-                        - ecr:BatchGetImage
-                        - ecr:BatchCheckLayerAvailability
-                        - ecr:ListImages
-                        - ecr:GetAuthorizationToken
-                      Resource: '*' 
-            LambdaPolicy:
-              Type: AWS::IAM::Policy
-              Condition: LambdaScanningEnabled
-              Properties:
-                PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
-                Roles:
-                  - !Ref ScanningRole
-                PolicyDocument:
-                  Version: '2012-10-17'
-                  Statement:
-                    - Effect: Allow
-                      Action:
-                        - lambda:GetFunction
-                        - lambda:GetFunctionConfiguration
-                        - lambda:GetRuntimeManagementConfig
-                        - lambda:ListFunctions
-                        - lambda:ListTagsForResource
-                        - lambda:GetLayerVersionByArn
-                        - lambda:GetLayerVersion
-                        - lambda:ListLayers
-                        - lambda:ListLayerVersions
-                      Resource: '*'
+          ECRPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+              PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
+              Roles:
+                - !Ref ScanningRole
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      - ecr:GetDownloadUrlForLayer
+                      - ecr:BatchGetImage
+                      - ecr:BatchCheckLayerAvailability
+                      - ecr:ListImages
+                      - ecr:GetAuthorizationToken
+                    Resource: '*'
+          LambdaPolicy:
+            Type: AWS::IAM::Policy
+            Condition: LambdaScanningEnabled
+            Properties:
+              PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
+              Roles:
+                - !Ref ScanningRole
+              PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      - lambda:GetFunction
+                      - lambda:GetFunctionConfiguration
+                      - lambda:GetRuntimeManagementConfig
+                      - lambda:ListFunctions
+                      - lambda:ListTagsForResource
+                      - lambda:GetLayerVersionByArn
+                      - lambda:GetLayerVersion
+                      - lambda:ListLayers
+                      - lambda:ListLayerVersions
+                    Resource: '*'
                 
 
 
