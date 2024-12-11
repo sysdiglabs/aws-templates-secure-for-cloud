@@ -229,7 +229,7 @@ Resources:
                       Resource: '*' 
             LambdaPolicy:
               Type: AWS::IAM::Policy
-              Condition: IsOrganizationalAndLambdaEnabled
+              Condition: LambdaScanningEnabled
               Properties:
                 PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
                 Roles:
