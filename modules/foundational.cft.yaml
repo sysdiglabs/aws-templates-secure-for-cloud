@@ -171,11 +171,6 @@ Resources:
         - Ref: AWS::Region
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
-        Metadata:
-          cfn-lint:
-            config:
-              ignore_checks:
-                - E0003
         Description: IAM Role for Agentless
         Parameters:
           NameSuffix:
