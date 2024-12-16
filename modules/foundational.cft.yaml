@@ -259,7 +259,7 @@ Resources:
 
 Outputs:
   ConfigPostureRoleARN:
-    Description: ARN of the config posture role
+    Description: ARN of the role for config posture
     Value:
       Fn::Sub: ${ConfigPostureRole.Arn}
   OnboardingRoleARN:
