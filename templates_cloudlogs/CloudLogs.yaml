@@ -62,7 +62,7 @@ Parameters:
   TopicARN:
     Type: String
     Default: ""
-    Description: "The ARN of an existing SNS Topic. Ignored if CreateTopic is set to true."
+    Description: "The ARN of an existing SNS Topic. If CreateTopic is true, this will be used as the name of the new topic."
 
   Endpoint:
     Type: String
@@ -112,21 +112,18 @@ Resources:
       Roles:
         - !Ref CloudLogsRole
 
-  # SNS Topic (optional creation)
   CloudTrailNotificationsTopic:
     Condition: CreateSNSTopic
     Type: "AWS::SNS::Topic"
     Properties:
-      TopicName: !Sub "${AWS::StackName}-CloudTrailNotifications"
-      DisplayName: "CloudTrail Notifications for Sysdig"
+      TopicName: !Select [ 5, !Split [ ":", !Ref TopicARN ] ]
 
   CloudTrailNotificationsSubscription:
-    Condition: CreateSNSTopic
     Type: "AWS::SNS::Subscription"
     Properties:
-      TopicArn: !Ref CloudTrailNotificationsTopic
+      TopicArn: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
       Protocol: "https"
-      Endpoint: '${Endpoint}'
+      Endpoint: !Ref Endpoint
 
   CloudTrailNotificationsPolicy:
     Condition: CreateSNSTopic
