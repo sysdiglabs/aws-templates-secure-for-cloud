@@ -73,11 +73,15 @@ Conditions:
       - Fn::Equals:
         - Ref: LambdaScanningEnabled
         - 'true'
+  IsLambdaEnabled:
+    Fn::And:
+      - Fn::Equals:
+          - Ref: LambdaScanningEnabled
+          - 'true'
 
 Resources:
   ScanningRole:
     Type: AWS::IAM::Role
-    Condition: IsNotOrganizational
     Properties:
       RoleName: !Sub sysdig-vm-workload-scanning-${NameSuffix}
       AssumeRolePolicyDocument:
@@ -94,7 +98,6 @@ Resources:
                   Ref: ExternalID
   ECRPolicy:
     Type: AWS::IAM::Policy
-    Condition: IsNotOrganizational
     Properties:
       PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
       Roles:
@@ -112,7 +115,7 @@ Resources:
             Resource: '*'
   LambdaPolicy:
     Type: AWS::IAM::Policy
-    Condition: IsNotOrganizationalAndLambdaEnabled
+    Condition: IsLambdaEnabled
     Properties:
       PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
       Roles:
