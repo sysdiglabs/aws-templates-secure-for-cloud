@@ -61,10 +61,6 @@ Conditions:
     Fn::Equals:
       - Ref: IsOrganizational
       - 'true'
-  IsNotOrganizational:
-    Fn::Equals:
-      - Ref: IsOrganizational
-      - 'false'
   IsLambdaEnabled:
     Fn::Equals:
       - Ref: LambdaScanningEnabled
