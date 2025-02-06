@@ -66,10 +66,9 @@ Conditions:
       - Ref: IsOrganizational
       - 'false'
   IsLambdaEnabled:
-    Fn::And:
-      - Fn::Equals:
-          - Ref: LambdaScanningEnabled
-          - 'true'
+    - Fn::Equals:
+      - Ref: LambdaScanningEnabled
+      - 'true'
 
 Resources:
   ScanningRole:
