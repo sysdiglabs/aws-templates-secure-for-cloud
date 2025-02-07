@@ -12,9 +12,6 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - BucketARN
-          - CreateTopic
-          - TopicARN
-          - Endpoint
 
     ParameterLabels:
       CSPMRoleName:
@@ -27,51 +24,23 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
-      CreateTopic:
-        default: "Create SNS Topic"
-      TopicARN:
-        default: "SNS Topic ARN"
-      Endpoint:
-        default: "Sysdig Secure endpoint"
 
 Parameters:
   CSPMRoleName:
     Type: String
     Description: The read-only IAM Role that Sysdig will create
-
   CloudLogsRoleName:
     Type: String
     Description: The name of the IAM Role that will enable access to the Cloudtrail logs.
-
   ExternalID:
     Type: String
     Description: Sysdig ExternalID required for the policy creation
-
   TrustedIdentity:
     Type: String
     Description: The name of Sysdig trusted identity.
-
   BucketARN:
     Type: String
-    Description: The ARN of your S3 bucket associated with your CloudTrail trail.
-
-  CreateTopic:
-    Type: String
-    AllowedValues:
-      - "true"
-      - "false"
-    Default: "false"
-    Description: "Whether to create a new SNS Topic for CloudTrail notifications."
-
-  TopicARN:
-    Type: String
-    Default: ""
-    Description: "The ARN of an existing SNS Topic. If CreateTopic is true, this will be used as the name of the new topic."
-
-  Endpoint:
-    Type: String
-    Default: ""
-    Description: "Sysdig Secure endpoint to receive CloudTrail notifications."
+    Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
 
 Resources:
   CloudAgentlessRole:
@@ -132,8 +101,6 @@ Resources:
             Condition:
               StringEquals:
                 "sts:ExternalId": !Ref ExternalID
-
-  # IAM Policy
   CloudLogsRolePolicies:
     Type: "AWS::IAM::Policy"
     Properties:
@@ -156,45 +123,4 @@ Resources:
               - !Sub '${BucketARN}'
               - !Sub '${BucketARN}/*'
       Roles:
-        - !Ref CloudLogsRole
-
-  CloudTrailNotificationsTopic:
-    Condition: CreateSNSTopic
-    Type: "AWS::SNS::Topic"
-    Properties:
-      TopicName: !Select [ 5, !Split [ ":", !Ref TopicARN ] ]
-
-  CloudTrailNotificationsSubscription:
-    Type: "AWS::SNS::Subscription"
-    Properties:
-      TopicArn: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
-      Protocol: "https"
-      Endpoint: !Ref Endpoint
-
-  CloudTrailNotificationsPolicy:
-    Condition: CreateSNSTopic
-    Type: "AWS::SNS::TopicPolicy"
-    Properties:
-      Topics:
-        - !Ref CloudTrailNotificationsTopic
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: "AllowCloudTrailPublish"
-            Effect: "Allow"
-            Principal:
-              Service: "cloudtrail.amazonaws.com"
-            Action: "SNS:Publish"
-            Resource: !Ref CloudTrailNotificationsTopic
-
-Conditions:
-  CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
-
-Outputs:
-  RoleARN:
-    Description: "The ARN of the IAM Role created for CloudTrail logs."
-    Value: !GetAtt CloudLogsRole.Arn
-
-  TopicARN:
-    Description: "The ARN of the SNS Topic created for CloudTrail notifications."
-    Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
+        - Ref: "CloudLogsRole"
