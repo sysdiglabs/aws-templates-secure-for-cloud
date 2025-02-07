@@ -92,13 +92,6 @@ Resources:
                 Resource:
                   - !Sub '${BucketARN}'
                   - !Sub '${BucketARN}/*'
-              - Sid: "CloudlogsS3AccessList"
-                Effect: "Allow"
-                Action:
-                  - "s3:List*"
-                Resource:
-                  - !Sub '${BucketARN}'
-                  - !Sub '${BucketARN}/*'
 
   CloudTrailNotificationsTopic:
     Condition: CreateSNSTopic
