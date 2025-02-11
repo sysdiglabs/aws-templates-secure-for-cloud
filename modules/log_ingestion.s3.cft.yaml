@@ -1,8 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  CloudFormation organizational template for provisioning
-  the necessary resources for the `cloud-logs`
-  component and the read-only role required to itneract with
+  CloudFormation organizational template for provisioning the necessary resources 
+  for the `cloud-logs` component and the read-only role required to interact with
   the target organizational environment.
 
 Metadata:
@@ -15,6 +14,9 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - BucketARN
+          - CreateTopic
+          - TopicARN
+          - Endpoint
 
     ParameterLabels:
       NameSuffix:
@@ -25,6 +27,12 @@ Metadata:
         default: Trusted Identity
       BucketARN:
         default: Bucket ARN
+      CreateTopic:
+        default: Create SNS Topic
+      TopicARN:
+        default: SNS Topic ARN
+      Endpoint:
+        default: Sysdig Secure endpoint
 
 Parameters:
   NameSuffix:
@@ -41,7 +49,20 @@ Parameters:
     Description: The Role in Sysdig's AWS Account with permissions to your account
   BucketARN:
     Type: String
-    Description: The ARN of your s3 bucket associated with your Cloudtrail trail logs.
+    Description: The ARN of your S3 bucket associated with your CloudTrail trail logs.
+  CreateTopic:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+    Description: Whether to create a new SNS Topic for CloudTrail notifications.
+  TopicARN:
+    Type: String
+    Description: The ARN of an existing SNS Topic. If CreateTopic is true, this will be used as the name of the new topic.
+  Endpoint:
+    Type: String
+    Description: Sysdig Secure endpoint to receive CloudTrail notifications.
 
 Resources:
   CloudLogsRole:
@@ -51,30 +72,60 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-        - Effect: "Allow"
-          Principal:
-            AWS: !Ref TrustedIdentity
-          Action:
-          - "sts:AssumeRole"
-          Condition:
-            StringEquals:
-              "sts:ExternalId": !Ref ExternalID
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref TrustedIdentity
+            Action:
+              - "sts:AssumeRole"
+            Condition:
+              StringEquals:
+                "sts:ExternalId": !Ref ExternalID
       Policies:
-      - PolicyName: !Sub sysdig-secure-cloudlogs-${NameSuffix}
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Sid: "CloudlogsS3AccessGet"
+        - PolicyName: !Sub sysdig-secure-cloudlogs-${NameSuffix}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: "CloudlogsS3AccessGet"
+                Effect: "Allow"
+                Action:
+                  - "s3:Get*"
+                Resource:
+                  - !Sub '${BucketARN}'
+                  - !Sub '${BucketARN}/*'
+
+  CloudTrailNotificationsTopic:
+    Condition: CreateSNSTopic
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: !Select [ 5, !Split [ ":", !Ref TopicARN ] ]
+
+  CloudTrailNotificationsSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      TopicArn: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
+      Protocol: "https"
+      Endpoint: !Ref Endpoint
+
+  CloudTrailNotificationsPolicy:
+    Condition: CreateSNSTopic
+    Type: "AWS::SNS::TopicPolicy"
+    Properties:
+      Topics:
+        - !Ref CloudTrailNotificationsTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowCloudTrailPublish"
             Effect: "Allow"
-            Action:
-            - "s3:Get*"
-            Resource:
-            - !Sub '${BucketARN}'
-            - !Sub '${BucketARN}/*'
-          - Sid: "CloudlogsS3AccessList"
-            Effect: "Allow"
-            Action:
-            - "s3:List*"
-            Resource:
-            - !Sub '${BucketARN}'
-            - !Sub '${BucketARN}/*'
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "SNS:Publish"
+            Resource: !Ref CloudTrailNotificationsTopic
+
+Conditions:
+  CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
+
+Outputs:
+  TopicARN:
+    Description: "The ARN of the SNS Topic created for CloudTrail notifications."
+    Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
