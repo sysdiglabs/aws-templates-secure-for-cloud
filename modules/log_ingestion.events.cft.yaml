@@ -4,6 +4,10 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
+        default: ""
+      Parameters:
+      - RuleEventPattern
+    - Label:
         default: "Sysdig Settings (Do not change)"
       Parameters:
       - NameSuffix
@@ -12,7 +16,6 @@ Metadata:
       - TargetEventBusARN
       - Regions
       - RuleState
-      - RuleEventPattern
       - IsOrganizational
       - OrganizationalUnitIDs
       - Partition
