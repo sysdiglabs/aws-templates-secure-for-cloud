@@ -70,7 +70,7 @@ Resources:
   ScanningRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-vm-workload-scanning-${NameSuffix}
+      RoleName: !Sub secure-vm-workload-scanning-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -86,7 +86,7 @@ Resources:
   ECRPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
+      PolicyName: !Sub secure-vm-workload-scanning-${NameSuffix}-ecr
       Roles:
         - !Ref ScanningRole
       PolicyDocument:
@@ -104,7 +104,7 @@ Resources:
     Type: AWS::IAM::Policy
     Condition: IsLambdaEnabled
     Properties:
-      PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
+      PolicyName: !Sub secure-vm-workload-scanning-${NameSuffix}-lambda
       Roles:
         - !Ref ScanningRole
       PolicyDocument:
@@ -128,7 +128,7 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
-      StackSetName: !Sub sysdig-vm-workload-scanning-${NameSuffix}
+      StackSetName: !Sub secure-vm-workload-scanning-${NameSuffix}
       Description: Creates IAM roles within an AWS organization for Agentless Workload Scanning
       PermissionModel: SERVICE_MANAGED
       Capabilities:
@@ -189,7 +189,7 @@ Resources:
           ScanningRole:
             Type: AWS::IAM::Role
             Properties:
-              RoleName: !Sub sysdig-vm-workload-scanning-${NameSuffix}
+              RoleName: !Sub secure-vm-workload-scanning-${NameSuffix}
               AssumeRolePolicyDocument:
                 Version: "2012-10-17"
                 Statement:
@@ -203,7 +203,7 @@ Resources:
           ECRPolicy:
             Type: AWS::IAM::Policy
             Properties:
-              PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-ecr
+              PolicyName: !Sub secure-vm-workload-scanning-${NameSuffix}-ecr
               Roles:
                 - !Ref ScanningRole
               PolicyDocument:
@@ -221,7 +221,7 @@ Resources:
             Type: AWS::IAM::Policy
             Condition: IsLambdaEnabled
             Properties:
-              PolicyName: !Sub sysdig-vm-workload-scanning-${NameSuffix}-lambda
+              PolicyName: !Sub secure-vm-workload-scanning-${NameSuffix}-lambda
               Roles:
                 - !Ref ScanningRole
               PolicyDocument:
@@ -246,5 +246,5 @@ Outputs:
   ScanningRoleARN:
     Description: ARN of the scanning role
     Value:
-      Fn::Sub: sysdig-vm-workload-scanning-${NameSuffix}
+      Fn::Sub: secure-vm-workload-scanning-${NameSuffix}
 
