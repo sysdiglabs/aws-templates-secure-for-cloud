@@ -5,7 +5,7 @@
     "version": "v0.1.0",
     "trustedRoleMetadata": {
       "aws": {
-        "roleName": "sysdig-vm-workload-scanning-{{NameSuffix}}"
+        "roleName": "secure-vm-workload-scanning-{{NameSuffix}}"
       }
     }
   }
