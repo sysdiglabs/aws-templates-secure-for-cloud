@@ -50,7 +50,12 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}"
+			"Partition=${PARAM_PARTITION}" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-LogIngestion-EventBridge-$(PARAM_NAME_SUFFIX) \
 		--template-file log_ingestion.events.cft.yaml \
@@ -63,7 +68,12 @@ deploy:
 			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}"
+			"Partition=${PARAM_PARTITION}" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-LogIngestion-S3-$(PARAM_NAME_SUFFIX) \
 		--template-file log_ingestion.s3.cft.yaml \
@@ -74,7 +84,12 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"BucketARN=$(PARAM_BUCKET_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)"
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-VolumeAccess-$(PARAM_NAME_SUFFIX) \
 		--template-file volume_access.cft.yaml \
@@ -85,7 +100,12 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"Regions=$(PARAM_REGIONS)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)"
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 
 	aws cloudformation deploy \
 		--stack-name $(STACK_NAME)-VMWorkloadScanning-$(PARAM_NAME_SUFFIX) \
@@ -97,7 +117,12 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"LambdaScanningEnabled"=$(PARAM_LAMBDA_SCANNING_ENABLED) \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)"
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-Foundational-$(PARAM_NAME_SUFFIX)
