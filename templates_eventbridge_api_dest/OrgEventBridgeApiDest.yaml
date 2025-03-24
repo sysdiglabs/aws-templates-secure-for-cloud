@@ -119,7 +119,7 @@ Resources:
                 Action:
                   - sts:AssumeRole
                 Resource:
-                  - "arn:*:iam::*:role/AWSCloudFormationStackSetExecutionRole"
+                  - "arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole"
 
   # CloudFormation StackSet Execution Role
   ExecutionRole:
@@ -256,9 +256,9 @@ Resources:
               Name: !Sub ${EventBridgeRoleName}-connection
               AuthorizationType: API_KEY
               AuthParameters:
-                ApiKey:
-                  Key: x-api-key
-                  Value: !Ref ApiKey
+                ApiKeyAuthParameters:
+                  ApiKeyName: X-Api-Key
+                  ApiKeyValue: !Ref ApiKey
 
           EventBridgeApiDestination:
             Type: AWS::Events::ApiDestination

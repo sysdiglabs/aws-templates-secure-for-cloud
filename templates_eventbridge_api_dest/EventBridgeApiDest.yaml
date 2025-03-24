@@ -91,9 +91,9 @@ Resources:
       Name: !Sub ${EventBridgeRoleName}-connection
       AuthorizationType: API_KEY
       AuthParameters:
-        ApiKey:
-          Key: X-Api-Key
-          Value: !Ref ApiKey
+        ApiKeyAuthParameters:
+          ApiKeyName: X-Api-Key
+          ApiKeyValue: !Ref ApiKey
 
   EventBridgeApiDestination:
     Type: AWS::Events::ApiDestination
