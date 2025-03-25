@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure
+Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure via API Destination
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -10,7 +10,9 @@ Metadata:
           - EventBridgeRoleName
           - ExternalID
           - TrustedIdentity
-          - EventBusARN
+          - ApiKey
+          - IngestionUrl
+          - RateLimit
           - EventBridgeState
           - EventBridgeEventPattern
 
@@ -19,8 +21,12 @@ Metadata:
         default: "External ID (Sysdig use only)"
       TrustedIdentity:
         default: "Trusted Identity (Sysdig use only)"
-      EventBusARN:
-        default: "Target Event Bus (Sysdig use only)"
+      ApiKey:
+        default: "API Key (Sysdig use only)"
+      IngestionUrl:
+        default: "Ingestion URL (Sysdig use only)"
+      RateLimit:
+        default: "Rate Limit (Sysdig use only)"
       EventBridgeRoleName:
         default: "Integration Name (Sysdig use only)"
       EventBridgeState:
@@ -38,15 +44,21 @@ Parameters:
   TrustedIdentity:
     Type: String
     Description: The Role in Sysdig's AWS Account with permissions to your account
-  EventBusARN:
+  ApiKey:
     Type: String
-    Description: The destination in Sysdig's AWS account where your events are sent
+    Description: API key for Sysdig Secure authentication
+  IngestionUrl:
+    Type: String
+    Description: Sysdig Secure API ingestion URL
+  RateLimit:
+    Type: Number
+    Description: Maximum invocations per second for the API destination
+    Default: 300
   EventBridgeState:
     Type: String
     Description: The state of the EventBridge Rule
-    Default: ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
+    Default: ENABLED
     AllowedValues:
-      - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
   EventBridgeEventPattern:
@@ -73,6 +85,25 @@ Parameters:
       }
 
 Resources:
+  EventBridgeConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: !Sub ${EventBridgeRoleName}-connection
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: X-Api-Key
+          ApiKeyValue: !Ref ApiKey
+
+  EventBridgeApiDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: !Sub ${EventBridgeRoleName}-destination
+      ConnectionArn: !GetAtt EventBridgeConnection.Arn
+      InvocationEndpoint: !Ref IngestionUrl
+      HttpMethod: POST
+      InvocationRateLimitPerSecond: !Ref RateLimit
+
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -89,31 +120,40 @@ Resources:
             Action: "sts:AssumeRole"
             Condition:
               StringEquals:
-                sts:ExternalId: !Ref ExternalID           
+                sts:ExternalId: !Ref ExternalID
       Policies:
         - PolicyName: !Ref EventBridgeRoleName
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Effect: Allow
-                Action: 'events:PutEvents'
-                Resource: !Ref EventBusARN
-              - Effect: Allow
+              - Sid: "InvokeApiDestination"
+                Effect: Allow
+                Action:
+                  - "events:InvokeApiDestination"
+                Resource:
+                  - !Sub "arn:aws:events:*:*:api-destination/${EventBridgeRoleName}-destination/*"
+              - Sid: "CloudTrailEventRuleAccess"
+                Effect: Allow
                 Action:
                   - "events:DescribeRule"
                   - "events:ListTargetsByRule"
                 Resource:
-                  - !Sub arn:aws:events:*:*:rule/${EventBridgeRoleName}
+                  - !Sub "arn:aws:events:*:*:rule/${EventBridgeRoleName}"
+              - Sid: "ValidationAccess"
+                Effect: Allow
+                Action:
+                  - "events:DescribeApiDestination"
+                  - "events:DescribeConnection"
+                Resource: "*"
+
   EventBridgeRule:
     Type: AWS::Events::Rule
     Properties:
       Name: !Ref EventBridgeRoleName
-      Description: Capture all CloudTrail events
+      Description: Capture all CloudTrail events for Sysdig Secure
       EventPattern: !Ref EventBridgeEventPattern
       State: !Ref EventBridgeState
       Targets:
         - Id: !Ref EventBridgeRoleName
-          Arn: !Ref EventBusARN
-          RoleArn: !GetAtt
-            - EventBridgeRole
-            - Arn
+          Arn: !GetAtt EventBridgeApiDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
