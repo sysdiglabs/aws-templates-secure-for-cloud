@@ -249,8 +249,6 @@ Resources:
           ParameterValue: !Ref ExternalID
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
-        - ParameterKey: EventBusARN
-          ParameterValue: !Ref EventBusARN
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
@@ -270,10 +268,7 @@ Resources:
             Description: Sysdig ExternalID required for the policy creation
           EventBridgeRoleName:
             Type: String
-            Description: A unique identifier used to create an IAM Role and EventBridge Rule
-          EventBusARN:
-            Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent                       
+            Description: A unique identifier used to create an IAM Role and EventBridge Rule                   
         Resources:
           CloudAgentlessRole:
             Type: "AWS::IAM::Role"
