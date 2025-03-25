@@ -124,7 +124,7 @@ Resources:
                 Action:
                   - sts:AssumeRole
                 Resource:
-                  - "arn:*:iam::*:role/AWSCloudFormationStackSetExecutionRole"
+                  - "arn:aws:iam::*:role/AWSCloudFormationStackSetExecutionRole"
   ExecutionRole:
     Type: AWS::IAM::Role   
     Properties:
