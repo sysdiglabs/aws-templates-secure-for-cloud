@@ -223,6 +223,7 @@ Resources:
                 Action:
                   - "events:DescribeApiDestination"
                   - "events:DescribeConnection"
+                  - "cloudwatch:GetMetricStatistics"
                 Resource: "*"
   RolesStackSet:
     Type: AWS::CloudFormation::StackSet
@@ -353,6 +354,7 @@ Resources:
                         Action:
                           - "events:DescribeApiDestination"
                           - "events:DescribeConnection"
+                          - "cloudwatch:GetMetricStatistics"
                         Resource: "*"
   EBRuleStackSet:
     Type: AWS::CloudFormation::StackSet

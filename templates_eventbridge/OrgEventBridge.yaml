@@ -180,6 +180,7 @@ Resources:
                 Action:
                   - "events:DescribeApiDestination"
                   - "events:DescribeConnection"
+                  - "cloudwatch:GetMetricStatistics"
                 Resource: "*"
 
   MgmtAccEBRuleStackSet:
@@ -347,6 +348,7 @@ Resources:
                         Action:
                           - "events:DescribeApiDestination"
                           - "events:DescribeConnection"
+                          - "cloudwatch:GetMetricStatistics"
                         Resource: "*"
 
   # StackSet for member accounts - EventBridge resources deployment
