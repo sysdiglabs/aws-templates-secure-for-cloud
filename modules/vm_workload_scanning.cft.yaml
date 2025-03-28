@@ -189,8 +189,8 @@ Resources:
               - lambda:GetFunctionConfiguration
               - lambda:GetRuntimeManagementConfig
               - lambda:ListFunctions
-              #- lambda:ListTagsForResource
-              #- lambda:GetLayerVersionByArn
+              - lambda:ListTagsForResource
+              - lambda:GetLayerVersionByArn
               - lambda:GetLayerVersion
               - lambda:ListLayers
               - lambda:ListLayerVersions
@@ -320,6 +320,8 @@ Resources:
                       - lambda:GetFunctionConfiguration
                       - lambda:GetRuntimeManagementConfig
                       - lambda:ListFunctions
+                      - lambda:ListTagsForResource
+                      - lambda:GetLayerVersionByArn
                       - lambda:GetLayerVersion
                       - lambda:ListLayers
                       - lambda:ListLayerVersions
