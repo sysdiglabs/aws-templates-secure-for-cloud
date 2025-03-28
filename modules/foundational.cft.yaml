@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::LanguageExtensions'
 Description: Sysdig Secure Onboarding
 Metadata:
   AWS::CloudFormation::Interface:
@@ -93,15 +92,15 @@ Conditions:
     - !Condition IsOrganizational
     - !Not
       - !Equals
-        - Fn::Length: !Ref IncludeOUIDs
-        - 0
+        - !Join ["", !Ref IncludeOUIDs]
+        - ''
   AccountInclusionsConfigured:
     !And
     - !Condition IsOrganizational
     - !Not
       - !Equals
-        - Fn::Length: !Ref IncludeAccounts
-        - 0
+        - !Join ["", !Ref IncludeAccounts]
+        - ''
   # -----------------------------------------------------------------------------------------------------
   # Remove below condition once AWS issue is fixed and replace with using UNION filter -
   # https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-cloudformation/issues/100
@@ -120,12 +119,12 @@ Conditions:
     !And
     - !Condition IsOrganizational
     - !Equals
-      - Fn::Length: !Ref IncludeAccounts
-      - 0
+      - !Join ["", !Ref IncludeAccounts]
+      - ''
     - !Not
       - !Equals
-        - Fn::Length: !Ref ExcludeAccounts
-        - 0
+        - !Join ["", !Ref ExcludeAccounts]
+        - ''
 Resources:
   ConfigPostureRole:
     Type: AWS::IAM::Role
