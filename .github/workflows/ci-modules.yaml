@@ -26,7 +26,7 @@ jobs:
     - name: cfn-lint
       uses: scottbrenner/cfn-lint-action@v2
       with:
-        version: 1.18.3
+        version: "==1.18.3"
 
     - name: Lint
       working-directory: modules
