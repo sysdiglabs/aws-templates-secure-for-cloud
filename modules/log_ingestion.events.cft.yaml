@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::LanguageExtensions'
 Description: EventBridge resources that forward CloudTrail logs to Sysdig Secure
 Metadata:
   AWS::CloudFormation::Interface:
@@ -119,7 +120,7 @@ Parameters:
     Description: AWS Partition of your account or organization to create resources in
     Default: 'aws'
   RootOUID:
-    Type: String
+    Type: CommaDelimitedList
     Description: Root Organizational Unit ID of your AWS organization
   IncludeOUIDs:
     Type: CommaDelimitedList
@@ -138,6 +139,48 @@ Conditions:
     Fn::Equals:
     - Ref: IsOrganizational
     - 'true'
+  OUInclusionsConfigured:
+    !And
+    - !Condition IsOrganizational
+    - !Not
+      - !Equals
+        - Fn::Length:
+          - !Ref IncludeOUIDs
+        - 0
+  AccountInclusionsConfigured:
+    !And
+    - !Condition IsOrganizational
+    - !Not
+      - !Equals
+        - Fn::Length:
+          - !Ref IncludeAccounts
+        - 0
+  # -----------------------------------------------------------------------------------------------------
+  # Remove below condition once AWS issue is fixed and replace with using UNION filter -
+  # https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-cloudformation/issues/100
+  # -----------------------------------------------------------------------------------------------------
+  # XXX: due to AWS bug of not having UNION filter fully working, there is no way to add those extra accounts requested.
+  # to not miss out on those extra accounts, deploy the cloud resources across entire org and noop the UNION filter.
+  # i.e till we can't deploy UNION, we deploy it all ()
+  AllowedInclusions:
+    !And
+    - !Condition OUInclusionsConfigured
+    - !Not
+      - !Condition AccountInclusionsConfigured
+
+  # cannot do OU exclusions since CFT templates are static and don't have a way to fetch dynamic data from AWS
+  AccountExclusionsConfigured:
+    !And
+    - !Condition IsOrganizational
+    - !Equals
+      - Fn::Length:
+        - !Ref IncludeAccounts
+      - 0
+    - !Not
+      - !Equals
+        - Fn::Length:
+          - !Ref ExcludeAccounts
+        - 0
 Resources:
   AdministrationRole:
     Type: AWS::IAM::Role
@@ -318,7 +361,21 @@ Resources:
         ParameterValue: !Ref Partition
       StackInstancesGroup:
       - DeploymentTargets:
-          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+          OrganizationalUnitIds:
+            Fn::If:
+            - AllowedInclusions
+            - !Ref IncludeOUIDs
+            - !Ref RootOUID
+          AccountFilterType:
+            Fn::If:
+            - AccountExclusionsConfigured
+            - "DIFFERENCE"
+            - "NONE"
+          Accounts:
+            Fn::If:
+            - AccountExclusionsConfigured
+            - !Ref ExcludeAccounts
+            - null
         Regions: [!Ref "AWS::Region"]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
@@ -406,7 +463,21 @@ Resources:
         ParameterValue: !Ref Partition
       StackInstancesGroup:
       - DeploymentTargets:
-          OrganizationalUnitIds: !Ref OrganizationalUnitIDs
+          OrganizationalUnitIds:
+            Fn::If:
+            - AllowedInclusions
+            - !Ref IncludeOUIDs
+            - !Ref RootOUID
+          AccountFilterType:
+            Fn::If:
+            - AccountExclusionsConfigured
+            - "DIFFERENCE"
+            - "NONE"
+          Accounts:
+            Fn::If:
+            - AccountExclusionsConfigured
+            - !Ref ExcludeAccounts
+            - null
         Regions: !Ref Regions
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
