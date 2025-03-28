@@ -10,11 +10,10 @@ Metadata:
       - ExternalID
       - TrustedIdentity
       - IsOrganizational
-      - OrganizationalUnitIDs
+      #- OrganizationalUnitIDs
       - Partition
       - RootOUID
       - IncludeOUIDs
-      - ExcludeOUIDs
       - IncludeAccounts
       - ExcludeAccounts
     ParameterLabels:
@@ -26,16 +25,14 @@ Metadata:
         default: Trusted Identity
       IsOrganizational:
         default: Is Organizational
-      OrganizationalUnitIDs:
-        default: (Deprecated, use RootOUID or IncludeOUIDs instead) Organizational Unit IDs
+      #OrganizationalUnitIDs:
+      #  default: (Deprecated, use RootOUID or IncludeOUIDs instead) Organizational Unit IDs
       Partition:
         default: AWS Partition
       RootOUID:
         default: Root Organization Unit ID
       IncludeOUIDs:
         default: Include Organizational Unit IDs
-      ExcludeOUIDs:
-        default: Exclude Organizational Unit IDs
       IncludeAccounts:
         default: Include AWS accounts
       ExcludeAccounts:
@@ -60,9 +57,9 @@ Parameters:
     AllowedValues:
     - 'true'
     - 'false'
-  OrganizationalUnitIDs:
-    Type: CommaDelimitedList
-    Description: (Deprecated, use RootOUID or IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
+#  OrganizationalUnitIDs:
+#    Type: CommaDelimitedList
+#    Description: (Deprecated, use RootOUID or IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   Partition:
     Type: String
     Description: AWS Partition of your account or organization to create resources in
@@ -73,9 +70,6 @@ Parameters:
   IncludeOUIDs:
     Type: CommaDelimitedList
     Description: Comma separated list of organizational unit IDs to be included for deployment
-  ExcludeOUIDs:
-    Type: CommaDelimitedList
-    Description: Comma separated list of organizational unit IDs to be excluded for deployment
   IncludeAccounts:
     Type: CommaDelimitedList
     Description: Comma separated list of AWS accounts in your organization to be included for deployment
@@ -114,7 +108,7 @@ Conditions:
     - !Not
       - !Condition AccountInclusionsConfigured
 
-  # cannot do OU exclusions since CFT templates are static and don't have a way to fetch dynamic data from AWS
+  # cannot do OU exclusions from ExcludeOUIDs since CFT templates are static and don't have a way to fetch dynamic data from AWS
   AccountExclusionsConfigured:
     !And
     - !Condition IsOrganizational
@@ -248,7 +242,7 @@ Resources:
             Fn::If:
             - AccountExclusionsConfigured
             - !Ref ExcludeAccounts
-            - null
+            - !Ref 'AWS::NoValue'
         Regions:
         - Ref: AWS::Region
       TemplateBody: |
