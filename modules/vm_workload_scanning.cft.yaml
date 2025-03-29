@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::LanguageExtensions'
 Description: Sysdig Secure Agentless Workload Scanning Onboarding
 Metadata:
   AWS::CloudFormation::Interface:
@@ -15,7 +14,6 @@ Metadata:
           - OrganizationalUnitIDs
           - RootOUID
           - IncludeOUIDs
-          - ExcludeOUIDs
           - IncludeAccounts
           - ExcludeAccounts
     ParameterLabels:
@@ -35,12 +33,12 @@ Metadata:
         default: Root Organization Unit ID
       IncludeOUIDs:
         default: Include Organizational Unit IDs
-      ExcludeOUIDs:
-        default: Exclude Organizational Unit IDs
       IncludeAccounts:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
+  UnusedParams: # cfn-lint ignore till we figure final solution
+    OrganizationalUnitIDs: !Ref OrganizationalUnitIDs
 Parameters:
   NameSuffix:
     Type: String
@@ -77,9 +75,6 @@ Parameters:
   IncludeOUIDs:
     Type: CommaDelimitedList
     Description: Comma separated list of organizational unit IDs to be included for deployment
-  ExcludeOUIDs:
-    Type: CommaDelimitedList
-    Description: Comma separated list of organizational unit IDs to be excluded for deployment
   IncludeAccounts:
     Type: CommaDelimitedList
     Description: Comma separated list of AWS accounts in your organization to be included for deployment
@@ -101,43 +96,39 @@ Conditions:
     - !Condition IsOrganizational
     - !Not
       - !Equals
-        - Fn::Length:
-          - !Ref IncludeOUIDs
-        - 0
+        - !Join ["", !Ref IncludeOUIDs]
+        - ''
   AccountInclusionsConfigured:
     !And
     - !Condition IsOrganizational
     - !Not
       - !Equals
-        - Fn::Length:
-          - !Ref IncludeAccounts
-        - 0
+        - !Join ["", !Ref IncludeAccounts]
+        - ''
   # -----------------------------------------------------------------------------------------------------
   # Remove below condition once AWS issue is fixed and replace with using UNION filter -
   # https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-cloudformation/issues/100
   # -----------------------------------------------------------------------------------------------------
   # XXX: due to AWS bug of not having UNION filter fully working, there is no way to add those extra accounts requested.
   # to not miss out on those extra accounts, deploy the cloud resources across entire org and noop the UNION filter.
-  # i.e till we can't deploy UNION, we deploy it all ()
+  # i.e till we can't deploy UNION, we deploy it all
   AllowedInclusions:
     !And
     - !Condition OUInclusionsConfigured
     - !Not
       - !Condition AccountInclusionsConfigured
 
-  # cannot do OU exclusions since CFT templates are static and don't have a way to fetch dynamic data from AWS
+  # cannot do OU exclusions from ExcludeOUIDs since CFT templates are static and don't have a way to fetch dynamic data from AWS
   AccountExclusionsConfigured:
     !And
     - !Condition IsOrganizational
     - !Equals
-      - Fn::Length:
-        - !Ref IncludeAccounts
-      - 0
+      - !Join ["", !Ref IncludeAccounts]
+      - ''
     - !Not
       - !Equals
-        - Fn::Length:
-          - !Ref ExcludeAccounts
-        - 0
+        - !Join ["", !Ref ExcludeAccounts]
+        - ''
 
 Resources:
   ScanningRole:
@@ -244,7 +235,7 @@ Resources:
               Fn::If:
               - AccountExclusionsConfigured
               - !Ref ExcludeAccounts
-              - null
+              - !Ref 'AWS::NoValue'
           Regions:
             - Ref: AWS::Region
       TemplateBody: |

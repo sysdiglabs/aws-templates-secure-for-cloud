@@ -10,7 +10,7 @@ Metadata:
       - ExternalID
       - TrustedIdentity
       - IsOrganizational
-      #- OrganizationalUnitIDs
+      - OrganizationalUnitIDs
       - Partition
       - RootOUID
       - IncludeOUIDs
@@ -25,8 +25,8 @@ Metadata:
         default: Trusted Identity
       IsOrganizational:
         default: Is Organizational
-      #OrganizationalUnitIDs:
-      #  default: (Deprecated, use RootOUID or IncludeOUIDs instead) Organizational Unit IDs
+      OrganizationalUnitIDs:
+        default: (Deprecated, use RootOUID or IncludeOUIDs instead) Organizational Unit IDs
       Partition:
         default: AWS Partition
       RootOUID:
@@ -37,6 +37,8 @@ Metadata:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
+  UnusedParams: # cfn-lint ignore till we figure final solution
+    OrganizationalUnitIDs: !Ref OrganizationalUnitIDs
 Parameters:
   NameSuffix:
     Type: String
@@ -57,9 +59,9 @@ Parameters:
     AllowedValues:
     - 'true'
     - 'false'
-#  OrganizationalUnitIDs:
-#    Type: CommaDelimitedList
-#    Description: (Deprecated, use RootOUID or IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
+  OrganizationalUnitIDs:
+    Type: CommaDelimitedList
+    Description: (Deprecated, use RootOUID or IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   Partition:
     Type: String
     Description: AWS Partition of your account or organization to create resources in
