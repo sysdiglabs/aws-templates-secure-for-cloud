@@ -53,7 +53,6 @@ deploy:
 			"Partition=${PARAM_PARTITION}" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
-			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
@@ -71,7 +70,6 @@ deploy:
 			"Partition=${PARAM_PARTITION}" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
-			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
@@ -87,7 +85,6 @@ deploy:
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
-			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 	aws cloudformation deploy \
@@ -103,7 +100,6 @@ deploy:
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
-			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 
@@ -120,7 +116,6 @@ deploy:
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
-			"ExcludeOUIDs=$(PARAM_EXCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 
