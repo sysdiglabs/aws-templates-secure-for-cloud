@@ -41,7 +41,7 @@ Metadata:
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
-        default: (Deprecated, use RootOUID or IncludeOUIDs instead) Organizational Unit IDs
+        default: (TO BE DEPRECATED Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs
       Partition:
         default: AWS Partition
       RootOUID:
@@ -52,8 +52,6 @@ Metadata:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
-  UnusedParams: # cfn-lint ignore till we figure final solution
-    OrganizationalUnitIDs: !Ref OrganizationalUnitIDs
 Parameters:
   NameSuffix:
     Type: String
@@ -75,7 +73,7 @@ Parameters:
     Description: Comma separated list of regions to monitor with EventBridge
   OrganizationalUnitIDs:
     Type: CommaDelimitedList
-    Description: (Deprecated, use RootOUID or IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
+    Description: (WARNING - TO BE DEPRECATED Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   RuleState:
     Type: String
     Description: The state of the EventBridge Rule
@@ -134,6 +132,17 @@ Conditions:
     Fn::Equals:
     - Ref: IsOrganizational
     - 'true'
+  # First check if old param OrganizationalUnitIDs configured - support till we DEPRECATE it
+  IsOldOuidConfigured:
+    !And
+    - !Condition IsOrganizational
+    - !Not
+      - !Equals
+        - !Join ["", !Ref OrganizationalUnitIDs]
+        - ''
+
+  # Else, check for new Inclusion and Exclusion params
+  # INCLUSIONS
   OUInclusionsConfigured:
     !And
     - !Condition IsOrganizational
@@ -161,6 +170,7 @@ Conditions:
     - !Not
       - !Condition AccountInclusionsConfigured
 
+  # EXCLUSIONS
   # cannot do OU exclusions from ExcludeOUIDs since CFT templates are static and don't have a way to fetch dynamic data from AWS
   AccountExclusionsConfigured:
     !And
@@ -354,19 +364,28 @@ Resources:
       - DeploymentTargets:
           OrganizationalUnitIds:
             Fn::If:
-            - AllowedInclusions
-            - !Ref IncludeOUIDs
-            - !Ref RootOUID
+            - IsOldOuidConfigured
+            - !Ref OrganizationalUnitIDs
+            - Fn::If:
+              - AllowedInclusions
+              - !Ref IncludeOUIDs
+              - !Ref RootOUID
           AccountFilterType:
             Fn::If:
-            - AccountExclusionsConfigured
-            - "DIFFERENCE"
-            - "NONE"
+            - IsOldOuidConfigured
+            - !Ref 'AWS::NoValue'
+            - Fn::If:
+              - AccountExclusionsConfigured
+              - "DIFFERENCE"
+              - "NONE"
           Accounts:
             Fn::If:
-            - AccountExclusionsConfigured
-            - !Ref ExcludeAccounts
+            - IsOldOuidConfigured
             - !Ref 'AWS::NoValue'
+            - Fn::If:
+              - AccountExclusionsConfigured
+              - !Ref ExcludeAccounts
+              - !Ref 'AWS::NoValue'
         Regions: [!Ref "AWS::Region"]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
@@ -456,19 +475,28 @@ Resources:
       - DeploymentTargets:
           OrganizationalUnitIds:
             Fn::If:
-            - AllowedInclusions
-            - !Ref IncludeOUIDs
-            - !Ref RootOUID
+            - IsOldOuidConfigured
+            - !Ref OrganizationalUnitIDs
+            - Fn::If:
+              - AllowedInclusions
+              - !Ref IncludeOUIDs
+              - !Ref RootOUID
           AccountFilterType:
             Fn::If:
-            - AccountExclusionsConfigured
-            - "DIFFERENCE"
-            - "NONE"
+            - IsOldOuidConfigured
+            - !Ref 'AWS::NoValue'
+            - Fn::If:
+              - AccountExclusionsConfigured
+              - "DIFFERENCE"
+              - "NONE"
           Accounts:
             Fn::If:
-            - AccountExclusionsConfigured
-            - !Ref ExcludeAccounts
+            - IsOldOuidConfigured
             - !Ref 'AWS::NoValue'
+            - Fn::If:
+              - AccountExclusionsConfigured
+              - !Ref ExcludeAccounts
+              - !Ref 'AWS::NoValue'
         Regions: !Ref Regions
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
