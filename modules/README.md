@@ -22,4 +22,4 @@ Following are the new parameters to configure organizational deployments on the 
 3. `IncludeAccounts` - List of AWS Accounts to deploy the Sysdig Secure for Cloud resources in.
 4. `ExcludeAccounts` - List of AWS Accounts to exclude deploying the Sysdig Secure for Cloud resources in.
 
-**WARNING**: module variable `OrganizationalUnitIDs` will be DEPRECATED soon going forward. Please work with Sysdig to migrate your Terraform installs to use `IncludeOUIDs` instead to achieve the same deployment outcome.
+**WARNING**: module template parameter `OrganizationalUnitIDs` will be DEPRECATED soon going forward. Please work with Sysdig to migrate your CFT based installs to use `IncludeOUIDs` instead to achieve the same deployment outcome.
