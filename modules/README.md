@@ -12,4 +12,14 @@ Modular templates support cross sections of Sysdig Secure feature sets. Each tem
 
 Organizations are supported by setting the following template parameters
 * `IsOrganizational=true`
-* `OrganizationalUnitIDs=ou-...`
+* `OrganizationalUnitIDs=ou-...` (to be deprecated soon, please read below)
+
+### Organizational Install Configurations
+
+Following are the new parameters to configure organizational deployments on the cloud for Sysdig Secure for Cloud :-
+1. `RootOUID` - Root Organization Unit ID
+2. `IncludeOUIDs` - List of AWS Organizational Unit IDs to deploy the Sysdig Secure for Cloud resources in.
+3. `IncludeAccounts` - List of AWS Accounts to deploy the Sysdig Secure for Cloud resources in.
+4. `ExcludeAccounts` - List of AWS Accounts to exclude deploying the Sysdig Secure for Cloud resources in.
+
+**WARNING**: module variable `OrganizationalUnitIDs` will be DEPRECATED soon going forward. Please work with Sysdig to migrate your Terraform installs to use `IncludeOUIDs` instead to achieve the same deployment outcome.
