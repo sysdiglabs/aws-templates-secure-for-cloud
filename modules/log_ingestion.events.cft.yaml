@@ -13,7 +13,9 @@ Metadata:
       - NameSuffix
       - ExternalID
       - TrustedIdentity
-      - TargetEventBusARN
+      - ApiKey
+      - IngestionUrl
+      - RateLimit
       - Regions
       - RuleState
       - IsOrganizational
@@ -30,8 +32,12 @@ Metadata:
         default: External ID
       TrustedIdentity:
         default: Trusted Identity
-      TargetEventBusARN:
-        default: Target Event Bus
+      ApiKey:
+        default: "API Key (Sysdig use only)"
+      IngestionUrl:
+        default: "Ingestion URL (Sysdig use only)"
+      RateLimit:
+        default: "Rate Limit (Sysdig use only)"
       Regions:
         default: Instrumented Regions
       RuleState:
@@ -65,9 +71,16 @@ Parameters:
   TrustedIdentity:
     Type: String
     Description: The Role in Sysdig's AWS Account with permissions to your account
-  TargetEventBusARN:
+  ApiKey:
     Type: String
-    Description: The destination in Sysdig's AWS account where your events are sent
+    Description: API key for Sysdig Secure authentication
+  IngestionUrl:
+    Type: String
+    Description: Sysdig Secure API ingestion URL
+  RateLimit:
+    Type: Number
+    Description: Maximum invocations per second for the API destination
+    Default: 300
   Regions:
     Type: CommaDelimitedList
     Description: Comma separated list of regions to monitor with EventBridge
@@ -245,14 +258,22 @@ Resources:
           Version: "2012-10-17"
           Statement:
           - Effect: Allow
-            Action: 'events:PutEvents'
-            Resource: !Ref TargetEventBusARN
+            Action:
+              - "events:InvokeApiDestination"
+            Resource:
+              - !Sub "arn:aws:events:*:*:api-destination/sysdig-secure-events-${NameSuffix}-destination/*"
           - Effect: Allow
             Action:
             - "events:DescribeRule"
             - "events:ListTargetsByRule"
             Resource:
             - !Sub arn:${Partition}:events:*:*:rule/sysdig-secure-events-${NameSuffix}
+          - Effect: Allow
+            Action:
+              - "events:DescribeApiDestination"
+              - "events:DescribeConnection"
+              - "cloudwatch:GetMetricStatistics"
+            Resource: "*"
   EventBridgeRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Metadata:
@@ -282,8 +303,12 @@ Resources:
       Parameters:
         - ParameterKey: Name
           ParameterValue: !Sub sysdig-secure-events-${NameSuffix}
-        - ParameterKey: TargetEventBusARN
-          ParameterValue: !Ref TargetEventBusARN
+        - ParameterKey: ApiKey
+          ParameterValue: !Ref ApiKey
+        - ParameterKey: IngestionUrl
+          ParameterValue: !Ref IngestionUrl
+        - ParameterKey: RateLimit
+          ParameterValue: !Ref RateLimit
         - ParameterKey: RuleState
           ParameterValue: !Ref RuleState
         - ParameterKey: RuleEventPattern
@@ -302,9 +327,15 @@ Resources:
           Name:
             Type: String
             Description: resource name identifier
-          TargetEventBusARN:
+          ApiKey:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent
+            Description: API key for authentication
+          IngestionUrl:
+            Type: String
+            Description: Target endpoint URL for the API destination
+          RateLimit:
+            Type: Number
+            Description: Maximum invocations per second for the API destination
           RuleState:
             Type: String
             Description: The state of the EventBridge Rule
@@ -320,17 +351,36 @@ Resources:
             Type: String
             Description: AWS Partition of your account or organization to create resources in
         Resources:           
-          EventBridgeRule:
-            Type: "AWS::Events::Rule"
+          EventBridgeConnection:
+            Type: AWS::Events::Connection
             Properties:
-              Name: !Ref Name
+              Name: !Sub ${Name}-connection
+              AuthorizationType: API_KEY
+              AuthParameters:
+                ApiKeyAuthParameters:
+                  ApiKeyName: X-Api-Key
+                  ApiKeyValue: !Ref ApiKey
+
+          EventBridgeApiDestination:
+            Type: AWS::Events::ApiDestination
+            Properties:
+              Name: !Sub ${Name}-destination
+              ConnectionArn: !GetAtt EventBridgeConnection.Arn
+              InvocationEndpoint: !Ref IngestionUrl
+              HttpMethod: POST
+              InvocationRateLimitPerSecond: !Ref RateLimit
+
+          EventBridgeRule:
+            Type: AWS::Events::Rule
+            Properties:
+              Name: !Sub ${Name}
               Description: Capture all CloudTrail events
-              EventPattern: !Ref RuleEventPattern
-              State: !Sub ${RuleState}
+              EventPattern: !Ref EventBridgeEventPattern
+              State: !Ref EventBridgeState
               Targets:
-                - Id: !Ref Name
-                  Arn: !Sub ${TargetEventBusARN}
-                  RoleArn: !Sub arn:${Partition}:iam::${AWS::AccountId}:role/${Name}
+                - Id: !Sub ${Name}
+                  Arn: !GetAtt EventBridgeApiDestination.Arn
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
   OrganizationRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -356,8 +406,12 @@ Resources:
         ParameterValue: !Ref TrustedIdentity
       - ParameterKey: ExternalID
         ParameterValue: !Ref ExternalID
-      - ParameterKey: TargetEventBusARN
-        ParameterValue: !Ref TargetEventBusARN
+      - ParameterKey: ApiKey
+        ParameterValue: !Ref ApiKey
+      - ParameterKey: IngestionUrl
+        ParameterValue: !Ref IngestionUrl
+      - ParameterKey: RateLimit
+        ParameterValue: !Ref RateLimit
       - ParameterKey: Partition
         ParameterValue: !Ref Partition
       StackInstancesGroup:
@@ -400,9 +454,15 @@ Resources:
           Name:
             Type: String
             Description: A unique identifier used to create and reference resources
-          TargetEventBusARN:
+          ApiKey:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent
+            Description: API key for Sysdig Secure authentication
+          IngestionUrl:
+            Type: String
+            Description: Sysdig Secure API endpoint URL
+          RateLimit:
+            Type: Number
+            Description: Maximum invocations per second for the API destination
           Partition:
             Type: String
             Description: AWS Partition of your account or organization to create resources in
@@ -430,15 +490,26 @@ Resources:
                 PolicyDocument:
                   Version: "2012-10-17"
                   Statement:
-                  - Effect: Allow
-                    Action: 'events:PutEvents'
-                    Resource: !Sub ${TargetEventBusARN}
-                  - Effect: Allow
-                    Action:
-                    - "events:DescribeRule"
-                    - "events:ListTargetsByRule"
-                    Resource:
-                    - !Sub arn:${Partition}:events:*:*:rule/${Name}
+                    - Sid: "InvokeApiDestination"
+                      Effect: Allow
+                      Action:
+                        - "events:InvokeApiDestination"
+                      Resource:
+                        - !Sub "arn:aws:events:*:*:api-destination/${EventBridgeRoleName}-destination/*"
+                    - Sid: "CloudTrailEventRuleAccess"
+                      Effect: Allow
+                      Action:
+                        - "events:DescribeRule"
+                        - "events:ListTargetsByRule"
+                      Resource:
+                        - !Sub "arn:aws:events:*:*:rule/${EventBridgeRoleName}"
+                    - Sid: "ValidationAccess"
+                      Effect: Allow
+                      Action:
+                        - "events:DescribeApiDestination"
+                        - "events:DescribeConnection"
+                        - "cloudwatch:GetMetricStatistics"
+                      Resource: "*"
   OrganizationRuleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -463,8 +534,12 @@ Resources:
       Parameters:
       - ParameterKey: Name
         ParameterValue: !Sub sysdig-secure-events-${NameSuffix}
-      - ParameterKey: TargetEventBusARN
-        ParameterValue: !Ref TargetEventBusARN
+      - ParameterKey: ApiKey
+        ParameterValue: !Ref ApiKey
+      - ParameterKey: IngestionUrl
+        ParameterValue: !Ref IngestionUrl
+      - ParameterKey: RateLimit
+        ParameterValue: !Ref RateLimit
       - ParameterKey: RuleState
         ParameterValue: !Ref RuleState
       - ParameterKey: RuleEventPattern
@@ -505,9 +580,15 @@ Resources:
           Name:
             Type: String
             Description: A unique identifier used to create and reference resources
-          TargetEventBusARN:
+          ApiKey:
             Type: String
-            Description: The destination in Sysdig's AWS account where your events are sent
+            Description: API key for Sysdig Secure authentication
+          IngestionUrl:
+            Type: String
+            Description: Sysdig Secure API endpoint URL
+          RateLimit:
+            Type: Number
+            Description: Maximum invocations per second for the API destination
           RuleState:
             Type: String
             Description: The state of the EventBridge Rule
@@ -523,17 +604,36 @@ Resources:
             Type: String
             Description: AWS Partition of your account or organization to create resources in
         Resources:           
+          EventBridgeConnection:
+            Type: AWS::Events::Connection
+            Properties:
+              Name: !Sub ${Name}-connection
+              AuthorizationType: API_KEY
+              AuthParameters:
+                ApiKeyAuthParameters:
+                  ApiKeyName: X-Api-Key
+                  ApiKeyValue: !Ref ApiKey
+
+          EventBridgeApiDestination:
+            Type: AWS::Events::ApiDestination
+            Properties:
+              Name: !Sub ${Name}-destination
+              ConnectionArn: !GetAtt EventBridgeConnection.Arn
+              InvocationEndpoint: !Ref IngestionUrl
+              HttpMethod: POST
+              InvocationRateLimitPerSecond: !Ref RateLimit
+
           EventBridgeRule:
-            Type: "AWS::Events::Rule"
+            Type: AWS::Events::Rule
             Properties:
               Name: !Ref Name
-              Description: Capture all CloudTrail events
-              EventPattern: !Ref RuleEventPattern
-              State: !Ref RuleState
+              Description: Capture all CloudTrail events for Sysdig Secure
+              EventPattern: !Ref EventBridgeEventPattern
+              State: !Ref EventBridgeState
               Targets:
                 - Id: !Ref Name
-                  Arn: !Ref TargetEventBusARN
-                  RoleArn: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/${Name}"
+                  Arn: !GetAtt EventBridgeApiDestination.Arn
+                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
 Outputs:
   EventBridgeRoleARN:
     Description: Sysdig Secure EventBridge Role ARN
