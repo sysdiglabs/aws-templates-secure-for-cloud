@@ -96,14 +96,18 @@ Parameters:
 Conditions:
   CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
   HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
-  # Matches Terraform's: is_cross_account = var.bucket_account_id != null && var.bucket_account_id != data.aws_caller_identity.current.account_id
-  IsCrossAccount: !And [
+  BucketCrossAccount: !And [
     !Not [ !Equals [ !Ref BucketAccountId, "" ] ],
     !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ]
   ]
-  NotIsCrossAccount: !Not [IsCrossAccount]
-  HasKMSAndNotCrossAccount: !And [HasKMSKey, NotIsCrossAccount]
-  HasKMSAndIsCrossAccount: !And [HasKMSKey, IsCrossAccount]
+  BucketInTargetAccount: !Not [BucketCrossAccount]
+  # Extract KMS account ID from KMS key ARN
+  KMSAccountId: !Select [4, !Split [":", !Ref KMSKeyARN]]
+  # Check if KMS key is in a different account from bucket
+  NeedKMSPolicy: !And [
+    HasKMSKey,
+    !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ]
+  ]
   IsTopicAccount: !Equals [ !Select [4, !Split [":", !Ref TopicARN]], !Ref "AWS::AccountId" ]
   IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
@@ -111,7 +115,7 @@ Resources:
   # Role and resources for same-account deployments
   CloudLogsRole:
     Type: "AWS::IAM::Role"
-    Condition: NotIsCrossAccount
+    Condition: BucketInTargetAccount
     Properties:
       RoleName: !Sub sysdig-secure-cloudlogs-${NameSuffix}  
       AssumeRolePolicyDocument:
@@ -186,7 +190,7 @@ Resources:
   # StackSet for cross-account bucket access
   BucketAccessStackSet:
     Type: AWS::CloudFormation::StackSet
-    Condition: IsCrossAccount
+    Condition: BucketCrossAccount
     Properties:
       StackSetName: !Sub sysdig-secure-cloudlogs-bucket-access-${NameSuffix}
       Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration
@@ -346,20 +350,20 @@ Outputs:
     Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
   RoleARN:
     Description: "The ARN of the IAM Role created for CloudTrail logs access."
-    Condition: NotIsCrossAccount
+    Condition: BucketInTargetAccount
     Value: !GetAtt CloudLogsRole.Arn
   CrossAccountRoleARN:
     Description: "ARN of the Cross-Account IAM Role for accessing the S3 bucket."
-    Condition: IsCrossAccount
+    Condition: BucketCrossAccount
     Value: !Sub "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
-  KMSPolicyInstructionsSameAccount:
+  KMSPolicyInstructions:
     Description: "Instructions for updating KMS key policy when KMS encryption is enabled"
-    Condition: HasKMSAndNotCrossAccount
+    Condition: NeedKMSPolicy
     Value: !Sub |
       IMPORTANT: MANUAL ACTION REQUIRED
 
       Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
-      This is necessary when KMS encryption is enabled for your S3 bucket.
+      This is necessary when KMS encryption is enabled for your S3 bucket and the KMS key is in a different account.
       Without this policy addition, Sysdig may not be able to read your encrypted logs.
 
       {
@@ -367,25 +371,6 @@ Outputs:
         "Effect": "Allow",
         "Principal": {
           "AWS": "${CloudLogsRole.Arn}"
-        },
-        "Action": "kms:Decrypt",
-        "Resource": "*"
-      }
-  KMSPolicyInstructionsCrossAccount:
-    Description: "Instructions for updating KMS key policy when KMS encryption is enabled (Cross-Account)"
-    Condition: HasKMSAndIsCrossAccount
-    Value: !Sub |
-      IMPORTANT: MANUAL ACTION REQUIRED
-
-      Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
-      This is necessary when KMS encryption is enabled for your S3 bucket.
-      Without this policy addition, Sysdig may not be able to read your encrypted logs.
-
-      {
-        "Sid": "Sysdig-Decrypt",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
         },
         "Action": "kms:Decrypt",
         "Resource": "*"
