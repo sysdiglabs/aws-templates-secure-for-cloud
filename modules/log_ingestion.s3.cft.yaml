@@ -1,8 +1,8 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  CloudFormation organizational template for provisioning the necessary resources 
-  for the `cloud-logs` component and the read-only role required to interact with
-  the target organizational environment.
+  CloudFormation template for provisioning the necessary resources 
+  for the `cloud-logs` component, allowing Sysdig to access CloudTrail logs in S3 buckets.
+  Supports single-account, organizational same-account, and organizational cross-account deployments.
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -14,9 +14,13 @@ Metadata:
           - ExternalID
           - TrustedIdentity
           - BucketARN
+          - KMSKeyARN
+          - BucketAccountId
+          - OrganizationalUnitIds
           - CreateTopic
           - TopicARN
           - Endpoint
+          - Partition
 
     ParameterLabels:
       NameSuffix:
@@ -27,12 +31,20 @@ Metadata:
         default: Trusted Identity
       BucketARN:
         default: Bucket ARN
+      KMSKeyARN:
+        default: KMS Key ARN
+      BucketAccountId:
+        default: Bucket Account ID
+      OrganizationalUnitIds:
+        default: Organizational Unit IDs
       CreateTopic:
         default: Create SNS Topic
       TopicARN:
         default: SNS Topic ARN
       Endpoint:
         default: Sysdig Secure endpoint
+      Partition:
+        default: AWS Partition
 
 Parameters:
   NameSuffix:
@@ -50,6 +62,19 @@ Parameters:
   BucketARN:
     Type: String
     Description: The ARN of your S3 bucket associated with your CloudTrail trail logs.
+    AllowedPattern: 'arn:(aws|aws-us-gov):s3:::.*'
+  KMSKeyARN:
+    Type: String
+    Description: The ARN of the KMS key used to encrypt the S3 bucket.
+    Default: ""
+  BucketAccountId:
+    Type: String
+    Description: The AWS Account ID that owns the S3 bucket, if different from the current account.
+    Default: ""
+  OrganizationalUnitIds:
+    Type: String
+    Description: Comma-separated list of AWS Organizations organizational unit (OU) IDs for cross-account deployments.
+    Default: "root"
   CreateTopic:
     Type: String
     AllowedValues:
@@ -63,12 +88,32 @@ Parameters:
   Endpoint:
     Type: String
     Description: Sysdig Secure endpoint to receive CloudTrail notifications.
+  Partition:
+    Type: String
+    Description: AWS Partition of your account or organization to create resources in
+    Default: 'aws'
+
+Conditions:
+  CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
+  HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
+  # Matches Terraform's: is_cross_account = var.bucket_account_id != null && var.bucket_account_id != data.aws_caller_identity.current.account_id
+  IsCrossAccount: !And [
+    !Not [ !Equals [ !Ref BucketAccountId, "" ] ],
+    !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ]
+  ]
+  NotIsCrossAccount: !Not [IsCrossAccount]
+  HasKMSAndNotCrossAccount: !And [HasKMSKey, NotIsCrossAccount]
+  HasKMSAndIsCrossAccount: !And [HasKMSKey, IsCrossAccount]
+  IsTopicAccount: !Equals [ !Select [4, !Split [":", !Ref TopicARN]], !Ref "AWS::AccountId" ]
+  IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
 Resources:
+  # Role and resources for same-account deployments
   CloudLogsRole:
     Type: "AWS::IAM::Role"
+    Condition: NotIsCrossAccount
     Properties:
-      RoleName: !Sub sysdig-secure-cloudlogs-${NameSuffix}
+      RoleName: !Sub sysdig-secure-cloudlogs-${NameSuffix}  
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -85,20 +130,29 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              - Sid: "CloudlogsS3AccessGet"
+              - Sid: "CloudlogsS3Access"
                 Effect: "Allow"
                 Action:
                   - "s3:Get*"
-                Resource:
-                  - !Sub '${BucketARN}'
-                  - !Sub '${BucketARN}/*'
-              - Sid: "CloudlogsS3AccessList"
-                Effect: "Allow"
-                Action:
                   - "s3:List*"
                 Resource:
                   - !Sub '${BucketARN}'
                   - !Sub '${BucketARN}/*'
+              - !If
+                - HasKMSKey
+                - Sid: "CloudlogsKMSDecrypt"
+                  Effect: "Allow"
+                  Action:
+                    - "kms:Decrypt"
+                  Resource: !Ref KMSKeyARN
+                - !Ref "AWS::NoValue"
+      Tags:
+        - Key: "Name"
+          Value: "Sysdig Secure CloudTrail Logs Access Role"
+        - Key: "Purpose"
+          Value: "Allow Sysdig to access S3 bucket for CloudTrail logs"
+        - Key: "product"
+          Value: "sysdig-secure-for-cloud"
 
   CloudTrailNotificationsTopic:
     Condition: CreateSNSTopic
@@ -129,10 +183,210 @@ Resources:
             Action: "SNS:Publish"
             Resource: !Ref CloudTrailNotificationsTopic
 
-Conditions:
-  CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
+  # StackSet for cross-account bucket access
+  BucketAccessStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsCrossAccount
+    Properties:
+      StackSetName: !Sub sysdig-secure-cloudlogs-bucket-access-${NameSuffix}
+      Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration
+      PermissionModel: SERVICE_MANAGED
+      AutoDeployment:
+        Enabled: false
+      ManagedExecution:
+        Active: true
+      Capabilities:
+        - "CAPABILITY_NAMED_IAM"
+      OperationPreferences:
+        MaxConcurrentPercentage: 100
+        FailureTolerancePercentage: 90
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+      Parameters:
+        - ParameterKey: RoleName
+          ParameterValue: !Sub sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}
+        - ParameterKey: TrustedIdentity
+          ParameterValue: !Ref TrustedIdentity
+        - ParameterKey: ExternalID
+          ParameterValue: !Ref ExternalID
+        - ParameterKey: BucketARN
+          ParameterValue: !Ref BucketARN
+        - ParameterKey: KMSKeyARN
+          ParameterValue: !Ref KMSKeyARN
+        - ParameterKey: BucketAccountId
+          ParameterValue: !Ref BucketAccountId
+        - ParameterKey: TopicARN
+          ParameterValue: !Ref TopicARN
+        - ParameterKey: Endpoint
+          ParameterValue: !Ref Endpoint
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
+            Accounts: [!Ref BucketAccountId]
+          Regions: [!Ref "AWS::Region"]
+        - DeploymentTargets:
+            OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
+            Accounts: [!Select [4, !Split [":", !Ref TopicARN]]]  # Extract account ID from topic ARN
+          Regions: [!Select [3, !Split [":", !Ref TopicARN]]]  # Extract region from topic ARN
+      TemplateBody: |
+        AWSTemplateFormatVersion: "2010-09-09"
+        Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration
+        Parameters:
+          RoleName:
+            Type: String
+            Description: Name of the role to be created in the bucket account
+          TrustedIdentity:
+            Type: String
+            Description: ARN of the Sysdig service that needs to assume the role
+          ExternalID:
+            Type: String
+            Description: External ID for secure role assumption by Sysdig
+          BucketARN:
+            Type: String
+            Description: ARN of the S3 bucket containing CloudTrail logs
+          KMSKeyARN:
+            Type: String
+            Description: ARN of the KMS key used for encryption
+            Default: ""
+          BucketAccountId:
+            Type: String
+            Description: AWS Account ID that owns the S3 bucket
+          TopicARN:
+            Type: String
+            Description: ARN of the SNS topic
+          Endpoint:
+            Type: String
+            Description: Sysdig Secure endpoint to receive CloudTrail notifications
+        Conditions:
+          IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
+          IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
+          HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
+        Resources:
+          S3AccessRole:
+            Type: AWS::IAM::Role
+            Condition: IsBucketAccount
+            Properties:
+              RoleName: !Ref RoleName
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: "Allow"
+                    Principal:
+                      AWS: !Ref TrustedIdentity
+                    Action: "sts:AssumeRole"
+                    Condition:
+                      StringEquals:
+                        "sts:ExternalId": !Ref ExternalID
+              Policies:
+                - PolicyName: "cloudlogs_s3_access_policy"
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                      - Sid: "S3BucketListAccess"
+                        Effect: "Allow"
+                        Action:
+                          - "s3:ListBucket"
+                          - "s3:GetBucketLocation"
+                        Resource:
+                          - !Ref BucketARN
+                      - Sid: "S3ObjectAccess"
+                        Effect: "Allow"
+                        Action:
+                          - "s3:GetObject"
+                        Resource:
+                          - !Sub "${BucketARN}/*"
+                      - !If
+                        - HasKMSKey
+                        - Sid: "KMSDecryptAccess"
+                          Effect: "Allow"
+                          Action: "kms:Decrypt"
+                          Resource: !Ref KMSKeyARN
+                        - !Ref "AWS::NoValue"
+              Tags:
+                - Key: "Name"
+                  Value: "Sysdig Secure CloudTrail Logs Access Role"
+                - Key: "Purpose"
+                  Value: "Allow Sysdig to access S3 bucket for CloudTrail logs"
+                - Key: "product"
+                  Value: "sysdig-secure-for-cloud"
+
+          CloudTrailSNSSubscription:
+            Type: AWS::SNS::Subscription
+            Condition: IsTopicAccount
+            Properties:
+              TopicArn: !Ref TopicARN
+              Protocol: "https"
+              Endpoint: !Ref Endpoint
+        Outputs:
+          S3AccessRoleArn:
+            Description: ARN of the IAM role created in the bucket account for S3 access
+            Value: !GetAtt S3AccessRole.Arn
+          KMSPolicyInstructions:
+            Description: Instructions for updating KMS key policy when KMS encryption is enabled
+            Condition: HasKMSKey
+            Value: !Sub |
+              IMPORTANT: MANUAL ACTION REQUIRED
+
+              Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
+              This is necessary when KMS encryption is enabled for your S3 bucket.
+              Without this policy addition, Sysdig may not be able to read your encrypted logs.
+
+              {
+                "Sid": "Sysdig-Decrypt",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "${S3AccessRole.Arn}"
+                },
+                "Action": "kms:Decrypt",
+                "Resource": "*"
+              }
 
 Outputs:
   TopicARN:
     Description: "The ARN of the SNS Topic created for CloudTrail notifications."
     Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
+  RoleARN:
+    Description: "The ARN of the IAM Role created for CloudTrail logs access."
+    Condition: NotIsCrossAccount
+    Value: !GetAtt CloudLogsRole.Arn
+  CrossAccountRoleARN:
+    Description: "ARN of the Cross-Account IAM Role for accessing the S3 bucket."
+    Condition: IsCrossAccount
+    Value: !Sub "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
+  KMSPolicyInstructionsSameAccount:
+    Description: "Instructions for updating KMS key policy when KMS encryption is enabled"
+    Condition: HasKMSAndNotCrossAccount
+    Value: !Sub |
+      IMPORTANT: MANUAL ACTION REQUIRED
+
+      Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
+      This is necessary when KMS encryption is enabled for your S3 bucket.
+      Without this policy addition, Sysdig may not be able to read your encrypted logs.
+
+      {
+        "Sid": "Sysdig-Decrypt",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "${CloudLogsRole.Arn}"
+        },
+        "Action": "kms:Decrypt",
+        "Resource": "*"
+      }
+  KMSPolicyInstructionsCrossAccount:
+    Description: "Instructions for updating KMS key policy when KMS encryption is enabled (Cross-Account)"
+    Condition: HasKMSAndIsCrossAccount
+    Value: !Sub |
+      IMPORTANT: MANUAL ACTION REQUIRED
+
+      Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
+      This is necessary when KMS encryption is enabled for your S3 bucket.
+      Without this policy addition, Sysdig may not be able to read your encrypted logs.
+
+      {
+        "Sid": "Sysdig-Decrypt",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
+        },
+        "Action": "kms:Decrypt",
+        "Resource": "*"
+      }
