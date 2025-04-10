@@ -111,12 +111,12 @@ Parameters:
 Conditions:
   CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
   HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
-  BucketCrossAccount: !And [
-    !Not [ !Equals [ !Ref BucketAccountId, "" ] ],
-    !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ]
+  DeployStackSet: !Or [
+    !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ],
+    !Not [ !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ] ]
   ]
   BucketInTargetAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
-  # Check if KMS key is in a different account from bucket
+
   NeedKMSPolicy: !And [
     !Not [ !Equals [ !Ref KMSKeyARN, "" ] ],
     !Not [ !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ] ]
@@ -203,7 +203,7 @@ Resources:
   # StackSet for cross-account bucket access
   BucketAccessStackSet:
     Type: AWS::CloudFormation::StackSet
-    Condition: BucketCrossAccount
+    Condition: DeployStackSet
     Properties:
       StackSetName: !Sub sysdig-secure-cloudlogs-bucket-access-${NameSuffix}
       Description: StackSet to configure S3 bucket and KMS permissions for Sysdig Cloud Logs integration
