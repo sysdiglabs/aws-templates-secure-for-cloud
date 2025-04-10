@@ -114,7 +114,11 @@ Conditions:
     !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ],
     !Not [ !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ] ]
   ]
-  BucketInTargetAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
+
+  DeployRole: !And [
+    !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ,
+    !Equals [ DeployStackSet, "false" ]
+  ]
 
   NeedKMSPolicy: !And [
     !Not [ !Equals [ !Ref KMSKeyARN, "" ] ],
@@ -126,7 +130,7 @@ Resources:
   # Role and resources for same-account deployments
   CloudLogsRole:
     Type: "AWS::IAM::Role"
-    Condition: BucketInTargetAccount
+    Condition: DeployRole
     Properties:
       RoleName: !Sub sysdig-secure-cloudlogs-${NameSuffix}  
       AssumeRolePolicyDocument:
