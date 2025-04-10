@@ -15,12 +15,15 @@ Metadata:
           - TrustedIdentity
           - BucketARN
           - KMSKeyARN
+          - KMSAccountId
           - BucketAccountId
+          - TopicAccountId
           - OrganizationalUnitIds
           - CreateTopic
           - TopicARN
           - Endpoint
           - Partition
+          - TopicRegion
 
     ParameterLabels:
       NameSuffix:
@@ -33,8 +36,12 @@ Metadata:
         default: Bucket ARN
       KMSKeyARN:
         default: KMS Key ARN
+      KMSAccountId:
+        default: KMS Account ID
       BucketAccountId:
         default: Bucket Account ID
+      TopicAccountId:
+        default: SNS Topic Account ID
       OrganizationalUnitIds:
         default: Organizational Unit IDs
       CreateTopic:
@@ -45,6 +52,8 @@ Metadata:
         default: Sysdig Secure endpoint
       Partition:
         default: AWS Partition
+      TopicRegion:
+        default: The AWS region where the SNS topic is located
 
 Parameters:
   NameSuffix:
@@ -67,9 +76,17 @@ Parameters:
     Type: String
     Description: The ARN of the KMS key used to encrypt the S3 bucket.
     Default: ""
+  KMSAccountId:
+    Type: String
+    Description: The AWS Account ID that owns the KMS key.
+    Default: ""
   BucketAccountId:
     Type: String
     Description: The AWS Account ID that owns the S3 bucket, if different from the current account.
+    Default: ""
+  TopicAccountId:
+    Type: String
+    Description: The AWS Account ID that owns the SNS topic.
     Default: ""
   OrganizationalUnitIds:
     Type: String
@@ -92,6 +109,10 @@ Parameters:
     Type: String
     Description: AWS Partition of your account or organization to create resources in
     Default: 'aws'
+  TopicRegion:
+    Type: String
+    Description: The AWS region where the SNS topic is located
+    AllowedPattern: '^[a-zA-Z0-9-]{1,128}$'
 
 Conditions:
   CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
@@ -100,16 +121,18 @@ Conditions:
     !Not [ !Equals [ !Ref BucketAccountId, "" ] ],
     !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ]
   ]
-  BucketInTargetAccount: !Not [BucketCrossAccount]
-  # Extract KMS account ID from KMS key ARN
-  KMSAccountId: !Select [4, !Split [":", !Ref KMSKeyARN]]
+  BucketInTargetAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
   # Check if KMS key is in a different account from bucket
   NeedKMSPolicy: !And [
-    HasKMSKey,
-    !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ]
+    !Not [ !Equals [ !Ref KMSKeyARN, "" ] ],
+    !Not [ !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ] ]
   ]
-  IsTopicAccount: !Equals [ !Select [4, !Split [":", !Ref TopicARN]], !Ref "AWS::AccountId" ]
+  IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
   IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
+  NeedKMSPolicyInTargetAccount: 
+    Fn::And:
+      - !Condition NeedKMSPolicy
+      - !Condition BucketInTargetAccount
 
 Resources:
   # Role and resources for same-account deployments
@@ -165,6 +188,7 @@ Resources:
       TopicName: !Select [ 5, !Split [ ":", !Ref TopicARN ] ]
 
   CloudTrailNotificationsSubscription:
+    Condition: IsTopicAccount
     Type: "AWS::SNS::Subscription"
     Properties:
       TopicArn: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
@@ -206,6 +230,8 @@ Resources:
         FailureTolerancePercentage: 90
         ConcurrencyMode: SOFT_FAILURE_TOLERANCE
       Parameters:
+        - ParameterKey: NameSuffix
+          ParameterValue: !Ref NameSuffix
         - ParameterKey: RoleName
           ParameterValue: !Sub sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}
         - ParameterKey: TrustedIdentity
@@ -220,21 +246,30 @@ Resources:
           ParameterValue: !Ref BucketAccountId
         - ParameterKey: TopicARN
           ParameterValue: !Ref TopicARN
+        - ParameterKey: TopicAccountId
+          ParameterValue: !Ref TopicAccountId
         - ParameterKey: Endpoint
           ParameterValue: !Ref Endpoint
+        - ParameterKey: TopicRegion
+          ParameterValue: !Ref TopicRegion
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
             Accounts: [!Ref BucketAccountId]
+            AccountFilterType: INTERSECTION
           Regions: [!Ref "AWS::Region"]
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
-            Accounts: [!Select [4, !Split [":", !Ref TopicARN]]]  # Extract account ID from topic ARN
-          Regions: [!Select [3, !Split [":", !Ref TopicARN]]]  # Extract region from topic ARN
+            Accounts: [!Ref TopicAccountId]
+            AccountFilterType: INTERSECTION
+          Regions: [!Ref TopicRegion]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration
         Parameters:
+          NameSuffix:
+            Type: String
+            Description: Suffix to append to the resource name identifiers
           RoleName:
             Type: String
             Description: Name of the role to be created in the bucket account
@@ -257,9 +292,15 @@ Resources:
           TopicARN:
             Type: String
             Description: ARN of the SNS topic
+          TopicAccountId:
+            Type: String
+            Description: AWS Account ID that owns the SNS topic
           Endpoint:
             Type: String
             Description: Sysdig Secure endpoint to receive CloudTrail notifications
+          TopicRegion:
+            Type: String
+            Description: The AWS region where the SNS topic is located
         Conditions:
           IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
           IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
@@ -281,7 +322,7 @@ Resources:
                       StringEquals:
                         "sts:ExternalId": !Ref ExternalID
               Policies:
-                - PolicyName: "cloudlogs_s3_access_policy"
+                - PolicyName: !Sub "sysdig-secure-cloudlogs-policy-${AWS::AccountId}-${NameSuffix}"
                   PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
@@ -320,45 +361,17 @@ Resources:
               TopicArn: !Ref TopicARN
               Protocol: "https"
               Endpoint: !Ref Endpoint
-        Outputs:
-          S3AccessRoleArn:
-            Description: ARN of the IAM role created in the bucket account for S3 access
-            Value: !GetAtt S3AccessRole.Arn
-          KMSPolicyInstructions:
-            Description: Instructions for updating KMS key policy when KMS encryption is enabled
-            Condition: HasKMSKey
-            Value: !Sub |
-              IMPORTANT: MANUAL ACTION REQUIRED
-
-              Please add the following statement to your KMS key policy to allow Sysdig to decrypt logs.
-              This is necessary when KMS encryption is enabled for your S3 bucket.
-              Without this policy addition, Sysdig may not be able to read your encrypted logs.
-
-              {
-                "Sid": "Sysdig-Decrypt",
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": "${S3AccessRole.Arn}"
-                },
-                "Action": "kms:Decrypt",
-                "Resource": "*"
-              }
-
 Outputs:
   TopicARN:
     Description: "The ARN of the SNS Topic created for CloudTrail notifications."
     Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
-  RoleARN:
-    Description: "The ARN of the IAM Role created for CloudTrail logs access."
-    Condition: BucketInTargetAccount
-    Value: !GetAtt CloudLogsRole.Arn
   CrossAccountRoleARN:
     Description: "ARN of the Cross-Account IAM Role for accessing the S3 bucket."
     Condition: BucketCrossAccount
     Value: !Sub "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
   KMSPolicyInstructions:
     Description: "Instructions for updating KMS key policy when KMS encryption is enabled"
-    Condition: NeedKMSPolicy
+    Condition: NeedKMSPolicyInTargetAccount
     Value: !Sub |
       IMPORTANT: MANUAL ACTION REQUIRED
 
