@@ -84,7 +84,6 @@ Parameters:
   TopicAccountId:
     Type: String
     Description: The AWS Account ID that owns the SNS topic.
-    Default: ""
     AllowedPattern: '^[0-9]{12}$'
   OrganizationalUnitIds:
     Type: String
