@@ -261,7 +261,7 @@ Resources:
             Action:
               - "events:InvokeApiDestination"
             Resource:
-              - !Sub "arn:aws:events:*:*:api-destination/sysdig-secure-events-${NameSuffix}-destination/*"
+              - !Sub "arn:${Partition}:events:*:*:api-destination/sysdig-secure-events-${NameSuffix}-destination/*"
           - Effect: Allow
             Action:
             - "events:DescribeRule"
@@ -374,13 +374,13 @@ Resources:
             Type: AWS::Events::Rule
             Properties:
               Name: !Sub ${Name}
-              Description: Capture all CloudTrail events
-              EventPattern: !Ref EventBridgeEventPattern
-              State: !Ref EventBridgeState
+              Description: Forwards events to Sysdig via API Destination
+              EventPattern: !Ref RuleEventPattern
+              State: !Ref RuleState
               Targets:
                 - Id: !Sub ${Name}
                   Arn: !GetAtt EventBridgeApiDestination.Arn
-                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
+                  RoleArn: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/${Name}"
   OrganizationRoleStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
@@ -495,14 +495,14 @@ Resources:
                       Action:
                         - "events:InvokeApiDestination"
                       Resource:
-                        - !Sub "arn:aws:events:*:*:api-destination/${EventBridgeRoleName}-destination/*"
+                        - !Sub "arn:${Partition}:events:*:*:api-destination/${Name}-destination/*"
                     - Sid: "CloudTrailEventRuleAccess"
                       Effect: Allow
                       Action:
                         - "events:DescribeRule"
                         - "events:ListTargetsByRule"
                       Resource:
-                        - !Sub "arn:aws:events:*:*:rule/${EventBridgeRoleName}"
+                        - !Sub "arn:${Partition}:events:*:*:rule/${Name}"
                     - Sid: "ValidationAccess"
                       Effect: Allow
                       Action:
@@ -627,13 +627,13 @@ Resources:
             Type: AWS::Events::Rule
             Properties:
               Name: !Ref Name
-              Description: Capture all CloudTrail events for Sysdig Secure
-              EventPattern: !Ref EventBridgeEventPattern
-              State: !Ref EventBridgeState
+              Description: Forwards events to Sysdig via API Destination for Sysdig Secure
+              EventPattern: !Ref RuleEventPattern
+              State: !Ref RuleState
               Targets:
                 - Id: !Ref Name
                   Arn: !GetAtt EventBridgeApiDestination.Arn
-                  RoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Name}"
+                  RoleArn: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/${Name}"
 Outputs:
   EventBridgeRoleARN:
     Description: Sysdig Secure EventBridge Role ARN
