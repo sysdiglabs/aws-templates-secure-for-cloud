@@ -75,7 +75,7 @@ Parameters:
   KMSAccountId:
     Type: String
     Description: The AWS Account ID that owns the KMS key.
-    Default: ""
+    AllowedPattern: '^[0-9]{12}$'
   BucketAccountId:
     Type: String
     Description: The AWS Account ID that owns the S3 bucket, if different from the current account.
