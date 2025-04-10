@@ -85,10 +85,12 @@ Parameters:
     Type: String
     Description: The AWS Account ID that owns the SNS topic.
     Default: ""
+    AllowedPattern: '^[0-9]{12}$'
   OrganizationalUnitIds:
     Type: String
     Description: Comma-separated list of AWS Organizations organizational unit (OU) IDs for cross-account deployments.
-    Default: "root"
+    Default: "r-root"
+    AllowedPattern: '^(ou-[a-z0-9]{4,32}-[a-z0-9]{8,32}|r-[a-z0-9]{4,32})(,\s*(ou-[a-z0-9]{4,32}-[a-z0-9]{8,32}|r-[a-z0-9]{4,32}))*$'
   CreateTopic:
     Type: String
     AllowedValues:
