@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: >
   CloudFormation template for provisioning the necessary resources 
   for the `cloud-logs` component, allowing Sysdig to access CloudTrail logs in S3 buckets.
-  Supports single-account, organizational same-account, and organizational cross-account deployments.
 
 Metadata:
   AWS::CloudFormation::Interface:
