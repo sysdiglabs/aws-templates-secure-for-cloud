@@ -121,7 +121,6 @@ Conditions:
     !Not [ !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ] ]
   ]
   IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
-  IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
 Resources:
   # Role and resources for same-account deployments
