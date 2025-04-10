@@ -80,7 +80,7 @@ Parameters:
   BucketAccountId:
     Type: String
     Description: The AWS Account ID that owns the S3 bucket, if different from the current account.
-    Default: ""
+    AllowedPattern: '^[0-9]{12}$'
   TopicAccountId:
     Type: String
     Description: The AWS Account ID that owns the SNS topic.
