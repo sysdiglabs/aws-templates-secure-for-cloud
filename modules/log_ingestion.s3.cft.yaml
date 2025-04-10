@@ -22,7 +22,6 @@ Metadata:
           - CreateTopic
           - TopicARN
           - Endpoint
-          - Partition
           - TopicRegion
 
     ParameterLabels:
@@ -50,8 +49,6 @@ Metadata:
         default: SNS Topic ARN
       Endpoint:
         default: Sysdig Secure endpoint
-      Partition:
-        default: AWS Partition
       TopicRegion:
         default: The AWS region where the SNS topic is located
 
@@ -105,10 +102,6 @@ Parameters:
   Endpoint:
     Type: String
     Description: Sysdig Secure endpoint to receive CloudTrail notifications.
-  Partition:
-    Type: String
-    Description: AWS Partition of your account or organization to create resources in
-    Default: 'aws'
   TopicRegion:
     Type: String
     Description: The AWS region where the SNS topic is located
@@ -129,10 +122,6 @@ Conditions:
   ]
   IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
   IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
-  NeedKMSPolicyInTargetAccount: 
-    Fn::And:
-      - !Condition NeedKMSPolicy
-      - !Condition BucketInTargetAccount
 
 Resources:
   # Role and resources for same-account deployments
@@ -217,7 +206,7 @@ Resources:
     Condition: BucketCrossAccount
     Properties:
       StackSetName: !Sub sysdig-secure-cloudlogs-bucket-access-${NameSuffix}
-      Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration
+      Description: StackSet to configure S3 bucket and KMS permissions for Sysdig Cloud Logs integration
       PermissionModel: SERVICE_MANAGED
       AutoDeployment:
         Enabled: false
@@ -233,7 +222,7 @@ Resources:
         - ParameterKey: NameSuffix
           ParameterValue: !Ref NameSuffix
         - ParameterKey: RoleName
-          ParameterValue: !Sub sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}
+          ParameterValue: !Sub sysdig-secure-cloudlogs-${NameSuffix}
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
         - ParameterKey: ExternalID
@@ -362,16 +351,9 @@ Resources:
               Protocol: "https"
               Endpoint: !Ref Endpoint
 Outputs:
-  TopicARN:
-    Description: "The ARN of the SNS Topic created for CloudTrail notifications."
-    Value: !If [ CreateSNSTopic, !Ref CloudTrailNotificationsTopic, !Ref TopicARN ]
-  CrossAccountRoleARN:
-    Description: "ARN of the Cross-Account IAM Role for accessing the S3 bucket."
-    Condition: BucketCrossAccount
-    Value: !Sub "arn:${Partition}:iam::${BucketAccountId}:role/sysdig-secure-cloudlogs-${AWS::AccountId}-${NameSuffix}"
   KMSPolicyInstructions:
     Description: "Instructions for updating KMS key policy when KMS encryption is enabled"
-    Condition: NeedKMSPolicyInTargetAccount
+    Condition: NeedKMSPolicy
     Value: !Sub |
       IMPORTANT: MANUAL ACTION REQUIRED
 
@@ -383,7 +365,7 @@ Outputs:
         "Sid": "Sysdig-Decrypt",
         "Effect": "Allow",
         "Principal": {
-          "AWS": "${CloudLogsRole.Arn}"
+          "AWS": "sysdig-secure-cloudlogs-${NameSuffix}"
         },
         "Action": "kms:Decrypt",
         "Resource": "*"
