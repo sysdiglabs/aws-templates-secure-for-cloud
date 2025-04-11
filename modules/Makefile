@@ -8,7 +8,9 @@ PARAM_NAME_SUFFIX ?= test
 PARAM_IS_ORGANIZATIONAL ?= false
 PARAM_EXTERNAL_ID ?= test
 PARAM_TRUSTED_IDENTITY ?= arn:aws:iam:::role/$(PARAM_NAME_SUFFIX)
-PARAM_TARGET_EVENT_BUS_ARN ?= arn:aws:events:us-east-1::event-bus/default
+PARAM_API_KEY ?= <your_api_key>
+PARAM_INGESTION_URL ?= https://app-staging.sysdigcloud.com/api/cloudingestion/webhooks/eventbridge/v1/64616366-3130-6163-3665-346636653537
+PARAM_RATE_LIMIT ?= 300
 PARAM_BUCKET_ARN ?= arn:aws:s3:::cloudtrail-$(PARAM_NAME_SUFFIX)
 PARAM_REGIONS ?= us-east-1
 PARAM_LAMBDA_SCANNING_ENABLED ?= true
@@ -64,7 +66,9 @@ deploy:
 			"ExternalID=$(PARAM_EXTERNAL_ID)" \
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"Regions=$(PARAM_REGIONS)" \
-			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
+			"ApiKey=$(PARAM_API_KEY)" \
+			"IngestionUrl=$(PARAM_INGESTION_URL)" \
+			"RateLimit=$(PARAM_RATE_LIMIT)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"Partition=${PARAM_PARTITION}" \
@@ -125,5 +129,3 @@ clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-LogIngestion-S3-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VolumeAccess-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VMWorkloadScanning-$(PARAM_NAME_SUFFIX)
-
-
