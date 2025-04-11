@@ -7,6 +7,7 @@ Metadata:
         default: ""
       Parameters:
       - RuleEventPattern
+      - RateLimit
     - Label:
         default: "Sysdig Settings (Do not change)"
       Parameters:
@@ -15,7 +16,6 @@ Metadata:
       - TrustedIdentity
       - ApiKey
       - IngestionUrl
-      - RateLimit
       - Regions
       - RuleState
       - IsOrganizational
@@ -37,7 +37,7 @@ Metadata:
       IngestionUrl:
         default: "Ingestion URL (Sysdig use only)"
       RateLimit:
-        default: "Rate Limit (Sysdig use only)"
+        default: "Api Destinations Rate Limit"
       Regions:
         default: Instrumented Regions
       RuleState:
