@@ -142,6 +142,15 @@ Resources:
               - Effect: "Allow"
                 Action: "account:GetContactInformation"
                 Resource: "*"
+              - Effect: "Allow"
+                Action: "bedrock:ListAgents"
+                Resource: "*"
+              - Effect: "Allow"
+                Action: "bedrock:ListCustomModels"
+                Resource: "*"
+              - Effect: "Allow"
+                Action: "bedrock:ListKnowledgeBases"
+                Resource: "*"
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -262,6 +271,15 @@ Resources:
                         Resource: "*"
                       - Effect: "Allow"
                         Action: "account:GetContactInformation"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "bedrock:ListAgents"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "bedrock:ListCustomModels"
+                        Resource: "*"
+                      - Effect: "Allow"
+                        Action: "bedrock:ListKnowledgeBases"
                         Resource: "*"
           EventBridgeRole:
             Type: AWS::IAM::Role
