@@ -102,9 +102,6 @@ Resources:
                 Action: "bedrock:ListAgents"
                 Resource: "*"
               - Effect: "Allow"
-                Action: "bedrock:ListCustomModels"
-                Resource: "*"
-              - Effect: "Allow"
                 Action: "bedrock:ListKnowledgeBases"
                 Resource: "*"
   EventBridgeRole:
