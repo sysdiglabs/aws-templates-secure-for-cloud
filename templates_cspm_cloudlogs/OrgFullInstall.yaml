@@ -144,9 +144,14 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
+        RetainStacksOnAccountRemoval: false        
+      ManagedExecution:
+        Active: true
       OperationPreferences:
-        MaxConcurrentCount: 5
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
       Parameters:
         - ParameterKey: CSPMRoleName
           ParameterValue: !Ref CSPMRoleName

@@ -1,0 +1,14 @@
+[
+  {
+    "type": "COMPONENT_CLOUD_LOGS",
+    "instance": "secure-runtime",
+    "cloudLogsMetadata": {
+        "aws": {
+            "cloudtrailS3Bucket": {
+                "roleName": "sysdig-secure-cloudlogs-{{NameSuffix}}",
+                "folderArn": "{{FolderArn}}"
+            }
+        }
+    }
+  }
+]

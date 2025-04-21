@@ -14,6 +14,7 @@ Metadata:
           - Regions
           - OrganizationUnitIDs
           - EventBridgeState
+          - EventBridgeEventPattern
     ParameterLabels:
       CSPMRoleName:
         default: "CSPM Role Name (Sysdig use only)"    
@@ -31,6 +32,8 @@ Metadata:
         default: "Organization Unit IDs (Sysdig use only)"
       EventBridgeState:
         default: "State of the EventBridge Rule (Sysdig use only)"
+      EventBridgeEventPattern:
+        default: "Event Pattern (Sysdig use only)"
 Parameters:
   CSPMRoleName:
     Type: String
@@ -61,6 +64,28 @@ Parameters:
       - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
       - ENABLED
       - DISABLED
+  EventBridgeEventPattern:
+    Type: String
+    Description: JSON pattern for the EventBridge rule's event pattern
+    Default: |
+      {
+        "detail-type": [
+          "AWS API Call via CloudTrail",
+          "AWS Console Sign In via CloudTrail",
+          "AWS Service Event via CloudTrail",
+          "Object Access Tier Changed",
+          "Object ACL Updated",
+          "Object Created",
+          "Object Deleted",
+          "Object Restore Completed",
+          "Object Restore Expired",
+          "Object Restore Initiated",
+          "Object Storage Class Changed",
+          "Object Tags Added",
+          "Object Tags Deleted",
+          "GuardDuty Finding"
+        ]
+      }
 
 Resources:
   AdministrationRole:
@@ -163,17 +188,23 @@ Resources:
       AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SELF_MANAGED
+      ManagedExecution:
+        Active: true      
       Capabilities:
         - CAPABILITY_NAMED_IAM              
       OperationPreferences:
-        MaxConcurrentCount: 5
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
       Parameters:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
           ParameterValue: !Ref EventBusARN
         - ParameterKey: EventBridgeState
-          ParameterValue: !Ref EventBridgeState                     
+          ParameterValue: !Ref EventBridgeState
+        - ParameterKey: EventBridgeEventPattern
+          ParameterValue: !Ref EventBridgeEventPattern                     
       StackInstancesGroup:
         - DeploymentTargets:
             Accounts: 
@@ -196,28 +227,36 @@ Resources:
             AllowedValues:
               - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
               - ENABLED
-              - DISABLED                         
+              - DISABLED
+          EventBridgeEventPattern:
+            Type: String
+            Description: JSON pattern for the EventBridge rule's event pattern
+            Default: |
+              {
+                "detail-type": [
+                  "AWS API Call via CloudTrail",
+                  "AWS Console Sign In via CloudTrail",
+                  "AWS Service Event via CloudTrail",
+                  "Object Access Tier Changed",
+                  "Object ACL Updated",
+                  "Object Created",
+                  "Object Deleted",
+                  "Object Restore Completed",
+                  "Object Restore Expired",
+                  "Object Restore Initiated",
+                  "Object Storage Class Changed",
+                  "Object Tags Added",
+                  "Object Tags Deleted",
+                  "GuardDuty Finding"
+                ]
+              }
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
             Properties:
               Name: !Sub ${EventBridgeRoleName}
               Description: Capture all CloudTrail events
-              EventPattern:
-                detail-type:
-                  - 'AWS API Call via CloudTrail'
-                  - 'AWS Console Sign In via CloudTrail'
-                  - 'AWS Service Event via CloudTrail'
-                  - 'Object Access Tier Changed'
-                  - 'Object ACL Updated'
-                  - 'Object Created'
-                  - 'Object Deleted'
-                  - 'Object Restore Completed'
-                  - 'Object Restore Expired'
-                  - 'Object Restore Initiated'
-                  - 'Object Storage Class Changed'
-                  - 'Object Tags Added'
-                  - 'Object Tags Deleted'
+              EventPattern: !Ref EventBridgeEventPattern
               State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}
@@ -232,9 +271,13 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
       OperationPreferences:
-        MaxConcurrentCount: 5
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
       Parameters:
         - ParameterKey: TrustedIdentity
           ParameterValue: !Ref TrustedIdentity
@@ -306,16 +349,23 @@ Resources:
       Capabilities:
         - "CAPABILITY_NAMED_IAM"
       AutoDeployment:
-        Enabled: false
+        Enabled: true
+        RetainStacksOnAccountRemoval: false         
+      ManagedExecution:
+        Active: true        
       OperationPreferences:
-        MaxConcurrentCount: 5
+        MaxConcurrentPercentage: 100
+        ConcurrencyMode: SOFT_FAILURE_TOLERANCE
+        RegionConcurrencyType: PARALLEL
       Parameters:
         - ParameterKey: EventBridgeRoleName
           ParameterValue: !Ref EventBridgeRoleName
         - ParameterKey: EventBusARN
           ParameterValue: !Ref EventBusARN
         - ParameterKey: EventBridgeState
-          ParameterValue: !Ref EventBridgeState                    
+          ParameterValue: !Ref EventBridgeState
+        - ParameterKey: EventBridgeEventPattern
+          ParameterValue: !Ref EventBridgeEventPattern
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Split [ ",", !Ref OrganizationUnitIDs]
@@ -337,28 +387,36 @@ Resources:
             AllowedValues:
               - ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS
               - ENABLED
-              - DISABLED                 
+              - DISABLED
+          EventBridgeEventPattern:
+            Type: String
+            Description: JSON pattern for the EventBridge rule's event pattern
+            Default: |
+              {
+                "detail-type": [
+                  "AWS API Call via CloudTrail",
+                  "AWS Console Sign In via CloudTrail",
+                  "AWS Service Event via CloudTrail",
+                  "Object Access Tier Changed",
+                  "Object ACL Updated",
+                  "Object Created",
+                  "Object Deleted",
+                  "Object Restore Completed",
+                  "Object Restore Expired",
+                  "Object Restore Initiated",
+                  "Object Storage Class Changed",
+                  "Object Tags Added",
+                  "Object Tags Deleted",
+                  "GuardDuty Finding"
+                ]
+              }
         Resources:           
           EventBridgeRule:
             Type: "AWS::Events::Rule"
             Properties:
               Name: !Sub ${EventBridgeRoleName}
               Description: Capture all CloudTrail events
-              EventPattern:
-                detail-type:
-                  - 'AWS API Call via CloudTrail'
-                  - 'AWS Console Sign In via CloudTrail'
-                  - 'AWS Service Event via CloudTrail'
-                  - 'Object Access Tier Changed'
-                  - 'Object ACL Updated'
-                  - 'Object Created'
-                  - 'Object Deleted'
-                  - 'Object Restore Completed'
-                  - 'Object Restore Expired'
-                  - 'Object Restore Initiated'
-                  - 'Object Storage Class Changed'
-                  - 'Object Tags Added'
-                  - 'Object Tags Deleted'
+              EventPattern: !Ref EventBridgeEventPattern
               State: !Sub ${EventBridgeState}
               Targets:
                 - Id: !Sub ${EventBridgeRoleName}

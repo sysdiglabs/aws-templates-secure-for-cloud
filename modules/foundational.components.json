@@ -1,0 +1,21 @@
+[
+  {
+    "type": "COMPONENT_TRUSTED_ROLE",
+    "instance": "secure-posture",
+    "trustedRoleMetadata": {
+      "aws": {
+          "roleName": "sysdig-secure-posture-{{NameSuffix}}"
+      }
+    }
+  },
+  {
+    "type": "COMPONENT_TRUSTED_ROLE",
+    "instance": "secure-onboarding",
+    "version": "v0.1.0",
+    "trustedRoleMetadata": {
+      "aws": {
+          "roleName": "sysdig-secure-onboarding-{{NameSuffix}}"
+      }
+    }
+  }
+]
