@@ -17,7 +17,7 @@ Metadata:
           - KMSAccountId
           - BucketAccountId
           - TopicAccountId
-          - OrganizationalUnitIds
+          - RootOUID
           - CreateTopic
           - TopicARN
           - Endpoint
@@ -40,8 +40,8 @@ Metadata:
         default: Bucket Account ID
       TopicAccountId:
         default: SNS Topic Account ID
-      OrganizationalUnitIds:
-        default: Organizational Unit IDs
+      RootOUID:
+        default: Root Organization Unit ID
       CreateTopic:
         default: Create SNS Topic
       TopicARN:
@@ -84,11 +84,9 @@ Parameters:
     Type: String
     Description: The AWS Account ID that owns the SNS topic.
     AllowedPattern: '^[0-9]{12}$'
-  OrganizationalUnitIds:
-    Type: String
-    Description: Comma-separated list of AWS Organizations organizational unit (OU) IDs for cross-account deployments.
-    Default: "r-root"
-    AllowedPattern: '^(ou-[a-z0-9]{4,32}-[a-z0-9]{8,32}|r-[a-z0-9]{4,32})(,\s*(ou-[a-z0-9]{4,32}-[a-z0-9]{8,32}|r-[a-z0-9]{4,32}))*$'
+  RootOUID:
+    Type: CommaDelimitedList
+    Description: Root Organizational Unit ID of your AWS organization
   CreateTopic:
     Type: String
     AllowedValues:
@@ -246,12 +244,12 @@ Resources:
           ParameterValue: !Ref TopicRegion
       StackInstancesGroup:
         - DeploymentTargets:
-            OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
+            OrganizationalUnitIds: !Ref RootOUID
             Accounts: [!Ref BucketAccountId]
             AccountFilterType: INTERSECTION
           Regions: [!Ref "AWS::Region"]
         - DeploymentTargets:
-            OrganizationalUnitIds: !Split [",", !Ref OrganizationalUnitIds]
+            OrganizationalUnitIds: !Ref RootOUID
             Accounts: [!Ref TopicAccountId]
             AccountFilterType: INTERSECTION
           Regions: [!Ref TopicRegion]
