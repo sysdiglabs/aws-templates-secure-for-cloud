@@ -73,12 +73,6 @@ Resources:
               - Effect: "Allow"
                 Action: "account:GetContactInformation"
                 Resource: "*"
-              - Effect: "Allow"
-                Action: "bedrock:ListAgents"
-                Resource: "*"
-              - Effect: "Allow"
-                Action: "bedrock:ListKnowledgeBases"
-                Resource: "*"
                 
 Outputs:
   RoleARN:
