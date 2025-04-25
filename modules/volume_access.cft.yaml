@@ -31,7 +31,7 @@ Metadata:
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
-        default: "(TO BE DEPRECATED Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs"
+        default: "(TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs"
       RootOUID:
         default: Root Organization Unit ID
       IncludeOUIDs:
@@ -70,7 +70,7 @@ Parameters:
     - 'false'
   OrganizationalUnitIDs:
     Type: CommaDelimitedList
-    Description: (WARNING - TO BE DEPRECATED Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
+    Description: (WARNING - TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   RootOUID:
     Type: CommaDelimitedList
     Description: Root Organizational Unit ID of your AWS organization
