@@ -72,7 +72,8 @@ Resources:
                 Resource: "*"
               - Effect: "Allow"
                 Action: "account:GetContactInformation"
-                Resource: "*"          
+                Resource: "*"
+                
 Outputs:
   RoleARN:
     Description: ARN of the role created
