@@ -26,7 +26,7 @@ Metadata:
       IsOrganizational:
         default: Is Organizational
       OrganizationalUnitIDs:
-        default: (TO BE DEPRECATED Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs
+        default: (TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs
       Partition:
         default: AWS Partition
       RootOUID:
@@ -59,7 +59,7 @@ Parameters:
     - 'false'
   OrganizationalUnitIDs:
     Type: CommaDelimitedList
-    Description: (WARNING - TO BE DEPRECATED Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
+    Description: (WARNING - TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   Partition:
     Type: String
     Description: AWS Partition of your account or organization to create resources in
