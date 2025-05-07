@@ -188,6 +188,12 @@ Resources:
           - Effect: "Allow"
             Action: "bedrock:GetKnowledgeBase"
             Resource: "*"
+          - Effect: "Allow"
+            Action: "bedrock:ListGuardrails"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: "bedrock:GetGuardrail"
+            Resource: "*"
   OnboardingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -352,6 +358,12 @@ Resources:
                     Resource: "*"
                   - Effect: "Allow"
                     Action: "bedrock:GetKnowledgeBase"
+                    Resource: "*"
+                  - Effect: "Allow"
+                    Action: "bedrock:ListGuardrails"
+                    Resource: "*"
+                  - Effect: "Allow"
+                    Action: "bedrock:GetGuardrail"
                     Resource: "*"
           OnboardingRole:
             Type: AWS::IAM::Role
