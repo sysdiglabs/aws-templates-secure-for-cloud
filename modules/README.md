@@ -12,7 +12,7 @@ Modular templates support cross sections of Sysdig Secure feature sets. Each tem
 
 Organizations are supported by setting the following template parameters
 * `IsOrganizational=true`
-* `OrganizationalUnitIDs=ou-...` (to be deprecated soon, please read below)
+* `OrganizationalUnitIDs=ou-...` (to be deprecated on 30th November, 2025, please read below)
 
 ### Organizational Install Configurations
 
@@ -22,4 +22,4 @@ Following are the new parameters to configure organizational deployments on the 
 3. `IncludeAccounts` - List of AWS Accounts to deploy the Sysdig Secure for Cloud resources in.
 4. `ExcludeAccounts` - List of AWS Accounts to exclude deploying the Sysdig Secure for Cloud resources in.
 
-**WARNING**: module template parameter `OrganizationalUnitIDs` will be DEPRECATED soon going forward. Please work with Sysdig to migrate your CFT based installs to use `IncludeOUIDs` instead to achieve the same deployment outcome.
+**WARNING**: module template parameter `OrganizationalUnitIDs` will be DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate your CFT based installs to use `IncludeOUIDs` instead to achieve the same deployment outcome.
