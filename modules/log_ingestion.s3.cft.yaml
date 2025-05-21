@@ -70,12 +70,13 @@ Parameters:
     AllowedPattern: 'arn:(aws|aws-us-gov):s3:::.*'
   KMSKeyARN:
     Type: String
-    Description: The ARN of the KMS key used to encrypt the S3 bucket.
+    Description: (Optional) The ARN of the KMS key used to encrypt the S3 bucket.
     Default: ""
   KMSAccountId:
     Type: String
-    Description: The AWS Account ID that owns the KMS key.
-    AllowedPattern: '^[0-9]{12}$'
+    Description: (Optional) The AWS Account ID that owns the KMS key.
+    AllowedPattern: '(^$|^[0-9]{12}$)'
+    Default: ""
   BucketAccountId:
     Type: String
     Description: The AWS Account ID that owns the S3 bucket, if different from the current account.
@@ -108,6 +109,14 @@ Parameters:
 Conditions:
   CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
   HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
+  HasKMSAccountId: !Not [ !Equals [ !Ref KMSAccountId, "" ] ]
+
+  NeedKMSPolicy: !And [
+    !Condition HasKMSKey,
+    !Condition HasKMSAccountId,
+    !Not [ !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ] ]
+  ]
+
   DeployStackSet: !Or [
     !Not [ !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ],
     !Not [ !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ] ]
@@ -118,10 +127,6 @@ Conditions:
     !Not [ !Condition DeployStackSet ]
   ]
 
-  NeedKMSPolicy: !And [
-    !Not [ !Equals [ !Ref KMSKeyARN, "" ] ],
-    !Not [ !Equals [ !Ref KMSAccountId, !Ref BucketAccountId ] ]
-  ]
   IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
 
 Resources:
