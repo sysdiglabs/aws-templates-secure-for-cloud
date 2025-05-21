@@ -114,8 +114,8 @@ Conditions:
   ]
 
   DeployRole: !And [
-    !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ] ,
-    !Equals [ DeployStackSet, "false" ]
+    !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ],
+    !Not [ !Condition DeployStackSet ]
   ]
 
   NeedKMSPolicy: !And [
