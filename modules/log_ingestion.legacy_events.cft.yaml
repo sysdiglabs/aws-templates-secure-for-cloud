@@ -43,7 +43,7 @@ Metadata:
       OrganizationalUnitIDs:
         default: (TO BE DEPRECATED Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs
       Partition:
-        default: AWS Partition
+        default: AWS Partition (GovCloud Only)
       RootOUID:
         default: Root Organization Unit ID
       IncludeOUIDs:
@@ -68,6 +68,8 @@ Parameters:
   TargetEventBusARN:
     Type: String
     Description: The destination in Sysdig's AWS account where your events are sent
+    AllowedPattern: "^arn:aws-us-gov:events:.*"
+    ConstraintDescription: Must be a valid GovCloud EventBridge ARN (arn:aws-us-gov:events:...)
   Regions:
     Type: CommaDelimitedList
     Description: Comma separated list of regions to monitor with EventBridge
@@ -113,8 +115,10 @@ Parameters:
     - 'false'
   Partition:
     Type: String
-    Description: AWS Partition of your account or organization to create resources in
-    Default: 'aws'
+    Description: AWS Partition - This template is designed for AWS GovCloud only
+    Default: 'aws-us-gov'
+    AllowedValues:
+      - 'aws-us-gov'
   RootOUID:
     Type: CommaDelimitedList
     Description: Root Organizational Unit ID of your AWS organization
