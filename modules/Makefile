@@ -58,7 +58,7 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}" \
+			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -77,7 +77,7 @@ deploy:
 			"RateLimit=$(PARAM_RATE_LIMIT)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}" \
+			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -94,7 +94,7 @@ deploy:
 			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}" \
+			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
