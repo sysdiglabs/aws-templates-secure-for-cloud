@@ -11,6 +11,7 @@ PARAM_TRUSTED_IDENTITY ?= arn:aws:iam:::role/$(PARAM_NAME_SUFFIX)
 PARAM_API_KEY ?= <your_api_key>
 PARAM_INGESTION_URL ?= https://app-staging.sysdigcloud.com/api/cloudingestion/webhooks/eventbridge/v1/64616366-3130-6163-3665-346636653537
 PARAM_RATE_LIMIT ?= 300
+PARAM_TARGET_EVENT_BUS_ARN ?= arn:aws:events:us-east-1::event-bus/default
 PARAM_BUCKET_ARN ?= arn:aws:s3:::cloudtrail-$(PARAM_NAME_SUFFIX)
 PARAM_REGIONS ?= us-east-1
 PARAM_LAMBDA_SCANNING_ENABLED ?= true
@@ -20,6 +21,7 @@ validate: export AWS_PAGER=""
 validate:
 	aws --region us-east-1 cloudformation validate-template --template-body file://./foundational.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./log_ingestion.events.cft.yaml
+	aws --region us-east-1 cloudformation validate-template --template-body file://./log_ingestion.legacy_events.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./log_ingestion.s3.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./volume_access.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./vm_workload_scanning.cft.yaml
@@ -30,6 +32,9 @@ lint:
 	yq '.Resources.EventBridgeRuleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationRuleStackSet.Properties.TemplateBody' log_ingestion.events.cft.yaml | cfn-lint -
+	yq '.Resources.EventBridgeRuleStackSet.Properties.TemplateBody' log_ingestion.legacy_events.cft.yaml | cfn-lint -
+	yq '.Resources.OrganizationRoleStackSet.Properties.TemplateBody' log_ingestion.legacy_events.cft.yaml | cfn-lint -
+	yq '.Resources.OrganizationRuleStackSet.Properties.TemplateBody' log_ingestion.legacy_events.cft.yaml | cfn-lint -
 	yq '.Resources.AccountStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationStackSet.Properties.TemplateBody' volume_access.cft.yaml | cfn-lint -
 	yq '.Resources.ScanningOrgStackSet.Properties.TemplateBody' vm_workload_scanning.cft.yaml | cfn-lint -
@@ -38,6 +43,7 @@ publish:
 	aws s3 cp foundational.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational.cft.yaml
 	aws s3 cp log_ingestion.s3.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/log_ingestion.s3.cft.yaml
 	aws s3 cp log_ingestion.events.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/log_ingestion.events.cft.yaml
+	aws s3 cp log_ingestion.legacy_events.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/log_ingestion.legacy_events.cft.yaml
 	aws s3 cp volume_access.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/volume_access.cft.yaml
 	aws s3 cp vm_workload_scanning.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/vm_workload_scanning.cft.yaml
 
@@ -52,7 +58,7 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}" \
+			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -71,7 +77,24 @@ deploy:
 			"RateLimit=$(PARAM_RATE_LIMIT)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
-			"Partition=${PARAM_PARTITION}" \
+			"Partition=$(PARAM_PARTITION)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-LogIngestion-LegacyEventBridge-$(PARAM_NAME_SUFFIX) \
+		--template-file log_ingestion.legacy_events.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"Regions=$(PARAM_REGIONS)" \
+			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
+			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -126,6 +149,7 @@ deploy:
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-Foundational-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-LogIngestion-EventBridge-$(PARAM_NAME_SUFFIX)
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)-LogIngestion-LegacyEventBridge-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-LogIngestion-S3-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VolumeAccess-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VMWorkloadScanning-$(PARAM_NAME_SUFFIX)
