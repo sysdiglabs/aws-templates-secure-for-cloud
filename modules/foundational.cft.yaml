@@ -224,6 +224,7 @@ Resources:
             Action:
             - account:Get*
             - account:List*
+            - iam:ListAccountAliases
             Resource: '*'
   OrganizationStackSet:
     Type: AWS::CloudFormation::StackSet
