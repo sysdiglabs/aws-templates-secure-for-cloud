@@ -194,6 +194,27 @@ Resources:
           - Effect: "Allow"
             Action: "bedrock:GetGuardrail"
             Resource: "*"
+          - Effect: Allow
+            Action: ce:GetAnomalyMonitors
+            Resource: '*'
+          - Effect: Allow
+            Action: macie2:GetClassificationExportConfiguration
+            Resource: '*'
+          - Effect: Allow
+            Action: compute-optimizer:GetRecommendationSummaries
+            Resource: '*'
+          - Effect: Allow
+            Action: ce:GetReservationCoverage
+            Resource: '*'
+          - Effect: Allow
+            Action: dlm:GetLifecyclePolicies
+            Resource: '*'
+          - Effect: Allow
+            Action: eks:ListAddons
+            Resource: '*'
+          - Effect: Allow
+            Action: wellarchitected:ListWorkloads
+            Resource: '*'
   OnboardingRole:
     Type: AWS::IAM::Role
     Properties:
