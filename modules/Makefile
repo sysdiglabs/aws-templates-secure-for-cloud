@@ -57,7 +57,6 @@ deploy:
 			"ExternalID=$(PARAM_EXTERNAL_ID)" \
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
@@ -76,7 +75,6 @@ deploy:
 			"IngestionUrl=$(PARAM_INGESTION_URL)" \
 			"RateLimit=$(PARAM_RATE_LIMIT)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
@@ -93,7 +91,6 @@ deploy:
 			"Regions=$(PARAM_REGIONS)" \
 			"TargetEventBusARN=$(PARAM_TARGET_EVENT_BUS_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"Partition=$(PARAM_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
@@ -109,7 +106,6 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"BucketARN=$(PARAM_BUCKET_ARN)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -124,7 +120,6 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"Regions=$(PARAM_REGIONS)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
@@ -140,7 +135,6 @@ deploy:
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"LambdaScanningEnabled"=$(PARAM_LAMBDA_SCANNING_ENABLED) \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
-			"OrganizationalUnitIDs=$(PARAM_ORGANIZATIONAL_UNIT_IDS)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
