@@ -10,7 +10,6 @@ Metadata:
       - ExternalID
       - TrustedIdentity
       - IsOrganizational
-      - OrganizationalUnitIDs
       - Partition
       - RootOUID
       - IncludeOUIDs
@@ -25,8 +24,6 @@ Metadata:
         default: Trusted Identity
       IsOrganizational:
         default: Is Organizational
-      OrganizationalUnitIDs:
-        default: (TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate and use IncludeOUIDs) Organizational Unit IDs
       Partition:
         default: AWS Partition
       RootOUID:
@@ -57,9 +54,6 @@ Parameters:
     AllowedValues:
     - 'true'
     - 'false'
-  OrganizationalUnitIDs:
-    Type: CommaDelimitedList
-    Description: (WARNING - TO BE DEPRECATED on 30th November, 2025. Please work with Sysdig to migrate your installs to use IncludeOUIDs instead) Comma separated list of organizational unit IDs to deploy
   Partition:
     Type: String
     Description: AWS Partition of your account or organization to create resources in
@@ -81,16 +75,8 @@ Conditions:
     Fn::Equals:
     - Ref: IsOrganizational
     - 'true'
-  # First check if old param OrganizationalUnitIDs configured - support till we DEPRECATE it
-  IsOldOuidConfigured:
-    !And
-    - !Condition IsOrganizational
-    - !Not
-      - !Equals
-        - !Join ["", !Ref OrganizationalUnitIDs]
-        - ''
 
-  # Else, check for new Inclusion and Exclusion params
+  # check for new Inclusion and Exclusion params
   # INCLUSIONS
   OUInclusionsConfigured:
     !And
@@ -282,28 +268,19 @@ Resources:
       - DeploymentTargets:
           OrganizationalUnitIds:
             Fn::If:
-            - IsOldOuidConfigured
-            - !Ref OrganizationalUnitIDs
-            - Fn::If:
-              - AllowedInclusions
-              - !Ref IncludeOUIDs
-              - !Ref RootOUID
+            - AllowedInclusions
+            - !Ref IncludeOUIDs
+            - !Ref RootOUID
           AccountFilterType:
             Fn::If:
-            - IsOldOuidConfigured
-            - !Ref 'AWS::NoValue'
-            - Fn::If:
-              - AccountExclusionsConfigured
-              - "DIFFERENCE"
-              - "NONE"
+            - AccountExclusionsConfigured
+            - "DIFFERENCE"
+            - "NONE"
           Accounts:
             Fn::If:
-            - IsOldOuidConfigured
+            - AccountExclusionsConfigured
+            - !Ref ExcludeAccounts
             - !Ref 'AWS::NoValue'
-            - Fn::If:
-              - AccountExclusionsConfigured
-              - !Ref ExcludeAccounts
-              - !Ref 'AWS::NoValue'
         Regions:
         - Ref: AWS::Region
       TemplateBody: |
