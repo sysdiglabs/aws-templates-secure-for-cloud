@@ -6,14 +6,14 @@
       "aws": {
         "crossAccountRoleName": "{{CrossAccountRoleName}}",
         "regions": ["{{Regions}}"],
-        "lambdaNames": {
-          "quarantineUser": "{{QuarantineUserLambdaName}}",
-          "fetchCloudLogs": "{{FetchCloudLogsLambdaName}}",
-          "removePolicy": "{{RemovePolicyLambdaName}}",
-          "configureResourceAccess": "{{ConfigureResourceAccessLambdaName}}",
-          "createVolumeSnapshots": "{{CreateVolumeSnapshotsLambdaName}}",
-          "deleteVolumeSnapshots": "{{DeleteVolumeSnapshotsLambdaName}}"
-        }
+        "lambdaNames": [
+          "{{QuarantineUserLambdaName}}",
+          "{{FetchCloudLogsLambdaName}}",
+          "{{RemovePolicyLambdaName}}",
+          "{{ConfigureResourceAccessLambdaName}}",
+          "{{CreateVolumeSnapshotsLambdaName}}",
+          "{{DeleteVolumeSnapshotsLambdaName}}"
+        ]
       }
     }
   },

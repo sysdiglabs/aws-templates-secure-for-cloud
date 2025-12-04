@@ -521,15 +521,6 @@ Resources:
   # Lambda Functions StackSet
   LambdaFunctionsStackSet:
     Type: AWS::CloudFormation::StackSet
-    DependsOn:
-    - LambdaStackSetExecutionRole
-    - LambdaStackSetAdministrationRole
-    - QuarantineUserRole
-    - FetchCloudLogsRole
-    - RemovePolicyRole
-    - ConfigureResourceAccessRole
-    - CreateVolumeSnapshotsRole
-    - DeleteVolumeSnapshotsRole
     Properties:
       StackSetName: !Sub sysdig-secure-ra-${NameSuffix}-lambda
       AdministrationRoleARN: !GetAtt LambdaStackSetAdministrationRole.Arn
@@ -896,13 +887,6 @@ Resources:
   OrganizationDelegateRolesStackSet:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
-    DependsOn:
-    - QuarantineUserRole
-    - FetchCloudLogsRole
-    - RemovePolicyRole
-    - ConfigureResourceAccessRole
-    - CreateVolumeSnapshotsRole
-    - DeleteVolumeSnapshotsRole
     Properties:
       StackSetName: !Sub sysdig-secure-ra-${NameSuffix}-delegate-roles
       Description: Sysdig Response Actions Delegate Roles - Multi-Account Deployment
