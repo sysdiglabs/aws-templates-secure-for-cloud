@@ -1,0 +1,34 @@
+[
+  {
+    "type": "COMPONENT_CLOUD_RESPONDER",
+    "instance": "secure-runtime",
+    "cloudResponderMetadata": {
+      "aws": {
+        "crossAccountRoleName": "{{CrossAccountRoleName}}",
+        "regions": ["{{Regions}}"],
+        "lambdaNames": {
+          "quarantineUser": "{{QuarantineUserLambdaName}}",
+          "fetchCloudLogs": "{{FetchCloudLogsLambdaName}}",
+          "removePolicy": "{{RemovePolicyLambdaName}}",
+          "configureResourceAccess": "{{ConfigureResourceAccessLambdaName}}",
+          "createVolumeSnapshots": "{{CreateVolumeSnapshotsLambdaName}}",
+          "deleteVolumeSnapshots": "{{DeleteVolumeSnapshotsLambdaName}}"
+        }
+      }
+    }
+  },
+  {
+    "type": "COMPONENT_CLOUD_RESPONDER_ROLES",
+    "instance": "secure-runtime",
+    "cloudResponderRolesMetadata": {
+      "aws": {
+        "quarantineUserRoleName": "{{QuarantineUserRoleName}}",
+        "fetchCloudLogsRoleName": "{{FetchCloudLogsRoleName}}",
+        "removePolicyRoleName": "{{RemovePolicyRoleName}}",
+        "configureResourceAccessRoleName": "{{ConfigureResourceAccessRoleName}}",
+        "createVolumeSnapshotsRoleName": "{{CreateVolumeSnapshotsRoleName}}",
+        "deleteVolumeSnapshotsRoleName": "{{DeleteVolumeSnapshotsRoleName}}"
+      }
+    }
+  }
+]
