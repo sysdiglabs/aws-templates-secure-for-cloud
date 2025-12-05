@@ -16,8 +16,7 @@ Metadata:
       - ExternalID
       - TrustedIdentity
       - ApiBaseUrl
-      - S3BucketPrefix
-      - CloudLambdasPath
+      - LambdaPackagesBaseUrl
       - ResponseActionsVersion
       - IsOrganizational
       - Partition
@@ -34,10 +33,8 @@ Metadata:
         default: Trusted Identity
       ApiBaseUrl:
         default: API Base URL
-      S3BucketPrefix:
-        default: S3 Bucket Prefix
-      CloudLambdasPath:
-        default: Cloud Lambdas Path
+      LambdaPackagesBaseUrl:
+        default: Lambda Packages Base URL
       ResponseActionsVersion:
         default: Response Actions Version
       EnabledResponseActions:
@@ -74,13 +71,9 @@ Parameters:
   ApiBaseUrl:
     Type: String
     Description: API base URL for Lambda functions
-  S3BucketPrefix:
+  LambdaPackagesBaseUrl:
     Type: String
-    Description: Prefix for regional S3 buckets containing Lambda deployment packages (bucket name will be {prefix}-{region})
-  CloudLambdasPath:
-    Type: String
-    Description: The path where lambda code resides inside of regional S3 buckets
-    Default: "response-actions/cloud-lambdas"
+    Description: Base URL for downloading Lambda deployment packages (e.g., https://example.com/packages)
   ResponseActionsVersion:
     Type: String
     Description: Response Actions version
@@ -214,6 +207,9 @@ Resources:
             - iam:AttachRolePolicy
             - iam:DetachRolePolicy
             - iam:GetRolePolicy
+            - iam:TagRole
+            - iam:UntagRole
+            - iam:ListRoleTags
             - logs:CreateLogGroup
             - logs:DeleteLogGroup
             - logs:PutRetentionPolicy
@@ -221,7 +217,18 @@ Resources:
             - logs:UntagResource
             - logs:TagLogGroup
             - logs:ListTagsForResource
+            - s3:CreateBucket
+            - s3:DeleteBucket
+            - s3:GetBucketLocation
+            - s3:GetBucketVersioning
+            - s3:PutBucketVersioning
+            - s3:PutBucketPublicAccessBlock
+            - s3:GetBucketPublicAccessBlock
+            - s3:PutBucketTagging
+            - s3:GetBucketTagging
             - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
             - s3:ListBucket
             Resource: "*"
 
@@ -539,8 +546,8 @@ Resources:
       Parameters:
       - ParameterKey: ResourceName
         ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}
-      - ParameterKey: S3BucketPrefix
-        ParameterValue: !Ref S3BucketPrefix
+      - ParameterKey: S3BucketName
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-packages
       - ParameterKey: ApiBaseUrl
         ParameterValue: !Ref ApiBaseUrl
       - ParameterKey: QuarantineUserRoleArn
@@ -567,8 +574,10 @@ Resources:
         ParameterValue: !Select [1, !Split ["/", !GetAtt CreateVolumeSnapshotsRole.Arn]]
       - ParameterKey: DeleteVolumeSnapshotsRoleName
         ParameterValue: !Select [1, !Split ["/", !GetAtt DeleteVolumeSnapshotsRole.Arn]]
-      - ParameterKey: CloudLambdasPath
-        ParameterValue: !Sub "${CloudLambdasPath}/${ResponseActionsVersion}"
+      - ParameterKey: ResponseActionsVersion
+        ParameterValue: !Ref ResponseActionsVersion
+      - ParameterKey: LambdaPackagesBaseUrl
+        ParameterValue: !Ref LambdaPackagesBaseUrl
       - ParameterKey: EnabledResponseActions
         ParameterValue: !Join [",", !Ref EnabledResponseActions]
       StackInstancesGroup:
@@ -588,9 +597,9 @@ Resources:
             Type: String
             Description: Template version hash to force updates
             Default: "1"
-          S3BucketPrefix:
+          S3BucketName:
             Type: String
-            Description: Prefix for regional S3 buckets containing Lambda deployment packages (bucket name will be {prefix}-{region})
+            Description: Name for the regional S3 bucket containing Lambda deployment packages
           ApiBaseUrl:
             Type: String
             Description: API base URL for Lambda functions
@@ -630,9 +639,12 @@ Resources:
           DeleteVolumeSnapshotsRoleName:
             Type: String
             Description: Name of the IAM role for delete volume snapshots function
-          CloudLambdasPath:
+          ResponseActionsVersion:
             Type: String
-            Description: The path where lambda code resides inside of regional S3 buckets
+            Description: Version of response actions packages to download
+          LambdaPackagesBaseUrl:
+            Type: String
+            Description: Base URL for downloading Lambda deployment packages
           EnabledResponseActions:
             Type: String
             Description: Comma-separated list of response actions to enable
@@ -645,6 +657,209 @@ Resources:
           CreateVolumeSnapshotResources: !Not [!Equals [!Select [0, !Split ["create_volume_snapshot", !Ref EnabledResponseActions]], !Ref EnabledResponseActions]]
 
         Resources:
+          # S3 Bucket for Lambda packages (Regional)
+          LambdaPackagesBucket:
+            Type: AWS::S3::Bucket
+            Properties:
+              BucketName: !Sub '${S3BucketName}-${AWS::Region}'
+              PublicAccessBlockConfiguration:
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
+              VersioningConfiguration:
+                Status: Enabled
+              Tags:
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'lambda-packages-bucket'
+
+          # Package Downloader Lambda (per region)
+          PackageDownloaderRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Sub '${ResourceName}-package-downloader-role'
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                - Effect: Allow
+                  Principal:
+                    Service: lambda.amazonaws.com
+                  Action: sts:AssumeRole
+              ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+              Policies:
+              - PolicyName: package-downloader-policy
+                PolicyDocument:
+                  Version: "2012-10-17"
+                  Statement:
+                  - Effect: Allow
+                    Action:
+                    - s3:PutObject
+                    - s3:DeleteObject
+                    - s3:GetObject
+                    Resource: !Sub 'arn:aws:s3:::${S3BucketName}-*/*'
+                  - Effect: Allow
+                    Action:
+                    - s3:ListBucket
+                    Resource: !Sub 'arn:aws:s3:::${S3BucketName}-*'
+              Tags:
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'package-downloader-role'
+
+          PackageDownloaderLogGroup:
+            Type: AWS::Logs::LogGroup
+            DeletionPolicy: Retain
+            Properties:
+              LogGroupName: !Sub '/aws/lambda/${ResourceName}-package-downloader'
+              RetentionInDays: 7
+              Tags:
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'package-downloader-log-group'
+
+          PackageDownloaderFunction:
+            Type: AWS::Lambda::Function
+            DependsOn: PackageDownloaderLogGroup
+            Properties:
+              FunctionName: !Sub '${ResourceName}-package-downloader'
+              Runtime: python3.12
+              Handler: index.handler
+              Role: !GetAtt PackageDownloaderRole.Arn
+              Timeout: 300
+              MemorySize: 256
+              Code:
+                ZipFile: |
+                  import json
+                  import urllib.request
+                  import boto3
+                  import cfnresponse
+
+                  def handler(event, context):
+                      try:
+                          print(f"Event: {json.dumps(event)}")
+
+                          if event['RequestType'] == 'Delete':
+                              # Clean up S3 object on delete
+                              bucket = event['ResourceProperties']['Bucket']
+                              key = event['ResourceProperties']['Key']
+                              s3 = boto3.client('s3')
+                              try:
+                                  s3.delete_object(Bucket=bucket, Key=key)
+                                  print(f"Deleted s3://{bucket}/{key}")
+                              except Exception as e:
+                                  print(f"Error deleting object (may not exist): {e}")
+                              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                              return
+
+                          if event['RequestType'] in ['Create', 'Update']:
+                              url = event['ResourceProperties']['Url']
+                              bucket = event['ResourceProperties']['Bucket']
+                              key = event['ResourceProperties']['Key']
+
+                              print(f"Downloading from {url}")
+                              print(f"Target: s3://{bucket}/{key}")
+
+                              # Download from URL
+                              try:
+                                  req = urllib.request.Request(url)
+                                  with urllib.request.urlopen(req, timeout=60) as response:
+                                      content = response.read()
+                                      print(f"Downloaded {len(content)} bytes, status: {response.status}")
+                              except urllib.error.HTTPError as e:
+                                  error_msg = f"HTTP {e.code} downloading {url}: {e.reason}"
+                                  print(error_msg)
+                                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': error_msg})
+                                  return
+                              except urllib.error.URLError as e:
+                                  error_msg = f"URL error downloading {url}: {str(e.reason)}"
+                                  print(error_msg)
+                                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': error_msg})
+                                  return
+
+                              # Upload to S3
+                              try:
+                                  s3 = boto3.client('s3')
+                                  s3.put_object(Bucket=bucket, Key=key, Body=content)
+                                  print(f"Uploaded to s3://{bucket}/{key}")
+                              except Exception as e:
+                                  error_msg = f"S3 upload error: {str(e)}"
+                                  print(error_msg)
+                                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': error_msg})
+                                  return
+
+                              cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                                  'Bucket': bucket,
+                                  'Key': key,
+                                  'Size': len(content)
+                              })
+                          else:
+                              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+
+                      except Exception as e:
+                          import traceback
+                          error_msg = f"Unexpected error: {str(e)}\n{traceback.format_exc()}"
+                          print(error_msg)
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {
+                              'Error': str(e)
+                          })
+              Tags:
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'package-downloader-lambda'
+
+          # Custom Resources to download Lambda packages
+          QuarantineUserPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateQuarantineUserResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/quarantine_user.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
+
+          FetchCloudLogsPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateFetchCloudLogsResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/fetch_cloud_logs.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
+
+          RemovePolicyPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateQuarantineUserResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/remove_policy.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
+
+          ConfigureResourceAccessPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateMakePrivateResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/configure_resource_access.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
+
+          CreateVolumeSnapshotsPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateVolumeSnapshotResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/create_volume_snapshots.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
+
+          DeleteVolumeSnapshotsPackage:
+            Type: Custom::LambdaPackage
+            Condition: CreateVolumeSnapshotResources
+            Properties:
+              ServiceToken: !GetAtt PackageDownloaderFunction.Arn
+              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/delete_volume_snapshots.zip'
+              Bucket: !Ref LambdaPackagesBucket
+              Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
+
           # CloudWatch Log Groups (Regional Resources)
           QuarantineUserLogGroup:
             Type: AWS::Logs::LogGroup
@@ -710,15 +925,17 @@ Resources:
           QuarantineUserFunction:
             Type: AWS::Lambda::Function
             Condition: CreateQuarantineUserResources
-            DependsOn: QuarantineUserLogGroup
+            DependsOn:
+              - QuarantineUserLogGroup
+              - QuarantineUserPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-quarantine-user'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref QuarantineUserRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/quarantine_user.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -736,15 +953,17 @@ Resources:
           FetchCloudLogsFunction:
             Type: AWS::Lambda::Function
             Condition: CreateFetchCloudLogsResources
-            DependsOn: FetchCloudLogsLogGroup
+            DependsOn:
+              - FetchCloudLogsLogGroup
+              - FetchCloudLogsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-fetch-cloud-logs'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref FetchCloudLogsRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/fetch_cloud_logs.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -762,15 +981,17 @@ Resources:
           RemovePolicyFunction:
             Type: AWS::Lambda::Function
             Condition: CreateQuarantineUserResources
-            DependsOn: RemovePolicyLogGroup
+            DependsOn:
+              - RemovePolicyLogGroup
+              - RemovePolicyPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-remove-policy'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref RemovePolicyRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/remove_policy.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -788,15 +1009,17 @@ Resources:
           ConfigureResourceAccessFunction:
             Type: AWS::Lambda::Function
             Condition: CreateMakePrivateResources
-            DependsOn: ConfigureResourceAccessLogGroup
+            DependsOn:
+              - ConfigureResourceAccessLogGroup
+              - ConfigureResourceAccessPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-configure-resource-access'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref ConfigureResourceAccessRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/configure_resource_access.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -814,15 +1037,17 @@ Resources:
           CreateVolumeSnapshotsFunction:
             Type: AWS::Lambda::Function
             Condition: CreateVolumeSnapshotResources
-            DependsOn: CreateVolumeSnapshotsLogGroup
+            DependsOn:
+              - CreateVolumeSnapshotsLogGroup
+              - CreateVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-create-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref CreateVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/create_volume_snapshots.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -840,15 +1065,17 @@ Resources:
           DeleteVolumeSnapshotsFunction:
             Type: AWS::Lambda::Function
             Condition: CreateVolumeSnapshotResources
-            DependsOn: DeleteVolumeSnapshotsLogGroup
+            DependsOn:
+              - DeleteVolumeSnapshotsLogGroup
+              - DeleteVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-delete-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref DeleteVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-                S3Key: !Sub '${CloudLambdasPath}/delete_volume_snapshots.zip'
+                S3Bucket: !Ref LambdaPackagesBucket
+                S3Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
               Timeout: 300
               MemorySize: 128
               Environment:
