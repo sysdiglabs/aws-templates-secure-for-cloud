@@ -77,7 +77,7 @@ Parameters:
   ResponseActionsVersion:
     Type: String
     Description: Response Actions version
-    Default: "0.0.15"
+    Default: "0.0.16"
   EnabledResponseActions:
     Type: CommaDelimitedList
     Description: List of response actions to enable (make_private, fetch_cloud_logs, create_volume_snapshot, quarantine_user)
