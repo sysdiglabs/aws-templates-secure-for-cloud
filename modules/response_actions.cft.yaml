@@ -272,7 +272,7 @@ Resources:
   QuarantineUserRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-quarantine-user-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-quarantine-user-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -311,10 +311,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-quarantine-user-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-quarantine-user-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-quarantine-user-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-quarantine-user-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -323,7 +323,7 @@ Resources:
   FetchCloudLogsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-fetch-cloud-logs-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-fetch-cloud-logs-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -345,10 +345,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-fetch-cloud-logs-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-fetch-cloud-logs-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-fetch-cloud-logs-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-fetch-cloud-logs-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -357,7 +357,7 @@ Resources:
   RemovePolicyRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-remove-policy-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-remove-policy-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -384,10 +384,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-remove-policy-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-remove-policy-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-remove-policy-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-remove-policy-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -396,7 +396,7 @@ Resources:
   ConfigureResourceAccessRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-confi-res-access-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-confi-res-access-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -426,10 +426,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-confi-res-access-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-confi-res-access-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-confi-res-access-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-confi-res-access-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -438,7 +438,7 @@ Resources:
   CreateVolumeSnapshotsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-create-vol-snap-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-create-vol-snap-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -475,10 +475,10 @@ Resources:
             - "arn:aws:ec2:*:*:snapshot/*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-create-vol-snap-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-create-vol-snap-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-create-vol-snap-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-create-vol-snap-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -487,7 +487,7 @@ Resources:
   DeleteVolumeSnapshotsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-delete-vol-snap-role
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-delete-vol-snap-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -516,10 +516,10 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action: sts:AssumeRole
-            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-delete-vol-snap-role"
+            Resource: !Sub "arn:${Partition}:iam::*:role/sysdig-secure-ra-${NameSuffix}-delete-vol-snap-role"
       Tags:
         - Key: Name
-          Value: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}-delete-vol-snap-role
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-delete-vol-snap-role
         - Key: 'sysdig.com/response-actions/cloud-actions'
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
@@ -545,7 +545,7 @@ Resources:
         RegionConcurrencyType: PARALLEL
       Parameters:
       - ParameterKey: ResourceName
-        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-${AWS::AccountId}
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}
       - ParameterKey: S3BucketName
         ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-packages
       - ParameterKey: ApiBaseUrl
