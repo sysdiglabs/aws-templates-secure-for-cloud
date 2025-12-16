@@ -262,6 +262,11 @@ Resources:
             - lambda:GetFunction
             Resource:
             - !Sub "arn:${Partition}:lambda:*:${AWS::AccountId}:function:sysdig-secure-ra-${NameSuffix}-*"
+          - Effect: Allow
+            Action:
+            - iam:GetRole
+            Resource:
+            - !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/sysdig-secure-ra-${NameSuffix}-*"
       Tags:
         - Key: Name
           Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
