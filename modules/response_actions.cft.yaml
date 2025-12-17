@@ -265,6 +265,9 @@ Resources:
           - Effect: Allow
             Action:
             - iam:GetRole
+            - iam:GetRolePolicy
+            - iam:ListRolePolicies
+            - iam:ListAttachedRolePolicies
             Resource:
             - !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/sysdig-secure-ra-${NameSuffix}-*"
       Tags:
