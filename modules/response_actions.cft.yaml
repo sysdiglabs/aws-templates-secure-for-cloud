@@ -1511,6 +1511,48 @@ Outputs:
   CrossAccountRoleARN:
     Description: ARN of the cross-account role for Lambda invocation
     Value: !GetAtt CrossAccountLambdaInvokerRole.Arn
+  CrossAccountRoleName:
+    Description: Name of the cross-account role for Lambda invocation
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
+  Regions:
+    Description: Comma-separated list of regions where Lambda functions are deployed
+    Value: !Join [",", !Ref Regions]
+  QuarantineUserLambdaName:
+    Description: Name of the quarantine user Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-quarantine-user
+  FetchCloudLogsLambdaName:
+    Description: Name of the fetch cloud logs Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-fetch-cloud-logs
+  RemovePolicyLambdaName:
+    Description: Name of the remove policy Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-remove-policy
+  ConfigureResourceAccessLambdaName:
+    Description: Name of the configure resource access Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-configure-resource-access
+  CreateVolumeSnapshotsLambdaName:
+    Description: Name of the create volume snapshots Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-create-volume-snapshots
+  DeleteVolumeSnapshotsLambdaName:
+    Description: Name of the delete volume snapshots Lambda function
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-delete-volume-snapshots
+  QuarantineUserRoleName:
+    Description: Name of the quarantine user execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-quarantine-user-role
+  FetchCloudLogsRoleName:
+    Description: Name of the fetch cloud logs execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-fetch-cloud-logs-role
+  RemovePolicyRoleName:
+    Description: Name of the remove policy execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-remove-policy-role
+  ConfigureResourceAccessRoleName:
+    Description: Name of the configure resource access execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-confi-res-access-role
+  CreateVolumeSnapshotsRoleName:
+    Description: Name of the create volume snapshots execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-create-vol-snap-role
+  DeleteVolumeSnapshotsRoleName:
+    Description: Name of the delete volume snapshots execution role
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-delete-vol-snap-role
   LambdaStackSetName:
     Description: Name of the CloudFormation StackSet deploying Lambda functions
     Value: !Ref LambdaFunctionsStackSet
