@@ -64,7 +64,6 @@ Parameters:
   ExternalID:
     Type: String
     Description: External ID for secure cross-account role assumption
-    Default: "cloud-actions-lambda-invoke-access"
   TrustedIdentity:
     Type: String
     Description: The Role in Sysdig's AWS Account with permissions to your account
