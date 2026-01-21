@@ -5,6 +5,7 @@
     "cloudResponderMetadata": {
       "aws": {
         "crossAccountRoleName": "{{CrossAccountRoleName}}",
+        "validationRoleName": "{{ValidationRoleName}}",
         "regions": ["{{Regions}}"],
         "lambdaNames": [
           "{{QuarantineUserLambdaName}}",
@@ -21,6 +22,7 @@
     "type": "COMPONENT_CLOUD_RESPONDER_ROLES",
     "instance": "secure-runtime",
     "cloudResponderRolesMetadata": {
+      "validationRoleName": "{{ValidationRoleName}}",
       "aws": {
         "quarantineUserRoleName": "{{QuarantineUserRoleName}}",
         "fetchCloudLogsRoleName": "{{FetchCloudLogsRoleName}}",

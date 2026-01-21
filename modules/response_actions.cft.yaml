@@ -267,6 +267,45 @@ Resources:
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'cross-account-invoker'
 
+  # Validation Role
+  ValidationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Ref TrustedIdentity
+          Action: sts:AssumeRole
+          Condition:
+            StringEquals:
+              sts:ExternalId: !Ref ExternalID
+      Policies:
+      - PolicyName: !Sub sysdig-secure-ra-${NameSuffix}-validation-policy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:GetFunction
+            - lambda:GetPolicy
+            - lambda:ListFunctions
+            Resource: !Sub "arn:${Partition}:lambda:*:${AWS::AccountId}:function:sysdig-secure-ra-${NameSuffix}-*"
+          - Effect: Allow
+            Action:
+            - iam:GetRole
+            - iam:GetRolePolicy
+            - iam:ListRolePolicies
+            - iam:ListAttachedRolePolicies
+            Resource: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/sysdig-secure-ra-${NameSuffix}-*"
+      Tags:
+        - Key: Name
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+        - Key: 'sysdig.com/response-actions/resource-name'
+          Value: 'validation-role'
+
   # Lambda Execution Roles
   QuarantineUserRole:
     Type: AWS::IAM::Role
@@ -1153,6 +1192,14 @@ Resources:
         ParameterValue: !GetAtt DeleteVolumeSnapshotsRole.Arn
       - ParameterKey: DeleteVolumeSnapshotsRoleName
         ParameterValue: !Select [1, !Split ["/", !GetAtt DeleteVolumeSnapshotsRole.Arn]]
+      - ParameterKey: ValidationRoleName
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+      - ParameterKey: TrustedIdentity
+        ParameterValue: !Ref TrustedIdentity
+      - ParameterKey: ExternalId
+        ParameterValue: !Ref ExternalID
+      - ParameterKey: ResourceNamePrefix
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}
       - ParameterKey: EnabledResponseActions
         ParameterValue: !Join [",", !Ref EnabledResponseActions]
       StackInstancesGroup:
@@ -1218,6 +1265,18 @@ Resources:
           DeleteVolumeSnapshotsRoleName:
             Type: String
             Description: Name for the delete volume snapshots delegate role
+          ValidationRoleName:
+            Type: String
+            Description: Name for the validation role
+          TrustedIdentity:
+            Type: String
+            Description: ARN of the Sysdig trusted identity
+          ExternalId:
+            Type: String
+            Description: External ID for assuming the validation role
+          ResourceNamePrefix:
+            Type: String
+            Description: Prefix for resource names to scope IAM permissions
           EnabledResponseActions:
             Type: String
             Description: Comma-separated list of response actions to enable
@@ -1480,6 +1539,43 @@ Resources:
                 - Key: 'sysdig.com/response-actions/resource-name'
                   Value: 'remove-policy-delegate-role'
 
+          # Validation Role: Read-only access for validating Response Actions deployment
+          ValidationDelegateRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Ref ValidationRoleName
+              Description: Validation role for reading Response Actions resources
+              MaxSessionDuration: 3600
+              AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      AWS: !Ref TrustedIdentity
+                    Action: 'sts:AssumeRole'
+                    Condition:
+                      StringEquals:
+                        'sts:ExternalId': !Ref ExternalId
+              Policies:
+                - PolicyName: response-actions-validation
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Action:
+                          - 'iam:GetRole'
+                          - 'iam:GetRolePolicy'
+                          - 'iam:ListRolePolicies'
+                          - 'iam:ListAttachedRolePolicies'
+                        Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ResourceNamePrefix}-*'
+              Tags:
+                - Key: ManagedBy
+                  Value: CloudFormation
+                - Key: Purpose
+                  Value: ResponseActions
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'validation-delegate-role'
+
         Outputs:
           ConfigureAccessDelegateRoleName:
             Condition: CreateMakePrivateResources
@@ -1505,6 +1601,9 @@ Resources:
             Condition: CreateQuarantineUserResources
             Value: !Ref RemovePolicyDelegateRole
             Description: Name of the remove policy delegate role
+          ValidationDelegateRoleName:
+            Value: !Ref ValidationDelegateRole
+            Description: Name of the validation delegate role
 
 Outputs:
   CrossAccountRoleARN:
@@ -1513,6 +1612,12 @@ Outputs:
   CrossAccountRoleName:
     Description: Name of the cross-account role for Lambda invocation
     Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
+  ValidationRoleARN:
+    Description: ARN of the validation role for reading Response Actions resources
+    Value: !GetAtt ValidationRole.Arn
+  ValidationRoleName:
+    Description: Name of the validation role for reading Response Actions resources
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
   Regions:
     Description: Comma-separated list of regions where Lambda functions are deployed
     Value: !Join [",", !Ref Regions]
