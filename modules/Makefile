@@ -23,7 +23,7 @@ PARAM_RESPONSE_ACTIONS_VERSION ?= 1.0.0
 PARAM_ENABLED_RESPONSE_ACTIONS ?= make_private,fetch_cloud_logs,create_volume_snapshot,quarantine_user
 PARAM_RESPONSE_ACTIONS_PARTITION ?= aws
 
-.PHONY: validate lint deploy test clean response_actions
+.PHONY: validate lint deploy test clean
 validate: export AWS_PAGER=""
 validate:
 	aws --region us-east-1 cloudformation validate-template --template-body file://./foundational.cft.yaml
