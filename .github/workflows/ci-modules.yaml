@@ -77,3 +77,4 @@ jobs:
       env:
         S3_BUCKET: cf-templates-cloudvision-ci
         S3_PREFIX: ${{ github.event_name == 'push' && ((contains(github.ref, '/tags/v') && github.ref_name) || 'main') || format('pr/{0}', github.event.pull_request.number)}}
+
