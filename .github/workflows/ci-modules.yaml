@@ -50,6 +50,8 @@ jobs:
     - name: Validate Templates
       run: make validate
       working-directory: modules
+      env:
+        S3_BUCKET: cf-templates-cloudvision-ci
       
   publish:
     name: Publish Templates
