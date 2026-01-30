@@ -171,7 +171,6 @@ deploy:
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"Partition=$(PARAM_RESPONSE_ACTIONS_PARTITION)" \
 			"RootOUID=$(PARAM_ROOT_OU_ID)" \
-			"Partition=$(PARAM_RESPONSE_ACTIONS_PARTITION)" \
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
