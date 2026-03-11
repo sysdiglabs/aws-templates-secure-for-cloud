@@ -17,7 +17,6 @@ Metadata:
       - TrustedIdentity
       - ApiBaseUrl
       - LambdaPackagesBaseUrl
-      - ResponseActionsVersion
       - IsOrganizational
       - Partition
       - RootOUID
@@ -35,8 +34,6 @@ Metadata:
         default: API Base URL
       LambdaPackagesBaseUrl:
         default: Lambda Packages Base URL
-      ResponseActionsVersion:
-        default: Response Actions Version
       EnabledResponseActions:
         default: Enabled Response Actions
       Regions:
@@ -73,10 +70,6 @@ Parameters:
   LambdaPackagesBaseUrl:
     Type: String
     Description: Base URL for downloading Lambda deployment packages (e.g., https://example.com/packages)
-  ResponseActionsVersion:
-    Type: String
-    Description: Response Actions version
-    Default: "0.0.16"
   EnabledResponseActions:
     Type: CommaDelimitedList
     Description: List of response actions to enable (make_private, fetch_cloud_logs, create_volume_snapshot, quarantine_user)
@@ -612,8 +605,6 @@ Resources:
         ParameterValue: !Select [1, !Split ["/", !GetAtt CreateVolumeSnapshotsRole.Arn]]
       - ParameterKey: DeleteVolumeSnapshotsRoleName
         ParameterValue: !Select [1, !Split ["/", !GetAtt DeleteVolumeSnapshotsRole.Arn]]
-      - ParameterKey: ResponseActionsVersion
-        ParameterValue: !Ref ResponseActionsVersion
       - ParameterKey: LambdaPackagesBaseUrl
         ParameterValue: !Ref LambdaPackagesBaseUrl
       - ParameterKey: EnabledResponseActions
@@ -677,9 +668,6 @@ Resources:
           DeleteVolumeSnapshotsRoleName:
             Type: String
             Description: Name of the IAM role for delete volume snapshots function
-          ResponseActionsVersion:
-            Type: String
-            Description: Version of response actions packages to download
           LambdaPackagesBaseUrl:
             Type: String
             Description: Base URL for downloading Lambda deployment packages
@@ -849,54 +837,54 @@ Resources:
             Condition: CreateQuarantineUserResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/quarantine_user.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/quarantine_user.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
+              Key: "1.0.2/quarantine_user.zip"
 
           FetchCloudLogsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateFetchCloudLogsResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/fetch_cloud_logs.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/fetch_cloud_logs.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
+              Key: "1.0.2/fetch_cloud_logs.zip"
 
           RemovePolicyPackage:
             Type: Custom::LambdaPackage
             Condition: CreateQuarantineUserResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/remove_policy.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/remove_policy.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
+              Key: "1.0.2/remove_policy.zip"
 
           ConfigureResourceAccessPackage:
             Type: Custom::LambdaPackage
             Condition: CreateMakePrivateResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/configure_resource_access.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/configure_resource_access.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
+              Key: "1.0.2/configure_resource_access.zip"
 
           CreateVolumeSnapshotsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateVolumeSnapshotResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/create_volume_snapshots.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/create_volume_snapshots.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
+              Key: "1.0.2/create_volume_snapshots.zip"
 
           DeleteVolumeSnapshotsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateVolumeSnapshotResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/delete_volume_snapshots.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/delete_volume_snapshots.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
+              Key: "1.0.2/delete_volume_snapshots.zip"
 
           # CloudWatch Log Groups (Regional Resources)
           QuarantineUserLogGroup:
@@ -965,15 +953,14 @@ Resources:
             Condition: CreateQuarantineUserResources
             DependsOn:
               - QuarantineUserLogGroup
-              - QuarantineUserPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-quarantine-user'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref QuarantineUserRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
+                S3Bucket: !GetAtt QuarantineUserPackage.Bucket
+                S3Key: !GetAtt QuarantineUserPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -993,15 +980,14 @@ Resources:
             Condition: CreateFetchCloudLogsResources
             DependsOn:
               - FetchCloudLogsLogGroup
-              - FetchCloudLogsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-fetch-cloud-logs'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref FetchCloudLogsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
+                S3Bucket: !GetAtt FetchCloudLogsPackage.Bucket
+                S3Key: !GetAtt FetchCloudLogsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1021,15 +1007,14 @@ Resources:
             Condition: CreateQuarantineUserResources
             DependsOn:
               - RemovePolicyLogGroup
-              - RemovePolicyPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-remove-policy'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref RemovePolicyRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
+                S3Bucket: !GetAtt RemovePolicyPackage.Bucket
+                S3Key: !GetAtt RemovePolicyPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1049,15 +1034,14 @@ Resources:
             Condition: CreateMakePrivateResources
             DependsOn:
               - ConfigureResourceAccessLogGroup
-              - ConfigureResourceAccessPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-configure-resource-access'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref ConfigureResourceAccessRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
+                S3Bucket: !GetAtt ConfigureResourceAccessPackage.Bucket
+                S3Key: !GetAtt ConfigureResourceAccessPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1077,15 +1061,14 @@ Resources:
             Condition: CreateVolumeSnapshotResources
             DependsOn:
               - CreateVolumeSnapshotsLogGroup
-              - CreateVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-create-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref CreateVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
+                S3Bucket: !GetAtt CreateVolumeSnapshotsPackage.Bucket
+                S3Key: !GetAtt CreateVolumeSnapshotsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1105,15 +1088,14 @@ Resources:
             Condition: CreateVolumeSnapshotResources
             DependsOn:
               - DeleteVolumeSnapshotsLogGroup
-              - DeleteVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-delete-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref DeleteVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
+                S3Bucket: !GetAtt DeleteVolumeSnapshotsPackage.Bucket
+                S3Key: !GetAtt DeleteVolumeSnapshotsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
