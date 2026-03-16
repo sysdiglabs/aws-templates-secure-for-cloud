@@ -17,7 +17,6 @@ Metadata:
       - TrustedIdentity
       - ApiBaseUrl
       - LambdaPackagesBaseUrl
-      - ResponseActionsVersion
       - IsOrganizational
       - Partition
       - RootOUID
@@ -35,8 +34,6 @@ Metadata:
         default: API Base URL
       LambdaPackagesBaseUrl:
         default: Lambda Packages Base URL
-      ResponseActionsVersion:
-        default: Response Actions Version
       EnabledResponseActions:
         default: Enabled Response Actions
       Regions:
@@ -73,10 +70,6 @@ Parameters:
   LambdaPackagesBaseUrl:
     Type: String
     Description: Base URL for downloading Lambda deployment packages (e.g., https://example.com/packages)
-  ResponseActionsVersion:
-    Type: String
-    Description: Response Actions version
-    Default: "0.0.16"
   EnabledResponseActions:
     Type: CommaDelimitedList
     Description: List of response actions to enable (make_private, fetch_cloud_logs, create_volume_snapshot, quarantine_user)
@@ -266,6 +259,45 @@ Resources:
           Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'cross-account-invoker'
+
+  # Validation Role
+  ValidationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Ref TrustedIdentity
+          Action: sts:AssumeRole
+          Condition:
+            StringEquals:
+              sts:ExternalId: !Ref ExternalID
+      Policies:
+      - PolicyName: !Sub sysdig-secure-ra-${NameSuffix}-validation-policy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:GetFunction
+            - lambda:GetPolicy
+            - lambda:ListFunctions
+            Resource: !Sub "arn:${Partition}:lambda:*:${AWS::AccountId}:function:sysdig-secure-ra-${NameSuffix}-*"
+          - Effect: Allow
+            Action:
+            - iam:GetRole
+            - iam:GetRolePolicy
+            - iam:ListRolePolicies
+            - iam:ListAttachedRolePolicies
+            Resource: !Sub "arn:${Partition}:iam::${AWS::AccountId}:role/sysdig-secure-ra-${NameSuffix}-*"
+      Tags:
+        - Key: Name
+          Value: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+        - Key: 'sysdig.com/response-actions/resource-name'
+          Value: 'validation-role'
 
   # Lambda Execution Roles
   QuarantineUserRole:
@@ -573,8 +605,6 @@ Resources:
         ParameterValue: !Select [1, !Split ["/", !GetAtt CreateVolumeSnapshotsRole.Arn]]
       - ParameterKey: DeleteVolumeSnapshotsRoleName
         ParameterValue: !Select [1, !Split ["/", !GetAtt DeleteVolumeSnapshotsRole.Arn]]
-      - ParameterKey: ResponseActionsVersion
-        ParameterValue: !Ref ResponseActionsVersion
       - ParameterKey: LambdaPackagesBaseUrl
         ParameterValue: !Ref LambdaPackagesBaseUrl
       - ParameterKey: EnabledResponseActions
@@ -638,9 +668,6 @@ Resources:
           DeleteVolumeSnapshotsRoleName:
             Type: String
             Description: Name of the IAM role for delete volume snapshots function
-          ResponseActionsVersion:
-            Type: String
-            Description: Version of response actions packages to download
           LambdaPackagesBaseUrl:
             Type: String
             Description: Base URL for downloading Lambda deployment packages
@@ -810,54 +837,54 @@ Resources:
             Condition: CreateQuarantineUserResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/quarantine_user.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/quarantine_user.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
+              Key: "1.0.2/quarantine_user.zip"
 
           FetchCloudLogsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateFetchCloudLogsResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/fetch_cloud_logs.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/fetch_cloud_logs.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
+              Key: "1.0.2/fetch_cloud_logs.zip"
 
           RemovePolicyPackage:
             Type: Custom::LambdaPackage
             Condition: CreateQuarantineUserResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/remove_policy.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/remove_policy.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
+              Key: "1.0.2/remove_policy.zip"
 
           ConfigureResourceAccessPackage:
             Type: Custom::LambdaPackage
             Condition: CreateMakePrivateResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/configure_resource_access.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/configure_resource_access.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
+              Key: "1.0.2/configure_resource_access.zip"
 
           CreateVolumeSnapshotsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateVolumeSnapshotResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/create_volume_snapshots.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/create_volume_snapshots.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
+              Key: "1.0.2/create_volume_snapshots.zip"
 
           DeleteVolumeSnapshotsPackage:
             Type: Custom::LambdaPackage
             Condition: CreateVolumeSnapshotResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v${ResponseActionsVersion}/delete_volume_snapshots.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/delete_volume_snapshots.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
+              Key: "1.0.2/delete_volume_snapshots.zip"
 
           # CloudWatch Log Groups (Regional Resources)
           QuarantineUserLogGroup:
@@ -926,15 +953,14 @@ Resources:
             Condition: CreateQuarantineUserResources
             DependsOn:
               - QuarantineUserLogGroup
-              - QuarantineUserPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-quarantine-user'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref QuarantineUserRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/quarantine_user.zip'
+                S3Bucket: !GetAtt QuarantineUserPackage.Bucket
+                S3Key: !GetAtt QuarantineUserPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -954,15 +980,14 @@ Resources:
             Condition: CreateFetchCloudLogsResources
             DependsOn:
               - FetchCloudLogsLogGroup
-              - FetchCloudLogsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-fetch-cloud-logs'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref FetchCloudLogsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/fetch_cloud_logs.zip'
+                S3Bucket: !GetAtt FetchCloudLogsPackage.Bucket
+                S3Key: !GetAtt FetchCloudLogsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -982,15 +1007,14 @@ Resources:
             Condition: CreateQuarantineUserResources
             DependsOn:
               - RemovePolicyLogGroup
-              - RemovePolicyPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-remove-policy'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref RemovePolicyRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/remove_policy.zip'
+                S3Bucket: !GetAtt RemovePolicyPackage.Bucket
+                S3Key: !GetAtt RemovePolicyPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1010,15 +1034,14 @@ Resources:
             Condition: CreateMakePrivateResources
             DependsOn:
               - ConfigureResourceAccessLogGroup
-              - ConfigureResourceAccessPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-configure-resource-access'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref ConfigureResourceAccessRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/configure_resource_access.zip'
+                S3Bucket: !GetAtt ConfigureResourceAccessPackage.Bucket
+                S3Key: !GetAtt ConfigureResourceAccessPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1038,15 +1061,14 @@ Resources:
             Condition: CreateVolumeSnapshotResources
             DependsOn:
               - CreateVolumeSnapshotsLogGroup
-              - CreateVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-create-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref CreateVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/create_volume_snapshots.zip'
+                S3Bucket: !GetAtt CreateVolumeSnapshotsPackage.Bucket
+                S3Key: !GetAtt CreateVolumeSnapshotsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1066,15 +1088,14 @@ Resources:
             Condition: CreateVolumeSnapshotResources
             DependsOn:
               - DeleteVolumeSnapshotsLogGroup
-              - DeleteVolumeSnapshotsPackage
             Properties:
               FunctionName: !Sub '${ResourceName}-delete-volume-snapshots'
               Runtime: python3.12
               Handler: app.index.handler
               Role: !Ref DeleteVolumeSnapshotsRoleArn
               Code:
-                S3Bucket: !Ref LambdaPackagesBucket
-                S3Key: !Sub '${ResponseActionsVersion}/delete_volume_snapshots.zip'
+                S3Bucket: !GetAtt DeleteVolumeSnapshotsPackage.Bucket
+                S3Key: !GetAtt DeleteVolumeSnapshotsPackage.Key
               Timeout: 300
               MemorySize: 128
               Environment:
@@ -1153,6 +1174,14 @@ Resources:
         ParameterValue: !GetAtt DeleteVolumeSnapshotsRole.Arn
       - ParameterKey: DeleteVolumeSnapshotsRoleName
         ParameterValue: !Select [1, !Split ["/", !GetAtt DeleteVolumeSnapshotsRole.Arn]]
+      - ParameterKey: ValidationRoleName
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
+      - ParameterKey: TrustedIdentity
+        ParameterValue: !Ref TrustedIdentity
+      - ParameterKey: ExternalId
+        ParameterValue: !Ref ExternalID
+      - ParameterKey: ResourceNamePrefix
+        ParameterValue: !Sub sysdig-secure-ra-${NameSuffix}
       - ParameterKey: EnabledResponseActions
         ParameterValue: !Join [",", !Ref EnabledResponseActions]
       StackInstancesGroup:
@@ -1218,6 +1247,18 @@ Resources:
           DeleteVolumeSnapshotsRoleName:
             Type: String
             Description: Name for the delete volume snapshots delegate role
+          ValidationRoleName:
+            Type: String
+            Description: Name for the validation role
+          TrustedIdentity:
+            Type: String
+            Description: ARN of the Sysdig trusted identity
+          ExternalId:
+            Type: String
+            Description: External ID for assuming the validation role
+          ResourceNamePrefix:
+            Type: String
+            Description: Prefix for resource names to scope IAM permissions
           EnabledResponseActions:
             Type: String
             Description: Comma-separated list of response actions to enable
@@ -1480,6 +1521,43 @@ Resources:
                 - Key: 'sysdig.com/response-actions/resource-name'
                   Value: 'remove-policy-delegate-role'
 
+          # Validation Role: Read-only access for validating Response Actions deployment
+          ValidationDelegateRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: !Ref ValidationRoleName
+              Description: Validation role for reading Response Actions resources
+              MaxSessionDuration: 3600
+              AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      AWS: !Ref TrustedIdentity
+                    Action: 'sts:AssumeRole'
+                    Condition:
+                      StringEquals:
+                        'sts:ExternalId': !Ref ExternalId
+              Policies:
+                - PolicyName: response-actions-validation
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Action:
+                          - 'iam:GetRole'
+                          - 'iam:GetRolePolicy'
+                          - 'iam:ListRolePolicies'
+                          - 'iam:ListAttachedRolePolicies'
+                        Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ResourceNamePrefix}-*'
+              Tags:
+                - Key: ManagedBy
+                  Value: CloudFormation
+                - Key: Purpose
+                  Value: ResponseActions
+                - Key: 'sysdig.com/response-actions/resource-name'
+                  Value: 'validation-delegate-role'
+
         Outputs:
           ConfigureAccessDelegateRoleName:
             Condition: CreateMakePrivateResources
@@ -1505,6 +1583,9 @@ Resources:
             Condition: CreateQuarantineUserResources
             Value: !Ref RemovePolicyDelegateRole
             Description: Name of the remove policy delegate role
+          ValidationDelegateRoleName:
+            Value: !Ref ValidationDelegateRole
+            Description: Name of the validation delegate role
 
 Outputs:
   CrossAccountRoleARN:
@@ -1513,6 +1594,12 @@ Outputs:
   CrossAccountRoleName:
     Description: Name of the cross-account role for Lambda invocation
     Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
+  ValidationRoleARN:
+    Description: ARN of the validation role for reading Response Actions resources
+    Value: !GetAtt ValidationRole.Arn
+  ValidationRoleName:
+    Description: Name of the validation role for reading Response Actions resources
+    Value: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
   Regions:
     Description: Comma-separated list of regions where Lambda functions are deployed
     Value: !Join [",", !Ref Regions]

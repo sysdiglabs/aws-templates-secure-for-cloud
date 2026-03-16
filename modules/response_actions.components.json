@@ -5,7 +5,10 @@
     "cloudResponderMetadata": {
       "aws": {
         "crossAccountRoleName": "{{CrossAccountRoleName}}",
-        "regions": ["{{Regions}}"],
+        "validationRoleName": "{{ValidationRoleName}}",
+        "regions": [
+          "{{Regions}}"
+        ],
         "lambdaNames": [
           "{{QuarantineUserLambdaName}}",
           "{{FetchCloudLogsLambdaName}}",
@@ -21,14 +24,43 @@
     "type": "COMPONENT_CLOUD_RESPONDER_ROLES",
     "instance": "secure-runtime",
     "cloudResponderRolesMetadata": {
-      "aws": {
-        "quarantineUserRoleName": "{{QuarantineUserRoleName}}",
-        "fetchCloudLogsRoleName": "{{FetchCloudLogsRoleName}}",
-        "removePolicyRoleName": "{{RemovePolicyRoleName}}",
-        "configureResourceAccessRoleName": "{{ConfigureResourceAccessRoleName}}",
-        "createVolumeSnapshotsRoleName": "{{CreateVolumeSnapshotsRoleName}}",
-        "deleteVolumeSnapshotsRoleName": "{{DeleteVolumeSnapshotsRoleName}}"
-      }
+      "validationRole": {
+        "aws": {
+          "roleName": "{{ValidationRoleName}}"
+        }
+      },
+      "roles": [
+        {
+          "aws": {
+            "roleName": "{{QuarantineUserRoleName}}"
+          }
+        },
+        {
+          "aws": {
+            "roleName": "{{FetchCloudLogsRoleName}}"
+          }
+        },
+        {
+          "aws": {
+            "roleName": "{{RemovePolicyRoleName}}"
+          }
+        },
+        {
+          "aws": {
+            "roleName": "{{ConfigureResourceAccessRoleName}}"
+          }
+        },
+        {
+          "aws": {
+            "roleName": "{{CreateVolumeSnapshotsRoleName}}"
+          }
+        },
+        {
+          "aws": {
+            "roleName": "{{DeleteVolumeSnapshotsRoleName}}"
+          }
+        }
+      ]
     }
   }
 ]
