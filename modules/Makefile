@@ -17,6 +17,7 @@ PARAM_TARGET_EVENT_BUS_ARN ?= arn:aws:events:us-east-1::event-bus/default
 PARAM_BUCKET_ARN ?= arn:aws:s3:::cloudtrail-$(PARAM_NAME_SUFFIX)
 PARAM_REGIONS ?= us-east-1
 PARAM_LAMBDA_SCANNING_ENABLED ?= true
+PARAM_SCANNING_ACCOUNT_ID ?= 878070807337
 PARAM_API_BASE_URL ?= https://app-staging.sysdigcloud.com
 PARAM_LAMBDA_PACKAGES_BASE_URL ?= https://download.sysdig.com/cloud-response-actions
 PARAM_RESPONSE_ACTIONS_VERSION ?= 1.0.0
@@ -32,6 +33,9 @@ validate:
 	aws --region us-east-1 cloudformation validate-template --template-body file://./log_ingestion.s3.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./volume_access.cft.yaml
 	aws --region us-east-1 cloudformation validate-template --template-body file://./vm_workload_scanning.cft.yaml
+	aws --region us-east-1 cloudformation validate-template --template-body file://./foundational_with_scanning.cft.yaml
+	aws --region us-east-1 cloudformation validate-template --template-body file://./foundational_vm_workload_scanning.cft.yaml
+	aws --region us-east-1 cloudformation validate-template --template-body file://./foundational_volume_access.cft.yaml
 	@trap 'aws s3 rm $(RESPONSE_ACTIONS_TEMP_S3_URI) 2>/dev/null || true' EXIT; \
 	aws s3 cp response_actions.cft.yaml $(RESPONSE_ACTIONS_TEMP_S3_URI) && \
 	aws --region us-east-1 cloudformation validate-template --template-url `aws s3 presign $(RESPONSE_ACTIONS_TEMP_S3_URI) --region $(S3_REGION) --expires-in 60`
@@ -50,6 +54,15 @@ lint:
 	yq '.Resources.ScanningOrgStackSet.Properties.TemplateBody' vm_workload_scanning.cft.yaml | cfn-lint -
 	yq '.Resources.LambdaFunctionsStackSet.Properties.TemplateBody' response_actions.cft.yaml | cfn-lint -
 	yq '.Resources.OrganizationDelegateRolesStackSet.Properties.TemplateBody' response_actions.cft.yaml | cfn-lint -
+	yq '.Resources.FoundationalOrganizationStackSet.Properties.TemplateBody' foundational_with_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.VMWorkloadScanningOrganizationStackSet.Properties.TemplateBody' foundational_with_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.AccountStackSet.Properties.TemplateBody' foundational_with_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.VolumeAccessOrganizationStackSet.Properties.TemplateBody' foundational_with_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.FoundationalOrganizationStackSet.Properties.TemplateBody' foundational_vm_workload_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.VMWorkloadScanningOrganizationStackSet.Properties.TemplateBody' foundational_vm_workload_scanning.cft.yaml | cfn-lint -
+	yq '.Resources.FoundationalOrganizationStackSet.Properties.TemplateBody' foundational_volume_access.cft.yaml | cfn-lint -
+	yq '.Resources.AccountStackSet.Properties.TemplateBody' foundational_volume_access.cft.yaml | cfn-lint -
+	yq '.Resources.VolumeAccessOrganizationStackSet.Properties.TemplateBody' foundational_volume_access.cft.yaml | cfn-lint -
 
 publish:
 	aws s3 cp foundational.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational.cft.yaml
@@ -59,6 +72,9 @@ publish:
 	aws s3 cp volume_access.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/volume_access.cft.yaml
 	aws s3 cp vm_workload_scanning.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/vm_workload_scanning.cft.yaml
 	aws s3 cp response_actions.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/response_actions.cft.yaml
+	aws s3 cp foundational_with_scanning.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational_with_scanning.cft.yaml
+	aws s3 cp foundational_vm_workload_scanning.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational_vm_workload_scanning.cft.yaml
+	aws s3 cp foundational_volume_access.cft.yaml s3://$(S3_BUCKET)/modules/$(S3_PREFIX)/foundational_volume_access.cft.yaml
 
 deploy:
 	aws cloudformation deploy \
@@ -174,6 +190,54 @@ deploy:
 			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
 			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
 			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-FoundationalWithScanning-$(PARAM_NAME_SUFFIX) \
+		--template-file foundational_with_scanning.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"LambdaScanningEnabled=$(PARAM_LAMBDA_SCANNING_ENABLED)" \
+			"ScanningAccountID=$(PARAM_SCANNING_ACCOUNT_ID)" \
+			"Regions=$(PARAM_REGIONS)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"Partition=$(PARAM_PARTITION)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-FoundationalVMWorkloadScanning-$(PARAM_NAME_SUFFIX) \
+		--template-file foundational_vm_workload_scanning.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"LambdaScanningEnabled=$(PARAM_LAMBDA_SCANNING_ENABLED)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"Partition=$(PARAM_PARTITION)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
+	aws cloudformation deploy \
+		--stack-name $(STACK_NAME)-FoundationalVolumeAccess-$(PARAM_NAME_SUFFIX) \
+		--template-file foundational_volume_access.cft.yaml \
+		--capabilities "CAPABILITY_NAMED_IAM" "CAPABILITY_AUTO_EXPAND" \
+		--parameter-overrides \
+			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
+			"ExternalID=$(PARAM_EXTERNAL_ID)" \
+			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
+			"ScanningAccountID=$(PARAM_SCANNING_ACCOUNT_ID)" \
+			"Regions=$(PARAM_REGIONS)" \
+			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
+			"Partition=$(PARAM_PARTITION)" \
+			"RootOUID=$(PARAM_ROOT_OU_ID)" \
+			"IncludeOUIDs=$(PARAM_INCLUDE_OU_IDS)" \
+			"IncludeAccounts=$(PARAM_INCLUDE_ACCOUNTS)" \
+			"ExcludeAccounts=$(PARAM_EXCLUDE_ACCOUNTS)"
 
 clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-Foundational-$(PARAM_NAME_SUFFIX)
@@ -183,3 +247,6 @@ clean:
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VolumeAccess-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-VMWorkloadScanning-$(PARAM_NAME_SUFFIX)
 	aws cloudformation delete-stack --stack-name $(STACK_NAME)-ResponseActions-$(PARAM_NAME_SUFFIX)
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)-FoundationalWithScanning-$(PARAM_NAME_SUFFIX)
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)-FoundationalVMWorkloadScanning-$(PARAM_NAME_SUFFIX)
+	aws cloudformation delete-stack --stack-name $(STACK_NAME)-FoundationalVolumeAccess-$(PARAM_NAME_SUFFIX)
