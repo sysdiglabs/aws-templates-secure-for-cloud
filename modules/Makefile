@@ -17,7 +17,6 @@ PARAM_TARGET_EVENT_BUS_ARN ?= arn:aws:events:us-east-1::event-bus/default
 PARAM_BUCKET_ARN ?= arn:aws:s3:::cloudtrail-$(PARAM_NAME_SUFFIX)
 PARAM_REGIONS ?= us-east-1
 PARAM_LAMBDA_SCANNING_ENABLED ?= true
-PARAM_SCANNING_ACCOUNT_ID ?= 878070807337
 PARAM_API_BASE_URL ?= https://app-staging.sysdigcloud.com
 PARAM_LAMBDA_PACKAGES_BASE_URL ?= https://download.sysdig.com/cloud-response-actions
 PARAM_RESPONSE_ACTIONS_VERSION ?= 1.0.0
@@ -199,7 +198,6 @@ deploy:
 			"ExternalID=$(PARAM_EXTERNAL_ID)" \
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
 			"LambdaScanningEnabled=$(PARAM_LAMBDA_SCANNING_ENABLED)" \
-			"ScanningAccountID=$(PARAM_SCANNING_ACCOUNT_ID)" \
 			"Regions=$(PARAM_REGIONS)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"Partition=$(PARAM_PARTITION)" \
@@ -230,7 +228,6 @@ deploy:
 			"NameSuffix=$(PARAM_NAME_SUFFIX)" \
 			"ExternalID=$(PARAM_EXTERNAL_ID)" \
 			"TrustedIdentity=$(PARAM_TRUSTED_IDENTITY)" \
-			"ScanningAccountID=$(PARAM_SCANNING_ACCOUNT_ID)" \
 			"Regions=$(PARAM_REGIONS)" \
 			"IsOrganizational=$(PARAM_IS_ORGANIZATIONAL)" \
 			"Partition=$(PARAM_PARTITION)" \
