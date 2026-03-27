@@ -447,6 +447,7 @@ Resources:
             - s3:GetBucketLocation
             - s3:GetBucketPublicAccessBlock
             - s3:PutBucketPublicAccessBlock
+            - s3:DeletePublicAccessBlock
             - s3:ListAllMyBuckets
             Resource: "*"
           - Effect: Allow
@@ -864,9 +865,9 @@ Resources:
             Condition: CreateMakePrivateResources
             Properties:
               ServiceToken: !GetAtt PackageDownloaderFunction.Arn
-              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.2/configure_resource_access.zip'
+              Url: !Sub '${LambdaPackagesBaseUrl}/v1.0.3/configure_resource_access.zip'
               Bucket: !Ref LambdaPackagesBucket
-              Key: "1.0.2/configure_resource_access.zip"
+              Key: "1.0.3/configure_resource_access.zip"
 
           CreateVolumeSnapshotsPackage:
             Type: Custom::LambdaPackage
@@ -1296,6 +1297,7 @@ Resources:
                           - 's3:GetBucketLocation'
                           - 's3:GetBucketPublicAccessBlock'
                           - 's3:PutBucketPublicAccessBlock'
+                          - 's3:DeletePublicAccessBlock'
                           - 's3:ListAllMyBuckets'
                         Resource: '*'
                       - Effect: Allow
