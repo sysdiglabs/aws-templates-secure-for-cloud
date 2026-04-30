@@ -32,4 +32,4 @@ jobs:
             {
               "MODULE_BRANCH": "${{ github.head_ref || github.ref_name }}"
             }
-          job_timeout: "5400"
+          job_timeout: "7200"
