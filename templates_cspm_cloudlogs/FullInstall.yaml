@@ -41,11 +41,26 @@ Parameters:
   BucketARN:
     Type: String
     Description: The ARN of your s3 bucket associated with your Cloudtrail trail.
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
+
+Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
 
 Resources:
   CloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Ref CSPMRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -89,6 +104,8 @@ Resources:
   CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Ref CloudLogsRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
