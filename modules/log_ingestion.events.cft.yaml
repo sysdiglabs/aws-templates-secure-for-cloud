@@ -134,7 +134,18 @@ Parameters:
   ExcludeAccounts:
     Type: CommaDelimitedList
     Description: Comma separated list of AWS accounts in your organization to be excluded for deployment
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
 Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
   IsOrganizational:
     Fn::Equals:
     - Ref: IsOrganizational
@@ -185,6 +196,8 @@ Resources:
   AdministrationRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-events-stackset-administration-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -207,6 +220,8 @@ Resources:
   ExecutionRole:
     Type: AWS::IAM::Role   
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-events-stackset-execution-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -223,6 +238,8 @@ Resources:
   EventBridgeRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-events-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -272,6 +289,8 @@ Resources:
     - AdministrationRole
     - EventBridgeRole
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-events-rules-${NameSuffix}
       AdministrationRoleARN: !GetAtt AdministrationRole.Arn
       ExecutionRoleName: !Ref ExecutionRole
@@ -371,6 +390,8 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-events-organization-roles-${NameSuffix}
       Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
       PermissionModel: SERVICE_MANAGED
@@ -493,6 +514,8 @@ Resources:
     DependsOn:
     - OrganizationRoleStackSet
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-events-organization-rules-${NameSuffix}
       Description: EventBridge Resources that forward CloudTrail logs to Sysdig Secure
       PermissionModel: SERVICE_MANAGED
