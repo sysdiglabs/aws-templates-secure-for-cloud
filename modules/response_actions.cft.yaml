@@ -50,6 +50,8 @@ Metadata:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   NameSuffix:
@@ -100,8 +102,19 @@ Parameters:
   ExcludeAccounts:
     Type: CommaDelimitedList
     Description: Comma separated list of AWS accounts in your organization to be excluded for deployment
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
 
 Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
   IsOrganizational:
     Fn::Equals:
     - Ref: IsOrganizational
@@ -147,6 +160,8 @@ Resources:
   LambdaStackSetAdministrationRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-ra-${NameSuffix}-stackset-admin
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -170,6 +185,8 @@ Resources:
   LambdaStackSetExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-ra-${NameSuffix}-stackset-execution
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -259,6 +276,7 @@ Resources:
           Value: !Sub sysdig-secure-ra-${NameSuffix}-cross-account-invoker
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'cross-account-invoker'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   # Validation Role
   ValidationRole:
@@ -298,6 +316,7 @@ Resources:
           Value: !Sub sysdig-secure-ra-${NameSuffix}-validation-role
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'validation-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   # Lambda Execution Roles
   QuarantineUserRole:
@@ -350,6 +369,7 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'quarantine-user-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   FetchCloudLogsRole:
     Type: AWS::IAM::Role
@@ -384,6 +404,7 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'fetch-cloud-logs-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   RemovePolicyRole:
     Type: AWS::IAM::Role
@@ -423,6 +444,7 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'remove-policy-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   ConfigureResourceAccessRole:
     Type: AWS::IAM::Role
@@ -466,6 +488,7 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'configure-resource-access-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   CreateVolumeSnapshotsRole:
     Type: AWS::IAM::Role
@@ -515,6 +538,7 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'create-volume-snapshots-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   DeleteVolumeSnapshotsRole:
     Type: AWS::IAM::Role
@@ -556,11 +580,14 @@ Resources:
           Value: 'true'
         - Key: 'sysdig.com/response-actions/resource-name'
           Value: 'delete-volume-snapshots-role'
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   # Lambda Functions StackSet
   LambdaFunctionsStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-ra-${NameSuffix}-lambda
       AdministrationRoleARN: !GetAtt LambdaStackSetAdministrationRole.Arn
       ExecutionRoleName: !Ref LambdaStackSetExecutionRole
@@ -1133,6 +1160,8 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-ra-${NameSuffix}-delegate-roles
       Description: Sysdig Response Actions Delegate Roles - Multi-Account Deployment
       PermissionModel: SERVICE_MANAGED

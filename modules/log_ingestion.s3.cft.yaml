@@ -50,6 +50,8 @@ Metadata:
         default: Sysdig Secure endpoint
       TopicRegion:
         default: The AWS region where the SNS topic is located
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   NameSuffix:
@@ -105,8 +107,19 @@ Parameters:
     Type: String
     Description: The AWS region where the SNS topic is located
     AllowedPattern: '^[a-zA-Z0-9-]{1,128}$'
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
 
 Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
   CreateSNSTopic: !Equals [ !Ref CreateTopic, "true" ]
   HasKMSKey: !Not [ !Equals [ !Ref KMSKeyARN, "" ] ]
   HasKMSAccountId: !Not [ !Equals [ !Ref KMSAccountId, "" ] ]
@@ -128,6 +141,7 @@ Conditions:
   ]
 
   IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
+  IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
 Resources:
   # Role and resources for same-account deployments
@@ -175,11 +189,14 @@ Resources:
           Value: "Allow Sysdig to access S3 bucket for CloudTrail logs"
         - Key: "product"
           Value: "sysdig-secure-for-cloud"
+        - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
 
   CloudTrailNotificationsTopic:
     Condition: CreateSNSTopic
     Type: "AWS::SNS::Topic"
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       TopicName: !Select [ 5, !Split [ ":", !Ref TopicARN ] ]
 
   CloudTrailNotificationsSubscription:
@@ -211,6 +228,8 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: DeployStackSet
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-cloudlogs-bucket-access-${NameSuffix}
       Description: StackSet to configure S3 bucket and KMS permissions for Sysdig Cloud Logs integration
       PermissionModel: SERVICE_MANAGED
@@ -247,17 +266,25 @@ Resources:
           ParameterValue: !Ref Endpoint
         - ParameterKey: TopicRegion
           ParameterValue: !Ref TopicRegion
+      # Service-managed stack sets can't deploy to the account running this stack, so skip its instance group;
+      # otherwise every stack set update fails with "Stack Instances not found".
       StackInstancesGroup:
-        - DeploymentTargets:
-            OrganizationalUnitIds: !Ref RootOUID
-            Accounts: [!Ref BucketAccountId]
-            AccountFilterType: INTERSECTION
-          Regions: [!Ref "AWS::Region"]
-        - DeploymentTargets:
-            OrganizationalUnitIds: !Ref RootOUID
-            Accounts: [!Ref TopicAccountId]
-            AccountFilterType: INTERSECTION
-          Regions: [!Ref TopicRegion]
+        - !If
+          - IsBucketAccount
+          - !Ref AWS::NoValue
+          - DeploymentTargets:
+              OrganizationalUnitIds: !Ref RootOUID
+              Accounts: [!Ref BucketAccountId]
+              AccountFilterType: INTERSECTION
+            Regions: [!Ref "AWS::Region"]
+        - !If
+          - IsTopicAccount
+          - !Ref AWS::NoValue
+          - DeploymentTargets:
+              OrganizationalUnitIds: !Ref RootOUID
+              Accounts: [!Ref TopicAccountId]
+              AccountFilterType: INTERSECTION
+            Regions: [!Ref TopicRegion]
       TemplateBody: |
         AWSTemplateFormatVersion: "2010-09-09"
         Description: IAM Role for S3 bucket and KMS access for Sysdig Cloud Logs integration

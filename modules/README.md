@@ -7,6 +7,9 @@ Modular templates support cross sections of Sysdig Secure feature sets. Each tem
 * `NameSuffix` - a unique string suffix given to named resources where applicable.
 * `TrustedIdentity` - a Sysdig owned identity trusted to assume a permission limited customer installed role
 * `ExternalID` - a Sysdig assigned value
+* `EnableAWSPartnerTag` - `true` by default. Adds the tag `aws-apn-id-900918371795` = `pc:60xgt35ue7dm4pb1j44e9emhc` to the resources the template creates, including the ones stack sets deploy in member accounts. AWS [Partner Revenue Measurement](https://docs.aws.amazon.com/PRM/latest/aws-prm-onboarding-guide/resource-tagging.html) uses it to attribute the spend of these resources to Sysdig as an AWS Partner. The tag does not change how the resources work, does not grant access and does not send data anywhere. It is added only in the commercial `aws` partition. Set to `false` to opt out, for example when your tag policies reject unknown tags.
+  - In organizational installs, updating an existing stack to a template with this tag updates every stack set, which redeploys all stack instances. This can take a while in large organizations.
+  - The tag counts toward the AWS limit of 50 tags per resource. If your resources already have 50 tags, set `EnableAWSPartnerTag` to `false`.
 
 ## Organizations
 
