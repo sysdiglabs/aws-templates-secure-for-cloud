@@ -18,6 +18,8 @@ Metadata:
         default: "External ID (Sysdig use only)"
       TrustedIdentity:
         default: "Trusted Identity (Sysdig use only)"
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   RoleName:

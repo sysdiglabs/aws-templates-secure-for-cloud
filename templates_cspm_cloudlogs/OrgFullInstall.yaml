@@ -27,6 +27,8 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   CSPMRoleName:

@@ -24,6 +24,8 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       BucketARN:
         default: "Bucket ARN"
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   CSPMRoleName:

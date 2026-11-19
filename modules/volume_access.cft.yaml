@@ -37,6 +37,8 @@ Metadata:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   NameSuffix:

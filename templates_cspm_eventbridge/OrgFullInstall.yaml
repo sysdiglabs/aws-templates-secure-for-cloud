@@ -35,6 +35,8 @@ Metadata:
         default: "State of the EventBridge Rule (Sysdig use only)"
       EventBridgeEventPattern:
         default: "Event Pattern (Sysdig use only)"  
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   CSPMRoleName:

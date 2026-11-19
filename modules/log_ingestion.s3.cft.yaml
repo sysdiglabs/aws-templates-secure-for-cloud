@@ -50,6 +50,8 @@ Metadata:
         default: Sysdig Secure endpoint
       TopicRegion:
         default: The AWS region where the SNS topic is located
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   NameSuffix:
