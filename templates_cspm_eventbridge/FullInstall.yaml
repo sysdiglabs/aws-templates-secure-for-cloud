@@ -174,7 +174,14 @@ Resources:
                   - !Sub arn:aws:events:*:*:rule/${EventBridgeRoleName}
   EventBridgeRule:
     Type: AWS::Events::Rule
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3002  # Tags on AWS::Events::Rule are supported by CloudFormation but not by the pinned cfn-lint
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       Name: !Ref EventBridgeRoleName
       Description: Capture events based on the provided event pattern
       EventPattern: !Ref EventBridgeEventPattern
