@@ -27,6 +27,8 @@ Metadata:
         default: "Trusted Identity (Sysdig use only)"
       OrganizationUnitIDs:
         default: "Organization Unit IDs (Sysdig use only)"
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 
 Parameters:
   CSPMRoleName:
@@ -47,11 +49,26 @@ Parameters:
   OrganizationUnitIDs:
     Type: String
     Description: Organization Unit IDs to deploy
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
+
+Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
 
 Resources:
   CloudAgentlessRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub ${CSPMRoleName}
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -94,6 +111,8 @@ Resources:
   CloudLogsRole:
     Type: "AWS::IAM::Role"
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Ref CloudLogsRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -132,6 +151,8 @@ Resources:
   RolesStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: RolesStackSet
       Description: IAM Role used to forward CloudTrail logs to Sysdig Secure
       PermissionModel: SERVICE_MANAGED

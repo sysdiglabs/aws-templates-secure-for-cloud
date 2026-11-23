@@ -37,6 +37,8 @@ Metadata:
         default: Include AWS accounts
       ExcludeAccounts:
         default: Exclude AWS accounts
+      EnableAWSPartnerTag:
+        default: Add AWS Partner Tag
 Parameters:
   NameSuffix:
     Type: String
@@ -80,7 +82,18 @@ Parameters:
   ExcludeAccounts:
     Type: CommaDelimitedList
     Description: Comma separated list of AWS accounts in your organization to be excluded for deployment
+  EnableAWSPartnerTag:
+    Type: String
+    Description: Add the AWS Partner Revenue Measurement tag (aws-apn-id-900918371795 = pc:60xgt35ue7dm4pb1j44e9emhc) to the resources this template creates, so AWS can attribute their spend to Sysdig. Set to false to opt out.
+    Default: 'true'
+    AllowedValues:
+    - 'true'
+    - 'false'
 Conditions:
+  # AWS Partner Revenue Measurement only covers the commercial partition
+  AddAWSPartnerTag: !And
+  - !Equals [!Ref EnableAWSPartnerTag, 'true']
+  - !Equals [!Ref 'AWS::Partition', 'aws']
   IsOrganizational:
     Fn::Equals:
     - Ref: IsOrganizational
@@ -135,6 +148,8 @@ Resources:
   ConfigPostureRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-posture-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -218,6 +233,8 @@ Resources:
   OnboardingRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub sysdig-secure-onboarding-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -251,6 +268,8 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub sysdig-secure-organization-${NameSuffix}
       Description: Creates IAM roles within an AWS organization
       PermissionModel: SERVICE_MANAGED
@@ -405,6 +424,8 @@ Resources:
   ScanningRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       RoleName: !Sub secure-vm-workload-scanning-${NameSuffix}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -462,6 +483,8 @@ Resources:
     Type: AWS::CloudFormation::StackSet
     Condition: IsOrganizational
     Properties:
+      Tags:
+      - !If [AddAWSPartnerTag, {Key: 'aws-apn-id-900918371795', Value: 'pc:60xgt35ue7dm4pb1j44e9emhc'}, !Ref 'AWS::NoValue']
       StackSetName: !Sub secure-vm-workload-scanning-${NameSuffix}
       Description: Creates IAM roles within an AWS organization for Agentless Workload Scanning
       PermissionModel: SERVICE_MANAGED
