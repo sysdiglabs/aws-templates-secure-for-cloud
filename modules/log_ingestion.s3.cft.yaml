@@ -135,13 +135,10 @@ Conditions:
     !Not [ !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ] ]
   ]
 
-  DeployRole: !And [
-    !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ],
-    !Not [ !Condition DeployStackSet ]
-  ]
+  # The stack set can't target the account running this stack, so the bucket role is always created here
+  DeployRole: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
   IsTopicAccount: !Equals [ !Ref TopicAccountId, !Ref "AWS::AccountId" ]
-  IsBucketAccount: !Equals [ !Ref BucketAccountId, !Ref "AWS::AccountId" ]
 
 Resources:
   # Role and resources for same-account deployments
@@ -270,7 +267,7 @@ Resources:
       # otherwise every stack set update fails with "Stack Instances not found".
       StackInstancesGroup:
         - !If
-          - IsBucketAccount
+          - DeployRole
           - !Ref AWS::NoValue
           - DeploymentTargets:
               OrganizationalUnitIds: !Ref RootOUID
